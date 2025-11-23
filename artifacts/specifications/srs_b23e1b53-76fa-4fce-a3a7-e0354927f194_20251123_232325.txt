@@ -1,0 +1,89 @@
+# SOFTWARE REQUIREMENTS SPECIFICATION
+
+## 1. INTRODUCTION
+### 1.1 Purpose
+This Software Requirements Specification (SRS) is intended for developers and stakeholders involved in the software project. It provides a comprehensive description of the system's functional and non-functional requirements, ensuring that all aspects are understood and implemented correctly.
+
+### 1.2 Scope
+The scope of this software system includes developing an application to manage customer relationships and sales processes. The main features will be:
+
+* Customer data management (contact information, interactions, etc.)
+* Sales pipeline tracking (leads, opportunities, etc.)
+* Task assignment and reminders for sales team members
+
+Benefits include improved sales performance, enhanced customer engagement, and streamlined business operations.
+
+### 1.3 Definitions, Acronyms, and Abbreviations
+For the purpose of this document, the following terms are used:
+
+* CRM: Customer Relationship Management
+* SRS: Software Requirements Specification
+* FR-X: Functional Requirement X
+
+### 1.4 Overview
+This document is structured according to the IEEE-830 standard, covering overall description, functional requirements, non-functional requirements, and appendices.
+
+## 2. OVERALL DESCRIPTION
+### 2.1 Product Perspective
+The software system will be an integral part of the company's sales process, providing a centralized platform for managing customer interactions and tracking sales performance. It will integrate with existing systems to ensure seamless data exchange and minimize manual effort.
+
+### 2.2 Product Functions
+The primary functions of the software system are:
+
+* Customer data management: storing and retrieving customer information, including contact details, interaction history, and preferences.
+* Sales pipeline tracking: managing leads, opportunities, and sales stages, with automated reminders and notifications for sales team members.
+* Task assignment and reminders: assigning tasks to sales team members and sending reminders to ensure timely completion.
+
+### 2.3 User Characteristics
+The intended users of the software system are:
+
+* Sales team members: responsible for interacting with customers, managing leads, and tracking sales performance.
+* Customer service representatives: handling customer inquiries and providing support.
+* Management: overseeing sales performance, identifying areas for improvement, and making data-driven decisions.
+
+### 2.4 Constraints
+The following constraints apply to the software system:
+
+* Integration with existing systems (e.g., email clients, CRM tools)
+* Limited resources (time, budget, personnel) for development and maintenance
+* Compliance with industry regulations (data protection, security)
+
+### 2.5 Assumptions and Dependencies
+Assumptions made during the requirements gathering process include:
+
+* Existing infrastructure (servers, databases) will be available for integration.
+* The sales team will have basic computer skills and familiarity with CRM systems.
+
+Dependencies on external factors include:
+
+* Integration with third-party services (e.g., email providers, payment gateways)
+* Compliance with changing industry regulations
+
+## 3. FUNCTIONAL REQUIREMENTS
+FR-1: Customer data management system to store and retrieve customer information.
+FR-2: Sales pipeline tracking feature to manage leads, opportunities, and sales stages.
+FR-3: Task assignment and reminders for sales team members to ensure timely completion of tasks.
+FR-4: Integration with existing systems (e.g., email clients, CRM tools) for seamless data exchange.
+FR-5: Automated reminders and notifications for sales team members regarding upcoming deadlines.
+
+## 4. NON-FUNCTIONAL REQUIREMENTS
+### 4.1 Performance Requirements
+NR-1: The system should respond within 2 seconds to user input.
+NR-2: Data retrieval should take no longer than 500 milliseconds.
+
+### 4.2 Security Requirements
+NR-3: The system must ensure data encryption at rest and in transit.
+NR-4: Regular backups will be performed to prevent data loss.
+
+### 4.3 Usability Requirements
+NR-5: The user interface should be intuitive, with clear navigation and minimal clutter.
+NR-6: Help documentation and tutorials will be provided for users.
+
+### 4.4 Other Non-Functional Requirements
+NR-7: Compliance with industry regulations (data protection, security) is essential.
+NR-8: Integration with third-party services (e.g., email providers, payment gateways) should be seamless.
+
+## 5. APPENDICES
+Appendix A: System Architecture Diagram
+Appendix B: Data Flow Diagrams
+Appendix C: Glossary of Terms

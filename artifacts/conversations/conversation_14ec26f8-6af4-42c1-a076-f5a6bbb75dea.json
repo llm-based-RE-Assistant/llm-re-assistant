@@ -1,0 +1,21 @@
+{
+  "id": "14ec26f8-6af4-42c1-a076-f5a6bbb75dea",
+  "created_at": "2025-11-23T22:33:37.225622",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello",
+      "timestamp": "2025-11-23T22:33:39.999705"
+    },
+    {
+      "role": "assistant",
+      "content": "I apologize, but I'm having trouble connecting to the language model. Please ensure Ollama is running.",
+      "timestamp": "2025-11-23T22:33:40.906561"
+    }
+  ],
+  "metadata": {
+    "project_name": null,
+    "project_description": null,
+    "elicited_requirements": []
+  }
+}

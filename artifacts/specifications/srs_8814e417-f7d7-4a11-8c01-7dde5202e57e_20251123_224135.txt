@@ -1,0 +1,98 @@
+# SOFTWARE REQUIREMENTS SPECIFICATION
+
+## 1. INTRODUCTION
+### 1.1 Purpose
+This Software Requirements Specification (SRS) document outlines the functional and non-functional requirements for a software system designed to support project management tasks. The intended audience includes developers, testers, and stakeholders involved in the project.
+
+### 1.2 Scope
+The scope of this software system includes main features such as:
+	* Task creation and assignment
+	* Project scheduling and tracking
+	* Resource allocation and management
+	* Reporting and analytics
+
+Benefits include improved project visibility, enhanced collaboration, and increased productivity.
+
+### 1.3 Definitions, Acronyms, and Abbreviations
+For the purpose of this document, the following terms are used:
+	* SRS: Software Requirements Specification
+	* FR-X: Functional Requirement X (e.g., FR-1: Task creation and assignment)
+	* NFR-Y: Non-Functional Requirement Y (e.g., NFR-1: Performance requirements)
+
+### 1.4 Overview
+This document is structured according to the IEEE-830 standard, providing a comprehensive overview of the software system's functional and non-functional requirements.
+
+## 2. OVERALL DESCRIPTION
+### 2.1 Product Perspective
+The software system will be used by project managers, team members, and stakeholders to manage projects from initiation to completion. It will integrate with existing tools and systems to provide a seamless experience.
+
+### 2.2 Product Functions
+Major functions of the software system include:
+	* Task creation and assignment
+	* Project scheduling and tracking
+	* Resource allocation and management
+	* Reporting and analytics
+
+### 2.3 User Characteristics
+Intended users are project managers, team members, and stakeholders with varying levels of technical expertise.
+
+### 2.4 Constraints
+Constraints include:
+	* Integration with existing tools and systems
+	* Limited user training resources
+	* High-performance requirements for large projects
+
+### 2.5 Assumptions and Dependencies
+Assumptions made during the development process include:
+	* Existing infrastructure will support the software system's requirements
+	* Stakeholders will provide necessary input and feedback
+
+Dependencies include:
+	* Integration with existing project management tools
+	* Collaboration with stakeholders to ensure requirements are met
+
+## 3. FUNCTIONAL REQUIREMENTS
+FR-1: Task creation and assignment
+The software system must allow users to create tasks, assign them to team members, and track progress.
+
+FR-2: Project scheduling and tracking
+The software system must enable users to schedule projects, set milestones, and track progress in real-time.
+
+FR-3: Resource allocation and management
+The software system must allow users to allocate resources (e.g., personnel, equipment) to tasks and projects.
+
+FR-4: Reporting and analytics
+The software system must provide users with reporting and analytics capabilities to track project performance and identify areas for improvement.
+
+## 4. NON-FUNCTIONAL REQUIREMENTS
+### 4.1 Performance Requirements
+NFR-1: Response time
+The software system must respond within 2 seconds to user input.
+
+NFR-2: Data storage capacity
+The software system must store a minimum of 1000 tasks and projects without performance degradation.
+
+### 4.2 Security Requirements
+NFR-3: Authentication and authorization
+The software system must implement robust authentication and authorization mechanisms to ensure only authorized users access sensitive data.
+
+NFR-4: Data encryption
+The software system must encrypt all user data, including task and project information.
+
+### 4.3 Usability Requirements
+NFR-5: User interface design
+The software system's user interface must be intuitive and easy to navigate for users with varying levels of technical expertise.
+
+NFR-6: Accessibility features
+The software system must include accessibility features (e.g., screen reader support) to ensure equal access for all users.
+
+### 4.4 Other Non-Functional Requirements
+NFR-7: Integration with existing tools
+The software system must integrate seamlessly with existing project management tools and systems.
+
+## 5. APPENDICES
+Appendix A: Glossary of terms used in this document
+
+Appendix B: System architecture diagram
+
+Appendix C: References to relevant standards and regulations

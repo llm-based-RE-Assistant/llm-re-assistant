@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM-Based Requirements Engineering Assistant</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-primary:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Headings */
+        .message-content h1,
+        .message-content h2,
+        .message-content h3 {
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .message-content h1 { font-size: 1.5rem; }
+        .message-content h2 { font-size: 1.3rem; }
+        .message-content h3 { font-size: 1.15rem; }
+
+        /* Paragraph spacing */
+        .message-content p {
+            margin: 8px 0;
+        }
+
+        /* Lists spacing */
+        .message-content ul,
+        .message-content ol {
+            margin: 8px 0 8px 20px;
+        }
+
+        /* Inline code */
+        .message-content code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* Code blocks */
+        .message-content pre {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .message-content pre code {
+            background: none;
+            font-size: 0.95rem;
+        }
+
+        /* Blockquotes */
+        .message-content blockquote {
+            border-left: 4px solid #ccc;
+            padding-left: 10px;
+            margin-left: 0;
+            color: #555;
+        }
+
+        .message-label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+
+        .input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #userInput:focus {
+            border-color: #667eea;
+        }
+
+        #sendBtn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        #sendBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #667eea;
+            font-style: italic;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .welcome-message h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .welcome-message p {
+            line-height: 1.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="status-indicator"></span>
+                RE Assistant - Iteration 1 MVP
+            </h1>
+            <div class="header-buttons">
+                <button class="btn btn-primary" onclick="generateSpec()">Generate SRS</button>
+                <button class="btn btn-secondary" onclick="newSession()">New Session</button>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>Welcome to the Requirements Engineering Assistant!</h2>
+                <p>
+                    I'm here to help you elicit and document software requirements. 
+                    Tell me about your project idea, and I'll guide you through the requirements 
+                    engineering process using adaptive questions and the 4W analysis framework.
+                    <br><br>
+                    <strong>Let's start:</strong> What software system would you like to build?
+                </p>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">Assistant is thinking...</div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="userInput" 
+                placeholder="Type your message here..." 
+                onkeypress="handleKeyPress(event)"
+            >
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let isProcessing = false;
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !isProcessing) {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+
+            if (!message || isProcessing) return;
+
+            // Clear welcome message on first interaction
+            const welcomeMsg = document.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+
+            // Display user message
+            addMessage('user', message);
+            input.value = '';
+
+            // Show loading indicator
+            isProcessing = true;
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('sendBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    addMessage('assistant', data.response);
+                } else {
+                    showToast('Error: ' + (data.response || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to send message. Please try again.', 'error');
+            } finally {
+                isProcessing = false;
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessage(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            if (role === 'assistant') {
+                contentDiv.innerHTML = marked.parse(content);
+            } else {
+                contentDiv.textContent = content;
+            }
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function generateSpec() {
+            if (isProcessing) return;
+
+            isProcessing = true;
+            showToast('Generating specification...', 'success');
+
+            try {
+                const response = await fetch('/api/generate-spec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Display specification in chat
+                    addMessage('assistant', '=== GENERATED SPECIFICATION ===\n\n' + data.specification);
+                    showToast('Specification generated successfully!', 'success');
+                } else {
+                    showToast('Error: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to generate specification.', 'error');
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        async function newSession() {
+            if (!confirm('Start a new session? Current conversation will be saved but cleared from view.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/new-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Clear chat container
+                    document.getElementById('chatContainer').innerHTML = `
+                        <div class="welcome-message">
+                            <h2>New Session Started!</h2>
+                            <p>
+                                Previous conversation has been saved. Let's start fresh!
+                                <br><br>
+                                <strong>Tell me:</strong> What software system would you like to build?
+                            </p>
+                        </div>
+                    `;
+                    showToast('New session started!', 'success');
+                } else {
+                    showToast('Error starting new session', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to start new session', 'error');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Focus input on load
+        window.onload = () => {
+            document.getElementById('userInput').focus();
+        };
+    </script>
+</body>
+</html>

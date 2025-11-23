@@ -1,0 +1,1 @@
+I apologize, but I'm having trouble connecting to the language model. Please ensure Ollama is running.
