@@ -269,12 +269,11 @@ This implementation is based on systematic literature review findings:
 ## License
 
 Academic Research Project - Team Members:
-- Hunain Murtaza (1750471)
-- David Tashjian (1750243)
-- Saad Younas (1750124)
-- Amine Rafai (1749821)
-- Khaled Shaban (1750283)
-- Mohammad Alsaiad (1750755)
+- Hunain Murtaza
+- David Tashjian
+- Saad Younas
+- Khaled Shaban
+- Mohammad Alsaiad
 
 ---
 
