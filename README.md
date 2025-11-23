@@ -55,23 +55,9 @@ llm-re-assistant/
 ## Prerequisites
 
 1. **Python 3.8+** installed
-2. **Ollama** installed and running
-3. **Llama 3.1:8b model** pulled in Ollama
+2. **Ollama** server api key
+3. **Llama 3.1:8b model** check on ollama server or choose any other.
 
-### Installing Ollama & Model
-
-```bash
-# Install Ollama (Linux/Mac)
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Windows: Download from https://ollama.com/download
-
-# Pull Llama 3.1:8b model
-ollama pull llama3.1:8b
-
-# Verify Ollama is running
-ollama list
-```
 
 ## Installation
 
