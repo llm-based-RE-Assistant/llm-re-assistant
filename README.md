@@ -114,13 +114,14 @@ mkdir -p src/utils
 
 ## Running the Application
 
-### 1. Start Ollama (if not already running)
+### 1. Get Ollama Server API
 
 ```bash
-# Ollama typically runs as a background service
-# If not, start it manually:
-ollama serve
+# Generate ollama server api from University LLM Server
+Visit this link https://genai-01.uni-hildesheim.de/ollama
 ```
+If you don't have access to University Server then you can also locally setup ollama server.
+To download ollama server, visit this link `https://ollama.com/download`
 
 ### 2. Run Flask Application
 
