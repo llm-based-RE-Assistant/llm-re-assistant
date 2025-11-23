@@ -19,32 +19,6 @@ PYTHON_VERSION=$(python3 --version)
 echo "✅ Found: $PYTHON_VERSION"
 echo ""
 
-# Check Ollama installation
-echo "[2/7] Checking Ollama installation..."
-if ! command -v ollama &> /dev/null; then
-    echo "⚠️  WARNING: Ollama is not installed or not in PATH."
-    echo "Please install Ollama from: https://ollama.com/download"
-    echo "After installation, run: ollama pull llama3.1:8b"
-    echo ""
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-else
-    echo "✅ Ollama is installed"
-    
-    # Check if Llama 3.1:8b is available
-    if ollama list | grep -q "llama3.1:8b"; then
-        echo "✅ Llama 3.1:8b model is available"
-    else
-        echo "⚠️  WARNING: Llama 3.1:8b model not found"
-        echo "Pulling model now (this may take several minutes)..."
-        ollama pull llama3.1:8b
-    fi
-fi
-echo ""
-
 # Create directory structure
 echo "[3/7] Creating directory structure..."
 mkdir -p artifacts/conversations
