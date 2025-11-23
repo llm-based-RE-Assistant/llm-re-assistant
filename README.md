@@ -104,7 +104,7 @@ mkdir -p src/utils
 
 ```bash
 # Generate ollama server api from University LLM Server
-Visit this link https://genai-01.uni-hildesheim.de/ollama
+Visit this link https://genai-01.uni-hildesheim.de/
 ```
 If you don't have access to University Server then you can also locally setup ollama server.
 To download ollama server, visit this link `https://ollama.com/download`
