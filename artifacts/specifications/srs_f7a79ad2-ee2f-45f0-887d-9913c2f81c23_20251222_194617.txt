@@ -1,0 +1,102 @@
+# SOFTWARE REQUIREMENTS SPECIFICATION
+
+## 1. INTRODUCTION
+### 1.1 Purpose
+This Software Requirements Specification (SRS) outlines the functional and non-functional requirements for a library management system designed for a university with 50,000 books and 5,000 students.
+
+### 1.2 Scope
+The scope of this project includes developing a comprehensive library management system that caters to the needs of students, faculty members, and librarians. The system will enable online catalog browsing, borrowing, and renewal of books, as well as tracking overdue books and calculating late fees.
+
+### 1.3 Definitions, Acronyms, and Abbreviations
+* ISBN: International Standard Book Number
+* SRS: Software Requirements Specification
+
+### 1.4 Overview
+This document provides a detailed description of the functional and non-functional requirements for the library management system. It outlines the features, functionalities, and constraints that must be met to ensure the successful development and implementation of the system.
+
+## 2. OVERALL DESCRIPTION
+### 2.1 Product Perspective
+The library management system will be an online platform accessible through a web interface or mobile app. The system will integrate with the university's existing authentication system, allowing students and faculty members to log in using their university credentials.
+
+### 2.2 Product Functions
+The primary functions of the system include:
+
+* Online catalog browsing for students and faculty members
+* Borrowing and returning books by students and faculty members
+* Tracking overdue books and calculating late fees
+* Generating reports on popular books and borrowing trends
+
+### 2.3 User Characteristics
+The intended users of the system are:
+
+* Students: primary borrowers, able to search the catalog online, borrow books by showing their student ID, view borrowed books and due dates, renew books online (up to 2 times), and reserve checked-out books.
+* Faculty members: secondary borrowers, able to borrow more books for longer periods compared to students, with no late fees applicable.
+* Librarians: system administrators responsible for adding new books, tracking which books are borrowed, sending overdue reminders, generating reports on popular books, and calculating late fees.
+
+### 2.4 Constraints
+The following constraints must be considered:
+
+* Limited resources (time, budget, personnel)
+* Integration with existing university authentication system
+* Compliance with copyright laws and regulations
+
+### 2.5 Assumptions and Dependencies
+Assumptions made during the development of this SRS include:
+
+* The university's existing authentication system will be integrated seamlessly into the library management system.
+* The system will be developed using a suitable programming language (e.g., Java, Python) and framework (e.g., Spring, Django).
+* The system will be deployed on a secure server with adequate storage capacity.
+
+## 3. FUNCTIONAL REQUIREMENTS
+The following functional requirements have been identified:
+
+1. FR-1: Students can search the catalog online.
+2. FR-2: Students can borrow books by showing their student ID.
+3. FR-3: Faculty members can borrow more books for longer periods compared to students.
+4. FR-4: Librarians can add new books to the system.
+5. FR-5: Librarians can track which books are borrowed in real-time or near-real-time.
+6. FR-6: Overdue reminders will be sent via automated emails 24 hours before the due date and daily after books become overdue.
+7. FR-7: Late fees apply only to students ($0.50 per day, max $20 per book).
+8. FR-8: Librarians can generate reports on popular books (e.g., most checked-out, most frequently borrowed).
+9. FR-9: Students can renew their borrowed books online (up to 2 times) if no one has reserved them.
+10. FR-10: Students can reserve checked-out books and receive notification when they become available.
+
+## 4. NON-FUNCTIONAL REQUIREMENTS
+### 4.1 Performance Requirements
+The system must meet the following performance requirements:
+
+* Response time for searching the catalog should be less than 2 seconds.
+* The system should handle a minimum of 5,000 concurrent users without significant degradation in performance.
+
+### 4.2 Security Requirements
+The system must adhere to the following security requirements:
+
+* User authentication will be integrated with the university's existing authentication system.
+* Data encryption will be used for sensitive information (e.g., student and faculty member data).
+* Regular backups will be performed to ensure data integrity.
+
+### 4.3 Usability Requirements
+The system must meet the following usability requirements:
+
+* The user interface should be intuitive and easy to navigate.
+* Clear instructions and feedback will be provided throughout the system.
+* Accessibility features (e.g., screen reader compatibility) will be implemented to accommodate users with disabilities.
+
+### 4.4 Other Non-Functional Requirements
+Other non-functional requirements include:
+
+* Compliance with copyright laws and regulations.
+* Integration with existing university systems (e.g., student information system).
+* Regular maintenance and updates to ensure the system remains secure and functional.
+
+## 5. APPENDICES
+The following appendices are included:
+
+A. Glossary of Terms: definitions for technical terms used in this SRS.
+B. System Architecture Diagram: a high-level diagram illustrating the system's architecture.
+C. Data Flow Diagrams: detailed diagrams showing data flow within the system.
+D. Use Cases: descriptions of user interactions with the system.
+
+---
+
+This Software Requirements Specification provides a comprehensive outline of the functional and non-functional requirements for the library management system. It serves as a guide for developers, ensuring that the final product meets the needs and expectations of the university community.
