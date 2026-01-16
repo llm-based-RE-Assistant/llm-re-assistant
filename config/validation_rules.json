@@ -1,0 +1,22 @@
+{
+  "vague_terms": [
+    "fast",
+    "user-friendly",
+    "reliable",
+    "efficient",
+    "secure",
+    "high-quality"
+  ],
+  "weak_phrases": [
+    "if possible",
+    "as appropriate",
+    "if necessary",
+    "should consider",
+    "where applicable"
+  ],
+  "implicit_assumptions": [
+    "system will be secure",
+    "data will be protected"
+  ]
+}
+

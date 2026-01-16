@@ -1,0 +1,13 @@
+{
+  "safety_critical": [
+    "authentication",
+    "authorization",
+    "payment",
+    "financial",
+    "personal data",
+    "privacy",
+    "data loss",
+    "encryption"
+  ]
+}
+
