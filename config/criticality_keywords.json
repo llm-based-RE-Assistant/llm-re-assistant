@@ -1,13 +1,114 @@
 {
-  "safety_critical": [
-    "authentication",
-    "authorization",
-    "payment",
-    "financial",
-    "personal data",
-    "privacy",
-    "data loss",
-    "encryption"
-  ]
+  "safety_critical_keywords": {
+    "description": "Keywords that indicate safety or security-critical requirements requiring Tier 2 validation",
+    "categories": {
+      "authentication_security": {
+        "keywords": [
+          "authentication", "login", "password", "credential",
+          "token", "session", "oauth", "saml", "sso",
+          "multi-factor", "2fa", "mfa", "biometric"
+        ],
+        "rationale": "Authentication failures can lead to unauthorized access"
+      },
+      "authorization_access": {
+        "keywords": [
+          "authorization", "permission", "access control", "role",
+          "privilege", "admin", "administrator", "superuser",
+          "rbac", "acl", "grant", "deny"
+        ],
+        "rationale": "Authorization issues can expose sensitive operations"
+      },
+      "data_security": {
+        "keywords": [
+          "encrypt", "encryption", "decrypt", "cipher",
+          "hash", "salt", "secure", "security",
+          "personal data", "pii", "gdpr", "hipaa",
+          "confidential", "classified", "sensitive"
+        ],
+        "rationale": "Data security breaches have serious consequences"
+      },
+      "financial_transactions": {
+        "keywords": [
+          "payment", "transaction", "withdraw", "deposit",
+          "transfer", "balance", "account", "bank",
+          "credit card", "debit", "invoice", "billing",
+          "refund", "charge", "monetary"
+        ],
+        "rationale": "Financial operations require strict correctness"
+      },
+      "data_integrity": {
+        "keywords": [
+          "data loss", "backup", "restore", "recovery",
+          "rollback", "commit", "transaction", "atomic",
+          "consistency", "integrity", "corrupt", "delete permanently"
+        ],
+        "rationale": "Data loss can be irreversible and catastrophic"
+      },
+      "availability_performance": {
+        "keywords": [
+          "uptime", "availability", "downtime", "failover",
+          "disaster recovery", "high availability", "redundancy",
+          "critical path", "life-safety", "emergency"
+        ],
+        "rationale": "Availability issues in critical systems can be dangerous"
+      },
+      "compliance_legal": {
+        "keywords": [
+          "compliance", "regulation", "legal", "audit",
+          "sox", "pci-dss", "iso 27001", "gdpr",
+          "hipaa", "ferpa", "ccpa", "regulatory"
+        ],
+        "rationale": "Compliance violations have legal consequences"
+      }
+    }
+  },
+  
+  "escalation_rules": {
+    "tier2_triggers": {
+      "safety_critical_match": {
+        "description": "Requirement contains safety-critical keywords",
+        "action": "Escalate to Tier 2 SMT validation"
+      },
+      "low_confidence": {
+        "threshold": 0.7,
+        "description": "Confidence score below threshold",
+        "action": "Escalate to Tier 2 for formal verification"
+      },
+      "high_severity_issues": {
+        "description": "Contains high-severity validation issues",
+        "action": "Escalate to Tier 2 SMT validation"
+      },
+      "contradiction_detected": {
+        "description": "Logical contradiction detected in Tier 1",
+        "action": "Escalate to Tier 2 for formal proof"
+      }
+    }
+  },
+  
+  "tier_characteristics": {
+    "tier1_llm": {
+      "name": "LLM-Based Fast Checks",
+      "model": "Llama-3.1:8b",
+      "accuracy": "85-90%",
+      "speed": "<1 second per requirement",
+      "use_cases": [
+        "Ambiguity detection",
+        "Completeness assessment",
+        "Basic consistency checks",
+        "Quality scoring"
+      ]
+    },
+    "tier2_smt": {
+      "name": "SMT Formal Verification",
+      "solver": "Z3 (future) / Pattern-based (current)",
+      "accuracy": "95-100%",
+      "speed": "<5 seconds per requirement",
+      "use_cases": [
+        "Logical consistency verification",
+        "Constraint satisfaction",
+        "Contradiction detection",
+        "Safety-critical validation"
+      ]
+    }
+  }
 }
-

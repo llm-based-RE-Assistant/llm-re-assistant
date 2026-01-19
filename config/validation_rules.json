@@ -1,22 +1,100 @@
 {
-  "vague_terms": [
-    "fast",
-    "user-friendly",
-    "reliable",
-    "efficient",
-    "secure",
-    "high-quality"
-  ],
-  "weak_phrases": [
-    "if possible",
-    "as appropriate",
-    "if necessary",
-    "should consider",
-    "where applicable"
-  ],
-  "implicit_assumptions": [
-    "system will be secure",
-    "data will be protected"
-  ]
+  "vague_terms": {
+    "description": "Terms that lack specific, measurable criteria",
+    "terms": [
+      "fast", "slow", "quick", "user-friendly", "reliable",
+      "efficient", "secure", "high-quality", "robust", "scalable",
+      "flexible", "simple", "easy", "intuitive", "responsive",
+      "adequate", "sufficient", "appropriate", "reasonable", "timely",
+      "properly", "correctly", "accurately", "effectively", "efficiently",
+      "good", "bad", "better", "worse", "best",
+      "modern", "legacy", "outdated", "up-to-date",
+      "small", "large", "big", "little", "huge",
+      "many", "few", "several", "some", "various"
+    ],
+    "severity": "medium",
+    "suggestion_template": "Replace '{term}' with a specific, measurable criterion"
+  },
+  
+  "weak_phrases": {
+    "description": "Optional or ambiguous language that reduces requirement clarity",
+    "phrases": [
+      "if possible", "as appropriate", "if necessary", "should consider",
+      "may be", "could be", "might be", "as needed", "when required",
+      "as much as possible", "to the extent possible", "where feasible",
+      "if feasible", "as deemed appropriate", "subject to approval",
+      "try to", "attempt to", "endeavor to", "strive to",
+      "preferably", "ideally", "optimally", "hopefully"
+    ],
+    "severity": "low",
+    "suggestion_template": "Remove optional language '{phrase}' and use 'shall' for mandatory requirements"
+  },
+  
+  "temporal_keywords": {
+    "description": "Keywords indicating temporal constraints",
+    "keywords": [
+      "when", "within", "before", "after", "until", "during",
+      "at", "by", "in", "seconds", "minutes", "hours", "days",
+      "weeks", "months", "years", "milliseconds", "microseconds",
+      "immediately", "instantly", "real-time", "asynchronously"
+    ]
+  },
+  
+  "actor_keywords": {
+    "description": "Keywords indicating who performs an action",
+    "keywords": [
+      "user", "system", "admin", "administrator", "customer",
+      "operator", "developer", "manager", "stakeholder", "client",
+      "guest", "member", "visitor", "employee", "service",
+      "application", "database", "server", "api", "interface"
+    ]
+  },
+  
+  "completeness_rules": {
+    "4W_framework": {
+      "who": {
+        "description": "Actor performing the action",
+        "required": true,
+        "keywords": "actor_keywords"
+      },
+      "what": {
+        "description": "Action or behavior required",
+        "required": true,
+        "keywords": ["shall", "must", "will", "should"]
+      },
+      "when": {
+        "description": "Temporal constraint or trigger",
+        "required": true,
+        "keywords": "temporal_keywords"
+      },
+      "where": {
+        "description": "Context or location (optional for many requirements)",
+        "required": false,
+        "keywords": ["in", "on", "at", "within", "through"]
+      }
+    }
+  },
+  
+  "severity_levels": {
+    "high": {
+      "description": "Critical issues that make requirement invalid or contradictory",
+      "examples": ["contradictions", "impossible constraints"]
+    },
+    "medium": {
+      "description": "Significant issues that reduce requirement quality",
+      "examples": ["vague terms", "missing actor", "missing temporal constraint"]
+    },
+    "low": {
+      "description": "Minor issues that should be addressed for best practices",
+      "examples": ["weak phrases", "optional language"]
+    }
+  },
+  
+  "confidence_thresholds": {
+    "excellent": 0.90,
+    "good": 0.80,
+    "acceptable": 0.70,
+    "poor": 0.50,
+    "critical": 0.30
+  }
 }
-
