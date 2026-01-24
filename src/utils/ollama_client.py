@@ -10,7 +10,7 @@ from typing import List, Dict, Optional
 class OllamaClient:
     """Client for interacting with Ollama API"""
     
-    def __init__(self, base_url: str = "https://genai-01.uni-hildesheim.de/ollama", model: str = "llama3.1:8b"):
+    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "llama3.1:8b"):
         """
         Initialize Ollama client
         
@@ -23,7 +23,7 @@ class OllamaClient:
         self.api_endpoint = f"{base_url}/api/chat"
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv("OLLAMA_API_KEY")}",
+           "Authorization": f"Bearer {os.getenv('OLLAMA_API_KEY')}",
         }
     
     def chat(

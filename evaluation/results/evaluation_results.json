@@ -1,0 +1,3848 @@
+{
+  "projects": [
+    {
+      "project_name": "Online Banking System",
+      "domain": "Financial Services",
+      "original_count": 12,
+      "discovered_count": 80,
+      "improvement_pct": 666.67,
+      "precision": 100.0,
+      "discoveries": [
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_001",
+          "original_req_text": "User can login to online banking portal",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_002",
+          "original_req_text": "User can view account balance",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_002",
+          "original_req_text": "User can view account balance",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_003",
+          "original_req_text": "User can transfer money between accounts",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_003",
+          "original_req_text": "User can transfer money between accounts",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_004",
+          "original_req_text": "User can view transaction history",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_004",
+          "original_req_text": "User can view transaction history",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_005",
+          "original_req_text": "User can deposit checks via mobile app",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_006",
+          "original_req_text": "Admin can create new customer accounts",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_006",
+          "original_req_text": "Admin can create new customer accounts",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_007",
+          "original_req_text": "System generates monthly statements",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_008",
+          "original_req_text": "User can download account statements",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_008",
+          "original_req_text": "User can download account statements",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_009",
+          "original_req_text": "User can set up bill payments",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_009",
+          "original_req_text": "User can set up bill payments",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_010",
+          "original_req_text": "Admin can freeze suspicious accounts",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_010",
+          "original_req_text": "Admin can freeze suspicious accounts",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_011",
+          "original_req_text": "System sends transaction notifications",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_011",
+          "original_req_text": "System sends transaction notifications",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_012",
+          "original_req_text": "User can update contact information",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "login",
+          "trigger_req_id": "REQ_001",
+          "missing_action": "logout",
+          "suggestion": "Consider adding 'logout' functionality as complement to 'login'",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "create",
+          "trigger_req_id": "REQ_006",
+          "missing_action": "delete",
+          "suggestion": "Consider adding 'delete' functionality as complement to 'create'",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "deposit",
+          "trigger_req_id": "REQ_005",
+          "missing_action": "withdraw",
+          "suggestion": "Consider adding 'withdraw' functionality as complement to 'deposit'",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "User",
+          "missing_operations": [
+            "create",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new User records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "User",
+          "missing_operations": [
+            "create",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete User records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Banking Portal",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Banking Portal records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Banking Portal",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Banking Portal information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Banking Portal",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Banking Portal records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Banking Portal",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Banking Portal records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Balance",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Account Balance records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Balance",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Account Balance records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Balance",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Account Balance records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Transaction History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Transaction History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Transaction History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Transaction records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Transaction records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Transaction records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Customer Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve New Customer Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Customer Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing New Customer Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Customer Accounts",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete New Customer Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Admin information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Customer information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Customer records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Customer records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Statements",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Account Statements records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Statements",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Account Statements information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Statements",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Account Statements records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account Statements",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Account Statements records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Bill Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Bill Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Bill Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Bill Payments information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Bill Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Bill Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Bill Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Bill Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Payments information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Payments",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Payments records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Suspicious Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Suspicious Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Suspicious Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Suspicious Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Suspicious Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Suspicious Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Suspicious Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Suspicious Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Notifications information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Transaction Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Transaction Notifications information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Transaction Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Transaction Notifications",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Transaction Notifications records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Contact Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Contact Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Contact Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Contact Information information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Contact Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Contact Information records",
+          "priority": "medium"
+        }
+      ],
+      "categories": {
+        "4w_analysis": 20,
+        "complementary": 3,
+        "crud_missing": 57
+      },
+      "crud_completeness": {
+        "User": {
+          "present_operations": [
+            "read",
+            "update"
+          ],
+          "missing_operations": [
+            "create",
+            "delete"
+          ],
+          "completeness_percentage": 50.0,
+          "suggestions": [
+            "Add functionality to create new User records",
+            "Add functionality to remove/delete User records"
+          ]
+        },
+        "Banking Portal": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Banking Portal records",
+            "Add functionality to view/retrieve Banking Portal information",
+            "Add functionality to modify existing Banking Portal records",
+            "Add functionality to remove/delete Banking Portal records"
+          ]
+        },
+        "Account": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Account records",
+            "Add functionality to modify existing Account records",
+            "Add functionality to remove/delete Account records"
+          ]
+        },
+        "Account Balance": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Account Balance records",
+            "Add functionality to modify existing Account Balance records",
+            "Add functionality to remove/delete Account Balance records"
+          ]
+        },
+        "Accounts": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Accounts information",
+            "Add functionality to modify existing Accounts records",
+            "Add functionality to remove/delete Accounts records"
+          ]
+        },
+        "Transaction History": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Transaction History records",
+            "Add functionality to modify existing Transaction History records",
+            "Add functionality to remove/delete Transaction History records"
+          ]
+        },
+        "Transaction": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Transaction records",
+            "Add functionality to modify existing Transaction records",
+            "Add functionality to remove/delete Transaction records"
+          ]
+        },
+        "New Customer Accounts": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve New Customer Accounts information",
+            "Add functionality to modify existing New Customer Accounts records",
+            "Add functionality to remove/delete New Customer Accounts records"
+          ]
+        },
+        "Admin": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Admin information",
+            "Add functionality to modify existing Admin records",
+            "Add functionality to remove/delete Admin records"
+          ]
+        },
+        "Customer": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Customer information",
+            "Add functionality to modify existing Customer records",
+            "Add functionality to remove/delete Customer records"
+          ]
+        },
+        "Account Statements": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Account Statements records",
+            "Add functionality to view/retrieve Account Statements information",
+            "Add functionality to modify existing Account Statements records",
+            "Add functionality to remove/delete Account Statements records"
+          ]
+        },
+        "Bill Payments": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Bill Payments records",
+            "Add functionality to view/retrieve Bill Payments information",
+            "Add functionality to modify existing Bill Payments records",
+            "Add functionality to remove/delete Bill Payments records"
+          ]
+        },
+        "Payments": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Payments records",
+            "Add functionality to view/retrieve Payments information",
+            "Add functionality to modify existing Payments records",
+            "Add functionality to remove/delete Payments records"
+          ]
+        },
+        "Suspicious Accounts": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Suspicious Accounts records",
+            "Add functionality to view/retrieve Suspicious Accounts information",
+            "Add functionality to modify existing Suspicious Accounts records",
+            "Add functionality to remove/delete Suspicious Accounts records"
+          ]
+        },
+        "Notifications": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Notifications records",
+            "Add functionality to view/retrieve Notifications information",
+            "Add functionality to modify existing Notifications records",
+            "Add functionality to remove/delete Notifications records"
+          ]
+        },
+        "Transaction Notifications": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Transaction Notifications records",
+            "Add functionality to view/retrieve Transaction Notifications information",
+            "Add functionality to modify existing Transaction Notifications records",
+            "Add functionality to remove/delete Transaction Notifications records"
+          ]
+        },
+        "Contact Information": {
+          "present_operations": [
+            "update"
+          ],
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Contact Information records",
+            "Add functionality to view/retrieve Contact Information information",
+            "Add functionality to remove/delete Contact Information records"
+          ]
+        }
+      },
+      "expected_count": 7,
+      "timestamp": "2026-01-24T13:57:03.989698"
+    },
+    {
+      "project_name": "E-commerce Platform",
+      "domain": "Online Retail",
+      "original_count": 18,
+      "discovered_count": 125,
+      "improvement_pct": 694.44,
+      "precision": 100.0,
+      "discoveries": [
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_001",
+          "original_req_text": "User can register new account",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_001",
+          "original_req_text": "User can register new account",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_002",
+          "original_req_text": "User can browse product catalog",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_002",
+          "original_req_text": "User can browse product catalog",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_003",
+          "original_req_text": "User can search for products",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_003",
+          "original_req_text": "User can search for products",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_004",
+          "original_req_text": "User can add products to cart",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_004",
+          "original_req_text": "User can add products to cart",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_005",
+          "original_req_text": "User can view shopping cart",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_005",
+          "original_req_text": "User can view shopping cart",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_006",
+          "original_req_text": "User can place orders",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_006",
+          "original_req_text": "User can place orders",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_007",
+          "original_req_text": "User can track order status",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_007",
+          "original_req_text": "User can track order status",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_008",
+          "original_req_text": "Admin can add new products",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_008",
+          "original_req_text": "Admin can add new products",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_009",
+          "original_req_text": "Admin can view product inventory",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_009",
+          "original_req_text": "Admin can view product inventory",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_010",
+          "original_req_text": "Admin can process refunds",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_010",
+          "original_req_text": "Admin can process refunds",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_011",
+          "original_req_text": "System sends order confirmation emails",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_011",
+          "original_req_text": "System sends order confirmation emails",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_012",
+          "original_req_text": "User can write product reviews",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_012",
+          "original_req_text": "User can write product reviews",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_013",
+          "original_req_text": "User can save items to wishlist",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_013",
+          "original_req_text": "User can save items to wishlist",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_014",
+          "original_req_text": "Admin can manage customer accounts",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_014",
+          "original_req_text": "Admin can manage customer accounts",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_015",
+          "original_req_text": "System calculates shipping costs",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_015",
+          "original_req_text": "System calculates shipping costs",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_016",
+          "original_req_text": "User can apply discount codes",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_017",
+          "original_req_text": "User can view order history",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_017",
+          "original_req_text": "User can view order history",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_018",
+          "original_req_text": "Admin can generate sales reports",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_018",
+          "original_req_text": "Admin can generate sales reports",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "register",
+          "trigger_req_id": "REQ_001",
+          "missing_action": "unregister",
+          "suggestion": "Consider adding 'unregister' functionality as complement to 'register'",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "add",
+          "trigger_req_id": "REQ_008",
+          "missing_action": "remove",
+          "suggestion": "Consider adding 'remove' functionality as complement to 'add'",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "User",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing User records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "User",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete User records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Account information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve New Account information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing New Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Account",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete New Account records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Catalog",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Product Catalog records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Catalog",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Product Catalog information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Catalog",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Product Catalog records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Catalog",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Product Catalog records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Product records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Product records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Product records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Products information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Products records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Products records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Orders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Orders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Orders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Orders information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Orders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Orders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Orders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Orders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Status",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Order Status records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Status",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Order Status information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Status",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Order Status records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Status",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Order Status records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Order records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Order records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Order records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve New Products information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing New Products records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "New Products",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete New Products records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Inventory",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Product Inventory records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Inventory",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Product Inventory records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Inventory",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Product Inventory records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Order Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Order Confirmation Emails information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Order Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Order Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Emails information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Confirmation Emails information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Confirmation Emails",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Confirmation Emails records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Reviews",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Product Reviews records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Reviews",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Product Reviews information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Reviews",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Product Reviews records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Product Reviews",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Product Reviews records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Items",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Items records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Items",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Items information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Items",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Items records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Items",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Items records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Customer Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Customer Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Customer Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Customer Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Customer records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Customer information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Customer records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Customer",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Customer records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Shipping Costs",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Shipping Costs records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Shipping Costs",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Shipping Costs information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Shipping Costs",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Shipping Costs records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Shipping Costs",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Shipping Costs records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Discount Codes",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Discount Codes records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Discount Codes",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Discount Codes information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Discount Codes",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Discount Codes records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Discount Codes",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Discount Codes records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Order History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Order History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Order History",
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Order History records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Reports information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Sales Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Sales Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Sales Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Sales Reports information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Sales Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Sales Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Sales Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Sales Reports records",
+          "priority": "medium"
+        }
+      ],
+      "categories": {
+        "4w_analysis": 35,
+        "complementary": 2,
+        "crud_missing": 88
+      },
+      "crud_completeness": {
+        "User": {
+          "present_operations": [
+            "create",
+            "read"
+          ],
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 50.0,
+          "suggestions": [
+            "Add functionality to modify existing User records",
+            "Add functionality to remove/delete User records"
+          ]
+        },
+        "Account": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Account information",
+            "Add functionality to modify existing Account records",
+            "Add functionality to remove/delete Account records"
+          ]
+        },
+        "New Account": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve New Account information",
+            "Add functionality to modify existing New Account records",
+            "Add functionality to remove/delete New Account records"
+          ]
+        },
+        "Product Catalog": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Product Catalog records",
+            "Add functionality to view/retrieve Product Catalog information",
+            "Add functionality to modify existing Product Catalog records",
+            "Add functionality to remove/delete Product Catalog records"
+          ]
+        },
+        "Product": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Product records",
+            "Add functionality to modify existing Product records",
+            "Add functionality to remove/delete Product records"
+          ]
+        },
+        "Products": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Products information",
+            "Add functionality to modify existing Products records",
+            "Add functionality to remove/delete Products records"
+          ]
+        },
+        "Orders": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Orders records",
+            "Add functionality to view/retrieve Orders information",
+            "Add functionality to modify existing Orders records",
+            "Add functionality to remove/delete Orders records"
+          ]
+        },
+        "Order Status": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Order Status records",
+            "Add functionality to view/retrieve Order Status information",
+            "Add functionality to modify existing Order Status records",
+            "Add functionality to remove/delete Order Status records"
+          ]
+        },
+        "Order": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Order records",
+            "Add functionality to modify existing Order records",
+            "Add functionality to remove/delete Order records"
+          ]
+        },
+        "New Products": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve New Products information",
+            "Add functionality to modify existing New Products records",
+            "Add functionality to remove/delete New Products records"
+          ]
+        },
+        "Admin": {
+          "present_operations": [
+            "create",
+            "read"
+          ],
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 50.0,
+          "suggestions": [
+            "Add functionality to modify existing Admin records",
+            "Add functionality to remove/delete Admin records"
+          ]
+        },
+        "Product Inventory": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Product Inventory records",
+            "Add functionality to modify existing Product Inventory records",
+            "Add functionality to remove/delete Product Inventory records"
+          ]
+        },
+        "Order Confirmation Emails": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Order Confirmation Emails records",
+            "Add functionality to view/retrieve Order Confirmation Emails information",
+            "Add functionality to modify existing Order Confirmation Emails records",
+            "Add functionality to remove/delete Order Confirmation Emails records"
+          ]
+        },
+        "Emails": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Emails records",
+            "Add functionality to view/retrieve Emails information",
+            "Add functionality to modify existing Emails records",
+            "Add functionality to remove/delete Emails records"
+          ]
+        },
+        "Confirmation Emails": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Confirmation Emails records",
+            "Add functionality to view/retrieve Confirmation Emails information",
+            "Add functionality to modify existing Confirmation Emails records",
+            "Add functionality to remove/delete Confirmation Emails records"
+          ]
+        },
+        "Product Reviews": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Product Reviews records",
+            "Add functionality to view/retrieve Product Reviews information",
+            "Add functionality to modify existing Product Reviews records",
+            "Add functionality to remove/delete Product Reviews records"
+          ]
+        },
+        "Items": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Items records",
+            "Add functionality to view/retrieve Items information",
+            "Add functionality to modify existing Items records",
+            "Add functionality to remove/delete Items records"
+          ]
+        },
+        "Customer Accounts": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Customer Accounts records",
+            "Add functionality to view/retrieve Customer Accounts information",
+            "Add functionality to modify existing Customer Accounts records",
+            "Add functionality to remove/delete Customer Accounts records"
+          ]
+        },
+        "Accounts": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Accounts records",
+            "Add functionality to view/retrieve Accounts information",
+            "Add functionality to modify existing Accounts records",
+            "Add functionality to remove/delete Accounts records"
+          ]
+        },
+        "Customer": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Customer records",
+            "Add functionality to view/retrieve Customer information",
+            "Add functionality to modify existing Customer records",
+            "Add functionality to remove/delete Customer records"
+          ]
+        },
+        "Shipping Costs": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Shipping Costs records",
+            "Add functionality to view/retrieve Shipping Costs information",
+            "Add functionality to modify existing Shipping Costs records",
+            "Add functionality to remove/delete Shipping Costs records"
+          ]
+        },
+        "Discount Codes": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Discount Codes records",
+            "Add functionality to view/retrieve Discount Codes information",
+            "Add functionality to modify existing Discount Codes records",
+            "Add functionality to remove/delete Discount Codes records"
+          ]
+        },
+        "Order History": {
+          "present_operations": [
+            "read"
+          ],
+          "missing_operations": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Order History records",
+            "Add functionality to modify existing Order History records",
+            "Add functionality to remove/delete Order History records"
+          ]
+        },
+        "Reports": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Reports records",
+            "Add functionality to view/retrieve Reports information",
+            "Add functionality to modify existing Reports records",
+            "Add functionality to remove/delete Reports records"
+          ]
+        },
+        "Sales Reports": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Sales Reports records",
+            "Add functionality to view/retrieve Sales Reports information",
+            "Add functionality to modify existing Sales Reports records",
+            "Add functionality to remove/delete Sales Reports records"
+          ]
+        }
+      },
+      "expected_count": 7,
+      "timestamp": "2026-01-24T13:57:04.176832"
+    },
+    {
+      "project_name": "Healthcare Management System",
+      "domain": "Medical Records",
+      "original_count": 15,
+      "discovered_count": 77,
+      "improvement_pct": 513.33,
+      "precision": 100.0,
+      "discoveries": [
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_001",
+          "original_req_text": "Doctor can view patient medical history",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_001",
+          "original_req_text": "Doctor can view patient medical history",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_002",
+          "original_req_text": "Nurse can record patient vitals",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_002",
+          "original_req_text": "Nurse can record patient vitals",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_003",
+          "original_req_text": "Admin can register new patients",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_003",
+          "original_req_text": "Admin can register new patients",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_004",
+          "original_req_text": "Doctor can prescribe medications",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_004",
+          "original_req_text": "Doctor can prescribe medications",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_005",
+          "original_req_text": "Patient can schedule appointments",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_006",
+          "original_req_text": "System sends appointment reminders",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_007",
+          "original_req_text": "Doctor can upload test results",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_007",
+          "original_req_text": "Doctor can upload test results",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_008",
+          "original_req_text": "Patient can view their appointments",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_009",
+          "original_req_text": "Admin can manage staff accounts",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_009",
+          "original_req_text": "Admin can manage staff accounts",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_010",
+          "original_req_text": "Doctor can create treatment plans",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_011",
+          "original_req_text": "Nurse can access patient information",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_012",
+          "original_req_text": "System generates billing records",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_012",
+          "original_req_text": "System generates billing records",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_013",
+          "original_req_text": "Patient can update personal information",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_014",
+          "original_req_text": "Admin can generate compliance reports",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_014",
+          "original_req_text": "Admin can generate compliance reports",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_when",
+          "original_req_id": "REQ_015",
+          "original_req_text": "Doctor can refer patients to specialists",
+          "question": "WHEN can this action be performed? (timing, conditions, business hours, triggers)",
+          "priority": "medium"
+        },
+        {
+          "type": "4w_where",
+          "original_req_id": "REQ_015",
+          "original_req_text": "Doctor can refer patients to specialists",
+          "question": "WHERE does this action occur? (UI component, backend service, API, physical location)",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "upload",
+          "trigger_req_id": "REQ_007",
+          "missing_action": "download",
+          "suggestion": "Consider adding 'download' functionality as complement to 'upload'",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "register",
+          "trigger_req_id": "REQ_003",
+          "missing_action": "unregister",
+          "suggestion": "Consider adding 'unregister' functionality as complement to 'register'",
+          "priority": "medium"
+        },
+        {
+          "type": "complementary",
+          "trigger_action": "create",
+          "trigger_req_id": "REQ_010",
+          "missing_action": "delete",
+          "suggestion": "Consider adding 'delete' functionality as complement to 'create'",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Doctor",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Doctor records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Doctor",
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Doctor records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Nurse",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Nurse records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Nurse",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Nurse information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Nurse",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Nurse records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Nurse",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Nurse records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Admin information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Admin",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Admin records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Appointment Reminders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Appointment Reminders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Appointment Reminders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Appointment Reminders information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Appointment Reminders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Appointment Reminders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Appointment Reminders",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Appointment Reminders records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Test Results",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Test Results information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Test Results",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Test Results records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Test Results",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Test Results records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Staff Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Staff Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Staff Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Staff Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Staff Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Staff Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Staff Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Staff Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Accounts information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Accounts",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Accounts records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Treatment Plans",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Treatment Plans information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Treatment Plans",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Treatment Plans records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Treatment Plans",
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Treatment Plans records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Patient Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Patient Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Patient Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Patient Information information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Patient Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Patient Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Patient Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Patient Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Records information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Billing Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Billing Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Billing Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Billing Records information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Billing Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Billing Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Billing Records",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Billing Records records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Personal Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Personal Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Personal Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Personal Information information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Personal Information",
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Personal Information records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Compliance Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Compliance Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Compliance Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Compliance Reports information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Compliance Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Compliance Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Compliance Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Compliance Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to create new Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to view/retrieve Reports information",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to modify existing Reports records",
+          "priority": "medium"
+        },
+        {
+          "type": "crud_missing",
+          "entity": "Reports",
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "suggestion": "Add functionality to remove/delete Reports records",
+          "priority": "medium"
+        }
+      ],
+      "categories": {
+        "4w_analysis": 24,
+        "complementary": 3,
+        "crud_missing": 50
+      },
+      "crud_completeness": {
+        "Doctor": {
+          "present_operations": [
+            "create",
+            "read"
+          ],
+          "missing_operations": [
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 50.0,
+          "suggestions": [
+            "Add functionality to modify existing Doctor records",
+            "Add functionality to remove/delete Doctor records"
+          ]
+        },
+        "Nurse": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Nurse records",
+            "Add functionality to view/retrieve Nurse information",
+            "Add functionality to modify existing Nurse records",
+            "Add functionality to remove/delete Nurse records"
+          ]
+        },
+        "Admin": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Admin information",
+            "Add functionality to modify existing Admin records",
+            "Add functionality to remove/delete Admin records"
+          ]
+        },
+        "Appointment Reminders": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Appointment Reminders records",
+            "Add functionality to view/retrieve Appointment Reminders information",
+            "Add functionality to modify existing Appointment Reminders records",
+            "Add functionality to remove/delete Appointment Reminders records"
+          ]
+        },
+        "Test Results": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Test Results information",
+            "Add functionality to modify existing Test Results records",
+            "Add functionality to remove/delete Test Results records"
+          ]
+        },
+        "Staff Accounts": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Staff Accounts records",
+            "Add functionality to view/retrieve Staff Accounts information",
+            "Add functionality to modify existing Staff Accounts records",
+            "Add functionality to remove/delete Staff Accounts records"
+          ]
+        },
+        "Accounts": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Accounts records",
+            "Add functionality to view/retrieve Accounts information",
+            "Add functionality to modify existing Accounts records",
+            "Add functionality to remove/delete Accounts records"
+          ]
+        },
+        "Treatment Plans": {
+          "present_operations": [
+            "create"
+          ],
+          "missing_operations": [
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to view/retrieve Treatment Plans information",
+            "Add functionality to modify existing Treatment Plans records",
+            "Add functionality to remove/delete Treatment Plans records"
+          ]
+        },
+        "Patient Information": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Patient Information records",
+            "Add functionality to view/retrieve Patient Information information",
+            "Add functionality to modify existing Patient Information records",
+            "Add functionality to remove/delete Patient Information records"
+          ]
+        },
+        "Records": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Records records",
+            "Add functionality to view/retrieve Records information",
+            "Add functionality to modify existing Records records",
+            "Add functionality to remove/delete Records records"
+          ]
+        },
+        "Billing Records": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Billing Records records",
+            "Add functionality to view/retrieve Billing Records information",
+            "Add functionality to modify existing Billing Records records",
+            "Add functionality to remove/delete Billing Records records"
+          ]
+        },
+        "Personal Information": {
+          "present_operations": [
+            "update"
+          ],
+          "missing_operations": [
+            "create",
+            "read",
+            "delete"
+          ],
+          "completeness_percentage": 25.0,
+          "suggestions": [
+            "Add functionality to create new Personal Information records",
+            "Add functionality to view/retrieve Personal Information information",
+            "Add functionality to remove/delete Personal Information records"
+          ]
+        },
+        "Compliance Reports": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Compliance Reports records",
+            "Add functionality to view/retrieve Compliance Reports information",
+            "Add functionality to modify existing Compliance Reports records",
+            "Add functionality to remove/delete Compliance Reports records"
+          ]
+        },
+        "Reports": {
+          "present_operations": [],
+          "missing_operations": [
+            "create",
+            "read",
+            "update",
+            "delete"
+          ],
+          "completeness_percentage": 0.0,
+          "suggestions": [
+            "Add functionality to create new Reports records",
+            "Add functionality to view/retrieve Reports information",
+            "Add functionality to modify existing Reports records",
+            "Add functionality to remove/delete Reports records"
+          ]
+        }
+      },
+      "expected_count": 6,
+      "timestamp": "2026-01-24T13:57:04.326216"
+    }
+  ],
+  "aggregate": {
+    "project_count": 3,
+    "total_original_requirements": 45,
+    "total_discovered_requirements": 282,
+    "average_discoveries_per_project": 94.0,
+    "average_improvement_percentage": 624.81,
+    "average_precision": 100.0,
+    "benchmark_target": 4.4,
+    "benchmark_status": "EXCEEDS",
+    "discovery_breakdown": {
+      "4w_analysis": 79,
+      "complementary": 8,
+      "crud_missing": 195,
+      "total": 282
+    }
+  },
+  "timestamp": "2026-01-24T13:57:04.326216"
+}

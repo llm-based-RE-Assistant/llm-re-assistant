@@ -1,0 +1,174 @@
+{
+  "project_info": {
+    "name": "E-commerce Platform",
+    "domain": "Online Retail",
+    "description": "E-commerce website with product catalog, shopping cart, and order management",
+    "stakeholder": "TechShop Inc.",
+    "date": "2026-01-24"
+  },
+  "requirements": [
+    {
+      "id": "REQ_001",
+      "text": "User can register new account",
+      "type": "functional",
+      "priority": "high",
+      "category": "user_management"
+    },
+    {
+      "id": "REQ_002",
+      "text": "User can browse product catalog",
+      "type": "functional",
+      "priority": "high",
+      "category": "catalog"
+    },
+    {
+      "id": "REQ_003",
+      "text": "User can search for products",
+      "type": "functional",
+      "priority": "high",
+      "category": "catalog"
+    },
+    {
+      "id": "REQ_004",
+      "text": "User can add products to cart",
+      "type": "functional",
+      "priority": "high",
+      "category": "shopping_cart"
+    },
+    {
+      "id": "REQ_005",
+      "text": "User can view shopping cart",
+      "type": "functional",
+      "priority": "high",
+      "category": "shopping_cart"
+    },
+    {
+      "id": "REQ_006",
+      "text": "User can place orders",
+      "type": "functional",
+      "priority": "high",
+      "category": "orders"
+    },
+    {
+      "id": "REQ_007",
+      "text": "User can track order status",
+      "type": "functional",
+      "priority": "medium",
+      "category": "orders"
+    },
+    {
+      "id": "REQ_008",
+      "text": "Admin can add new products",
+      "type": "functional",
+      "priority": "high",
+      "category": "product_management"
+    },
+    {
+      "id": "REQ_009",
+      "text": "Admin can view product inventory",
+      "type": "functional",
+      "priority": "medium",
+      "category": "product_management"
+    },
+    {
+      "id": "REQ_010",
+      "text": "Admin can process refunds",
+      "type": "functional",
+      "priority": "medium",
+      "category": "orders"
+    },
+    {
+      "id": "REQ_011",
+      "text": "System sends order confirmation emails",
+      "type": "functional",
+      "priority": "medium",
+      "category": "notifications"
+    },
+    {
+      "id": "REQ_012",
+      "text": "User can write product reviews",
+      "type": "functional",
+      "priority": "low",
+      "category": "reviews"
+    },
+    {
+      "id": "REQ_013",
+      "text": "User can save items to wishlist",
+      "type": "functional",
+      "priority": "low",
+      "category": "wishlist"
+    },
+    {
+      "id": "REQ_014",
+      "text": "Admin can manage customer accounts",
+      "type": "functional",
+      "priority": "medium",
+      "category": "user_management"
+    },
+    {
+      "id": "REQ_015",
+      "text": "System calculates shipping costs",
+      "type": "functional",
+      "priority": "high",
+      "category": "shipping"
+    },
+    {
+      "id": "REQ_016",
+      "text": "User can apply discount codes",
+      "type": "functional",
+      "priority": "medium",
+      "category": "promotions"
+    },
+    {
+      "id": "REQ_017",
+      "text": "User can view order history",
+      "type": "functional",
+      "priority": "medium",
+      "category": "orders"
+    },
+    {
+      "id": "REQ_018",
+      "text": "Admin can generate sales reports",
+      "type": "functional",
+      "priority": "medium",
+      "category": "reporting"
+    }
+  ],
+  "expected_discoveries": {
+    "remove_cart": {
+      "type": "complementary",
+      "trigger": "REQ_004",
+      "description": "Missing remove from cart"
+    },
+    "remove_wishlist": {
+      "type": "complementary",
+      "trigger": "REQ_013",
+      "description": "Missing remove from wishlist"
+    },
+    "delete_product": {
+      "type": "complementary",
+      "trigger": "REQ_008",
+      "description": "Missing product deletion"
+    },
+    "when_review": {
+      "type": "4w_when",
+      "trigger": "REQ_012",
+      "description": "Missing timing for reviews"
+    },
+    "update_product": {
+      "type": "crud_update",
+      "entity": "Product",
+      "description": "Missing product update"
+    },
+    "update_order": {
+      "type": "crud_update",
+      "entity": "Order",
+      "description": "Missing order modification"
+    },
+    "delete_order": {
+      "type": "crud_delete",
+      "entity": "Order",
+      "description": "Missing order cancellation"
+    }
+  }
+}

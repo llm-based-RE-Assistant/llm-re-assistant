@@ -1,0 +1,132 @@
+{
+  "project_info": {
+    "name": "Online Banking System",
+    "domain": "Financial Services",
+    "description": "Web-based banking platform with account management, transactions, and reporting",
+    "stakeholder": "Metro Bank",
+    "date": "2026-01-24"
+  },
+  "requirements": [
+    {
+      "id": "REQ_001",
+      "text": "User can login to online banking portal",
+      "type": "functional",
+      "priority": "high",
+      "category": "authentication"
+    },
+    {
+      "id": "REQ_002",
+      "text": "User can view account balance",
+      "type": "functional",
+      "priority": "high",
+      "category": "account_management"
+    },
+    {
+      "id": "REQ_003",
+      "text": "User can transfer money between accounts",
+      "type": "functional",
+      "priority": "high",
+      "category": "transactions"
+    },
+    {
+      "id": "REQ_004",
+      "text": "User can view transaction history",
+      "type": "functional",
+      "priority": "medium",
+      "category": "reporting"
+    },
+    {
+      "id": "REQ_005",
+      "text": "User can deposit checks via mobile app",
+      "type": "functional",
+      "priority": "medium",
+      "category": "transactions"
+    },
+    {
+      "id": "REQ_006",
+      "text": "Admin can create new customer accounts",
+      "type": "functional",
+      "priority": "high",
+      "category": "account_management"
+    },
+    {
+      "id": "REQ_007",
+      "text": "System generates monthly statements",
+      "type": "functional",
+      "priority": "medium",
+      "category": "reporting"
+    },
+    {
+      "id": "REQ_008",
+      "text": "User can download account statements",
+      "type": "functional",
+      "priority": "medium",
+      "category": "reporting"
+    },
+    {
+      "id": "REQ_009",
+      "text": "User can set up bill payments",
+      "type": "functional",
+      "priority": "medium",
+      "category": "transactions"
+    },
+    {
+      "id": "REQ_010",
+      "text": "Admin can freeze suspicious accounts",
+      "type": "functional",
+      "priority": "high",
+      "category": "security"
+    },
+    {
+      "id": "REQ_011",
+      "text": "System sends transaction notifications",
+      "type": "functional",
+      "priority": "low",
+      "category": "notifications"
+    },
+    {
+      "id": "REQ_012",
+      "text": "User can update contact information",
+      "type": "functional",
+      "priority": "low",
+      "category": "account_management"
+    }
+  ],
+  "expected_discoveries": {
+    "logout": {
+      "type": "complementary",
+      "trigger": "REQ_001",
+      "description": "Missing logout functionality"
+    },
+    "unfreeze": {
+      "type": "complementary",
+      "trigger": "REQ_010",
+      "description": "Missing account unfreeze"
+    },
+    "cancel_payment": {
+      "type": "complementary",
+      "trigger": "REQ_009",
+      "description": "Missing payment cancellation"
+    },
+    "when_transfer": {
+      "type": "4w_when",
+      "trigger": "REQ_003",
+      "description": "Missing timing for money transfers"
+    },
+    "where_deposit": {
+      "type": "4w_where",
+      "trigger": "REQ_005",
+      "description": "Missing location details for check deposit"
+    },
+    "update_account": {
+      "type": "crud_update",
+      "entity": "Account",
+      "description": "Missing account update functionality"
+    },
+    "delete_account": {
+      "type": "crud_delete",
+      "entity": "Account",
+      "description": "Missing account deletion/closure"
+    }
+  }
+}

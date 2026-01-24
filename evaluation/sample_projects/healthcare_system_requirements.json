@@ -1,0 +1,148 @@
+{
+  "project_info": {
+    "name": "Healthcare Management System",
+    "domain": "Medical Records",
+    "description": "Healthcare management system for patient records, appointments, and prescriptions",
+    "stakeholder": "City General Hospital",
+    "date": "2026-01-24"
+  },
+  "requirements": [
+    {
+      "id": "REQ_001",
+      "text": "Doctor can view patient medical history",
+      "type": "functional",
+      "priority": "high",
+      "category": "medical_records"
+    },
+    {
+      "id": "REQ_002",
+      "text": "Nurse can record patient vitals",
+      "type": "functional",
+      "priority": "high",
+      "category": "medical_records"
+    },
+    {
+      "id": "REQ_003",
+      "text": "Admin can register new patients",
+      "type": "functional",
+      "priority": "high",
+      "category": "patient_management"
+    },
+    {
+      "id": "REQ_004",
+      "text": "Doctor can prescribe medications",
+      "type": "functional",
+      "priority": "high",
+      "category": "prescriptions"
+    },
+    {
+      "id": "REQ_005",
+      "text": "Patient can schedule appointments",
+      "type": "functional",
+      "priority": "high",
+      "category": "appointments"
+    },
+    {
+      "id": "REQ_006",
+      "text": "System sends appointment reminders",
+      "type": "functional",
+      "priority": "medium",
+      "category": "notifications"
+    },
+    {
+      "id": "REQ_007",
+      "text": "Doctor can upload test results",
+      "type": "functional",
+      "priority": "high",
+      "category": "medical_records"
+    },
+    {
+      "id": "REQ_008",
+      "text": "Patient can view their appointments",
+      "type": "functional",
+      "priority": "medium",
+      "category": "appointments"
+    },
+    {
+      "id": "REQ_009",
+      "text": "Admin can manage staff accounts",
+      "type": "functional",
+      "priority": "medium",
+      "category": "user_management"
+    },
+    {
+      "id": "REQ_010",
+      "text": "Doctor can create treatment plans",
+      "type": "functional",
+      "priority": "high",
+      "category": "treatment"
+    },
+    {
+      "id": "REQ_011",
+      "text": "Nurse can access patient information",
+      "type": "functional",
+      "priority": "high",
+      "category": "medical_records"
+    },
+    {
+      "id": "REQ_012",
+      "text": "System generates billing records",
+      "type": "functional",
+      "priority": "medium",
+      "category": "billing"
+    },
+    {
+      "id": "REQ_013",
+      "text": "Patient can update personal information",
+      "type": "functional",
+      "priority": "low",
+      "category": "patient_management"
+    },
+    {
+      "id": "REQ_014",
+      "text": "Admin can generate compliance reports",
+      "type": "functional",
+      "priority": "medium",
+      "category": "reporting"
+    },
+    {
+      "id": "REQ_015",
+      "text": "Doctor can refer patients to specialists",
+      "type": "functional",
+      "priority": "medium",
+      "category": "referrals"
+    }
+  ],
+  "expected_discoveries": {
+    "cancel_appointment": {
+      "type": "complementary",
+      "trigger": "REQ_005",
+      "description": "Missing appointment cancellation"
+    },
+    "when_vitals": {
+      "type": "4w_when",
+      "trigger": "REQ_002",
+      "description": "Missing timing for recording vitals"
+    },
+    "where_history": {
+      "type": "4w_where",
+      "trigger": "REQ_001",
+      "description": "Missing location for viewing history"
+    },
+    "update_treatment": {
+      "type": "crud_update",
+      "entity": "Treatment Plan",
+      "description": "Missing treatment plan updates"
+    },
+    "update_prescription": {
+      "type": "crud_update",
+      "entity": "Prescription",
+      "description": "Missing prescription modification"
+    },
+    "delete_prescription": {
+      "type": "crud_delete",
+      "entity": "Prescription",
+      "description": "Missing prescription revocation"
+    }
+  }
+}
