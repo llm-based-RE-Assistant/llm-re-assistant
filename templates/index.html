@@ -318,6 +318,141 @@
         .toast.error {
             border-left: 4px solid #f44336;
         }
+
+        /* UML Generation Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+            margin: 0;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .uml-section {
+            margin-bottom: 25px;
+        }
+
+        .uml-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .plantuml-code {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background: #f8f9fa;
+            resize: vertical;
+        }
+
+        .quality-metrics {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .quality-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .quality-metric:last-child {
+            border-bottom: none;
+        }
+
+        .quality-metric-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .quality-metric-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .warnings-list {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+
+        .warnings-list li {
+            color: #f44336;
+            margin: 5px 0;
+        }
+
+        .uml-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-copy {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #45a049;
+        }
+
+        .btn-visualize {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-visualize:hover {
+            background: #0b7dda;
+        }
     </style>
 </head>
 <body>
@@ -328,6 +463,7 @@
                 RE Assistant - Iteration 1 MVP
             </h1>
             <div class="header-buttons">
+                <button class="btn btn-primary" onclick="generateUML()">Generate UML Diagram</button>
                 <button class="btn btn-primary" onclick="generateSpec()">Generate SRS</button>
                 <button class="btn btn-secondary" onclick="newSession()">New Session</button>
             </div>
@@ -360,6 +496,30 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- UML Generation Modal -->
+    <div id="umlModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>UML Class Diagram</h2>
+                <span class="close" onclick="closeUMLModal()">&times;</span>
+            </div>
+            <div class="uml-section">
+                <h3>PlantUML Code</h3>
+                <textarea id="plantumlCode" class="plantuml-code" readonly></textarea>
+                <div class="uml-actions">
+                    <button class="btn btn-copy" onclick="copyPlantUMLCode()">Copy Code</button>
+                    <button class="btn btn-visualize" onclick="visualizePlantUML()">Visualize Online</button>
+                </div>
+            </div>
+            <div class="uml-section">
+                <h3>Quality Assessment</h3>
+                <div id="qualityMetrics" class="quality-metrics">
+                    <!-- Quality metrics will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let isProcessing = false;
@@ -503,6 +663,122 @@
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Failed to start new session', 'error');
+            }
+        }
+
+        async function generateUML() {
+            if (isProcessing) return;
+
+            isProcessing = true;
+            showToast('Generating UML diagram...', 'success');
+
+            try {
+                const response = await fetch('/api/generate-uml', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Display UML in modal
+                    document.getElementById('plantumlCode').value = data.plantuml_code;
+                    displayQualityMetrics(data.quality);
+                    document.getElementById('umlModal').style.display = 'block';
+                    showToast('UML diagram generated successfully!', 'success');
+                } else {
+                    showToast('Error: ' + (data.message || data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to generate UML diagram.', 'error');
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        function displayQualityMetrics(quality) {
+            const metricsDiv = document.getElementById('qualityMetrics');
+            const completenessRatio = quality.completeness_ratio || 0;
+            const completenessClass = completenessRatio >= 0.8 ? 'quality-metric-value' : 'quality-metric-value';
+            const completenessColor = completenessRatio >= 0.8 ? '#4caf50' : '#f44336';
+            
+            let html = `
+                <div class="quality-metric">
+                    <span class="quality-metric-label">Completeness Ratio:</span>
+                    <span class="quality-metric-value" style="color: ${completenessColor}">${completenessRatio.toFixed(2)}</span>
+                </div>
+                <div class="quality-metric">
+                    <span class="quality-metric-label">Entities Found:</span>
+                    <span class="quality-metric-value">${quality.entities_found || 0}</span>
+                </div>
+                <div class="quality-metric">
+                    <span class="quality-metric-label">Entities Expected:</span>
+                    <span class="quality-metric-value">${quality.entities_expected || 0}</span>
+                </div>
+                <div class="quality-metric">
+                    <span class="quality-metric-label">Relationships:</span>
+                    <span class="quality-metric-value">${quality.relationships_count || 0}</span>
+                </div>
+            `;
+            
+            if (quality.warnings && quality.warnings.length > 0) {
+                html += `
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e0e0;">
+                        <strong style="color: #f44336;">Warnings:</strong>
+                        <ul class="warnings-list">
+                            ${quality.warnings.map(w => `<li>${w}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            metricsDiv.innerHTML = html;
+        }
+
+        function closeUMLModal() {
+            document.getElementById('umlModal').style.display = 'none';
+        }
+
+        function copyPlantUMLCode() {
+            const codeTextarea = document.getElementById('plantumlCode');
+            codeTextarea.select();
+            document.execCommand('copy');
+            showToast('PlantUML code copied to clipboard!', 'success');
+        }
+
+        function visualizePlantUML() {
+            const code = document.getElementById('plantumlCode').value;
+            // PlantUML online server uses deflate compression + base64 encoding
+            // We'll use a simple approach: open the editor and show instructions
+            // For proper encoding, users can use online tools or copy-paste
+            const editorUrl = 'https://www.plantuml.com/plantuml/uml/';
+            
+            // Try to use PlantUML's text encoding (simpler than deflate)
+            // Note: This is a basic encoding, full deflate+base64 requires a library
+            try {
+                // Use PlantUML's text format (raw text encoding)
+                const textEncoded = encodeURIComponent(code);
+                const textUrl = editorUrl + 'txt/' + textEncoded;
+                
+                // Open in new tab
+                window.open(textUrl, '_blank');
+                showToast('Opening PlantUML visualizer...', 'success');
+            } catch (e) {
+                // Fallback: open editor and show copy instructions
+                window.open('https://www.plantuml.com/plantuml/uml/', '_blank');
+                showToast('PlantUML editor opened. Copy the code from above and paste it there.', 'success');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('umlModal');
+            if (event.target === modal) {
+                closeUMLModal();
             }
         }
 

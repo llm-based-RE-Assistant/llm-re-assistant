@@ -109,7 +109,12 @@ class OllamaClient:
             True if connection successful, False otherwise
         """
         try:
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response = requests.get(
+                f"{self.base_url}/api/tags", 
+                headers=self.headers,
+                timeout=5
+            )
             return response.status_code == 200
-        except:
+        except Exception as e:
+            print(f"Ollama connection check failed: {e}")
             return False

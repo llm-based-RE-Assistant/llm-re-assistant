@@ -7,17 +7,88 @@ from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime
 import json
 import os
+from dotenv import load_dotenv
 from src.utils.ollama_client import OllamaClient
+from src.utils.openai_client import OpenAIClient
 from src.utils.conversation_manager import ConversationManager
 from src.elicitation.elicitation_engine import ElicitationEngine
+from src.agents.modeling_agent import ModelingAgent
+
+# Load environment variables from .env file
+# Try multiple locations: same dir as app.py, then current directory
+app_dir = os.path.dirname(os.path.abspath(__file__))
+env_paths = [
+    os.path.join(app_dir, '.env'),  # Same directory as app.py
+    '.env',  # Current working directory
+    os.path.join(os.getcwd(), '.env')  # Explicit current directory
+]
+
+loaded = False
+for env_path in env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(dotenv_path=env_path, override=True)
+        if os.getenv('OPENAI_API_KEY'):
+            print(f"✓ Loaded .env from: {env_path}")
+            loaded = True
+            break
+
+if not loaded:
+    # Last attempt: just call load_dotenv() which searches automatically
+    load_dotenv(override=True)
+    if os.getenv('OPENAI_API_KEY'):
+        print("✓ Loaded .env (auto-detected)")
+    else:
+        print("⚠ .env file not found or OPENAI_API_KEY not set")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Initialize components
-ollama_client = OllamaClient(model="llama3.1:8b")
+# Try to use Ollama first, fallback to OpenAI if not available
+llm_client = None
+use_ollama = os.getenv('USE_OLLAMA', 'true').lower() == 'true'
+
+if use_ollama:
+    try:
+        ollama_base_url = os.getenv('LLM_SERVER_URL', 'https://genai-01.uni-hildesheim.de')
+        # Ensure base_url includes /ollama if not already present
+        if not ollama_base_url.endswith('/ollama'):
+            ollama_base_url = ollama_base_url.rstrip('/') + '/ollama'
+        ollama_model = os.getenv('OLLAMA_MODEL', 'qwen2.5:32b')
+        ollama_client = OllamaClient(base_url=ollama_base_url, model=ollama_model)
+        # Test connection
+        if ollama_client.check_connection():
+            llm_client = ollama_client
+            print("✓ Using Ollama for elicitation engine")
+        else:
+            print("⚠ Ollama not available, falling back to OpenAI")
+            llm_client = None
+    except Exception as e:
+        print(f"⚠ Ollama initialization failed: {e}, falling back to OpenAI")
+        llm_client = None
+
+# Fallback to OpenAI if Ollama is not available
+if llm_client is None:
+    try:
+        llm_client = OpenAIClient(
+            model=os.getenv('OPENAI_MODEL', 'gpt-4'),
+            temperature=0.7
+        )
+        print("✓ Using OpenAI for elicitation engine")
+    except Exception as e:
+        print(f"⚠ OpenAI initialization failed: {e}")
+        print("⚠ Both Ollama and OpenAI failed to initialize. Some features may not work.")
+        # Create a dummy client that will show error messages
+        llm_client = None
+
 conversation_manager = ConversationManager()
-elicitation_engine = ElicitationEngine(ollama_client)
+if llm_client:
+    elicitation_engine = ElicitationEngine(llm_client)
+else:
+    # Create a dummy engine that shows error messages
+    elicitation_engine = None
+
+modeling_agent = ModelingAgent()
 
 # Ensure artifacts directory exists
 os.makedirs('artifacts', exist_ok=True)
@@ -61,6 +132,12 @@ def chat():
         conversation_history = conversation_manager.get_conversation(session_id)
         
         # Process message through elicitation engine
+        if elicitation_engine is None:
+            return jsonify({
+                'status': 'error',
+                'response': 'LLM service is not available. Please check your Ollama or OpenAI configuration.'
+            }), 500
+        
         assistant_response = elicitation_engine.process_message(
             user_message, 
             conversation_history
@@ -109,6 +186,12 @@ def generate_specification():
             }), 400
         
         # Generate specification using elicitation engine
+        if elicitation_engine is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'LLM service is not available. Please check your Ollama or OpenAI configuration.'
+            }), 500
+        
         specification = elicitation_engine.generate_specification(conversation_history)
         
         # Save specification to artifacts
@@ -154,6 +237,62 @@ def new_session():
         return jsonify({
             'status': 'error',
             'message': 'An error occurred creating a new session.'
+        }), 500
+
+
+@app.route('/api/generate-uml', methods=['POST'])
+def generate_uml():
+    """
+    Generate UML class diagram from requirements
+    Input: Session ID or explicit requirements text
+    Output: PlantUML code + quality assessment
+    """
+    try:
+        data = request.get_json() or {}
+        session_id = session.get('session_id')
+        explicit_requirements = data.get('requirements', '').strip()
+        
+        # Get requirements from session or explicit input
+        if explicit_requirements:
+            requirements = explicit_requirements
+            conversation_history = None
+        elif session_id:
+            conversation_history = conversation_manager.get_conversation(session_id)
+            if not conversation_history or len(conversation_history) < 2:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Not enough conversation data to generate UML. Provide requirements or continue the conversation.'
+                }), 400
+            requirements = ''  # Will be extracted from conversation by the agent
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'No active session or requirements provided. Start a conversation or provide requirements text.'
+            }), 400
+        
+        # Generate UML diagram
+        result = modeling_agent.generate_uml(
+            requirements=requirements,
+            conversation_history=conversation_history if session_id else None
+        )
+        
+        if result['status'] == 'error':
+            return jsonify(result), 400
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error generating UML: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'An error occurred generating the UML diagram: {str(e)}',
+            'plantuml_code': '',
+            'quality': {
+                'completeness_ratio': 0.0,
+                'entities_found': 0,
+                'entities_expected': 0,
+                'warnings': [f"Generation failed: {str(e)}"]
+            }
         }), 500
 
 

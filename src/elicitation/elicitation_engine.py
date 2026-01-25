@@ -3,8 +3,9 @@ Elicitation Engine - Core logic for requirements elicitation
 Implements Chain-of-Thought prompting and adaptive questioning
 """
 
-from typing import List, Dict
+from typing import List, Dict, Union
 from src.utils.ollama_client import OllamaClient
+from src.utils.openai_client import OpenAIClient
 
 
 class ElicitationEngine:
@@ -88,14 +89,14 @@ Format: FR-X: [Requirement description]
 ---
 Extract specific requirements from the conversation and organize them clearly. Be precise and avoid ambiguity."""
 
-    def __init__(self, ollama_client: OllamaClient):
+    def __init__(self, llm_client: Union[OllamaClient, OpenAIClient]):
         """
         Initialize elicitation engine
         
         Args:
-            ollama_client: Initialized Ollama client for LLM communication
+            llm_client: Initialized LLM client (OllamaClient or OpenAIClient) for LLM communication
         """
-        self.ollama_client = ollama_client
+        self.llm_client = llm_client
     
     def process_message(
         self, 
@@ -119,7 +120,7 @@ Extract specific requirements from the conversation and organize them clearly. B
         ]
         
         # Get response using Chain-of-Thought prompting
-        response = self.ollama_client.chat_with_system_prompt(
+        response = self.llm_client.chat_with_system_prompt(
             system_prompt=self.SYSTEM_PROMPT,
             user_message=user_message,
             conversation_history=llm_history,
@@ -145,7 +146,7 @@ Extract specific requirements from the conversation and organize them clearly. B
         spec_prompt = f"{self.SPECIFICATION_GENERATION_PROMPT}\n\n## CONVERSATION HISTORY:\n\n{conversation_text}\n\nNow generate the complete SRS document:"
         
         # Generate specification
-        specification = self.ollama_client.chat_with_system_prompt(
+        specification = self.llm_client.chat_with_system_prompt(
             system_prompt="You are a technical writer specializing in software requirements specifications.",
             user_message=spec_prompt,
             temperature=0.3  # Lower temperature for more consistent output

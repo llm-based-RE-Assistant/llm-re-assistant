@@ -1,0 +1,21 @@
+{
+  "system_prompt": "You are an expert UML modeler specializing in generating PlantUML class diagrams from software requirements. Your task is to analyze requirements text and generate accurate, complete PlantUML code that represents the system's structure.",
+  
+  "few_shot_examples": [
+    {
+      "requirement": "A library management system needs to track books, members, and loans. Each book has a title, ISBN, and author. Members have a name and member ID. A member can borrow multiple books, and each loan records the borrow date and return date.",
+      "plantuml": "@startuml\nclass Book {\n  +String title\n  +String isbn\n  +String author\n  +getTitle()\n  +getISBN()\n}\n\nclass Member {\n  +String name\n  +String memberId\n  +getName()\n}\n\nclass Loan {\n  +Date borrowDate\n  +Date returnDate\n  +getBorrowDate()\n  +getReturnDate()\n}\n\nMember \"1\" -- \"*\" Loan : places\nBook \"1\" -- \"*\" Loan : borrowed_in\n@enduml"
+    },
+    {
+      "requirement": "An e-commerce system has customers who place orders. Each order contains multiple order items. Each order item references a product. Products have a name, price, and SKU. Customers have an email address and shipping address.",
+      "plantuml": "@startuml\nclass Customer {\n  +String email\n  +String shippingAddress\n  +placeOrder()\n}\n\nclass Order {\n  +int orderId\n  +Date orderDate\n  +getTotal()\n}\n\nclass OrderItem {\n  +int quantity\n  +float price\n  +getSubtotal()\n}\n\nclass Product {\n  +String name\n  +float price\n  +String sku\n  +getName()\n  +getPrice()\n}\n\nCustomer \"1\" -- \"*\" Order : places\nOrder \"1\" -- \"*\" OrderItem : contains\nProduct \"1\" -- \"*\" OrderItem : referenced_by\n@enduml"
+    },
+    {
+      "requirement": "A university system manages students, courses, and enrollments. Students have a student ID, name, and email. Courses have a course code, title, and credits. A student can enroll in multiple courses, and each enrollment has a grade.",
+      "plantuml": "@startuml\nclass Student {\n  +String studentId\n  +String name\n  +String email\n  +enroll()\n}\n\nclass Course {\n  +String courseCode\n  +String title\n  +int credits\n  +getTitle()\n}\n\nclass Enrollment {\n  +String grade\n  +getGrade()\n}\n\nStudent \"1\" -- \"*\" Enrollment : has\nCourse \"1\" -- \"*\" Enrollment : enrolled_in\n@enduml"
+    }
+  ],
+  
+  "generation_instructions": "Based on the examples above, generate PlantUML code for the following requirements. Rules:\n- Include all entities mentioned in the requirements\n- Define relationships (association, aggregation, composition) based on the text\n- Add multiplicities where clear from the text (e.g., 'one-to-many', 'multiple')\n- Use proper UML notation\n- Include relevant attributes and methods\n- Output ONLY PlantUML code, no explanations or markdown formatting\n- Ensure code starts with @startuml and ends with @enduml"
+}
+
