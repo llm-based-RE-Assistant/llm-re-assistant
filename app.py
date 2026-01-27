@@ -1,15 +1,16 @@
 """
-LLM-Based Requirements Engineering Assistant - Iteration 1 MVP
+LLM-Based Requirements Engineering Assistant
 Flask Application Entry Point
 """
 
 from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime
-import json
 import os
 from src.utils.ollama_client import OllamaClient
 from src.utils.conversation_manager import ConversationManager
 from src.elicitation.elicitation_engine import ElicitationEngine
+from src.agents.validation_agent import ValidationAgent
+from src.integration.validation_bridge import ValidationBridge
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -18,6 +19,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-producti
 ollama_client = OllamaClient(model="llama3.1:8b")
 conversation_manager = ConversationManager()
 elicitation_engine = ElicitationEngine(ollama_client)
+validation_agent = ValidationAgent()
+validation_bridge = ValidationBridge(validation_agent, conversation_manager)
 
 # Ensure artifacts directory exists
 os.makedirs('artifacts', exist_ok=True)
@@ -33,11 +36,7 @@ def index():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """
-    Handle chat messages from user
-    Expected JSON: {"message": "user message text"}
-    Returns: {"response": "assistant response", "status": "success"}
-    """
+    """Handle chat messages from user"""
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
@@ -48,28 +47,20 @@ def chat():
                 'response': 'Please provide a message.'
             }), 400
         
-        # Get or create session ID
         session_id = session.get('session_id')
         if not session_id:
             session_id = conversation_manager.create_session()
             session['session_id'] = session_id
         
-        # Add user message to conversation history
         conversation_manager.add_message(session_id, 'user', user_message)
-        
-        # Get conversation context
         conversation_history = conversation_manager.get_conversation(session_id)
         
-        # Process message through elicitation engine
         assistant_response = elicitation_engine.process_message(
             user_message, 
             conversation_history
         )
         
-        # Add assistant response to conversation history
         conversation_manager.add_message(session_id, 'assistant', assistant_response)
-        
-        # Save conversation periodically
         conversation_manager.save_conversation(session_id)
         
         return jsonify({
@@ -87,9 +78,7 @@ def chat():
 
 @app.route('/api/generate-spec', methods=['POST'])
 def generate_specification():
-    """
-    Generate IEEE-830 specification draft from conversation history
-    """
+    """Generate IEEE-830 specification draft from conversation history"""
     try:
         session_id = session.get('session_id')
         
@@ -99,7 +88,6 @@ def generate_specification():
                 'message': 'No active conversation session found.'
             }), 400
         
-        # Get conversation history
         conversation_history = conversation_manager.get_conversation(session_id)
         
         if len(conversation_history) < 2:
@@ -108,10 +96,8 @@ def generate_specification():
                 'message': 'Not enough conversation data to generate specification.'
             }), 400
         
-        # Generate specification using elicitation engine
         specification = elicitation_engine.generate_specification(conversation_history)
         
-        # Save specification to artifacts
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         spec_filename = f'artifacts/specifications/srs_{session_id}_{timestamp}.txt'
         
@@ -136,10 +122,7 @@ def generate_specification():
 def new_session():
     """Start a new conversation session"""
     try:
-        # Clear current session
         session.pop('session_id', None)
-        
-        # Create new session
         session_id = conversation_manager.create_session()
         session['session_id'] = session_id
         
@@ -164,6 +147,84 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat()
     })
+
+
+@app.route('/api/validate-requirements', methods=['POST'])
+def validate_requirements():
+    """Validate all requirements in current conversation"""
+    try:
+        session_id = session.get('session_id')
+        
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'No active conversation session found.'
+            }), 400
+        
+        result = validation_bridge.validate_conversation(session_id)
+        
+        if result['status'] == 'no_requirements':
+            return jsonify({
+                'status': 'warning',
+                'message': result['message'],
+                'requirements_found': 0
+            })
+        
+        report_text = validation_bridge.format_validation_report_for_chat(
+            result['report'],
+            result['validated_requirements']
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'requirements_found': result['requirements_found'],
+            'report': result['report'],
+            'report_text': report_text,
+            'validated_requirements': result['validated_requirements'],
+            'extraction_method': result.get('extraction_method', 'keyword')
+        })
+        
+    except Exception as e:
+        print(f"Error validating requirements: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred during validation.'
+        }), 500
+
+
+@app.route('/api/validation-summary', methods=['GET'])
+def get_validation_summary():
+    """Get validation summary for current session"""
+    try:
+        session_id = session.get('session_id')
+        
+        if not session_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'No active session.'
+            }), 400
+        
+        summary = validation_bridge.get_validation_summary(session_id)
+        
+        if not summary:
+            return jsonify({
+                'status': 'not_validated',
+                'message': 'Requirements have not been validated yet.'
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'summary': summary
+        })
+        
+    except Exception as e:
+        print(f"Error getting validation summary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred.'
+        }), 500
 
 
 if __name__ == '__main__':
