@@ -26,9 +26,9 @@ Configure via the sidebar:
 Run
 ---
     pip install streamlit
-    streamlit run pp.py
+    streamlit run app.py
     # or with a specific model:
-    streamlit run app.py -- --provider ollama --model llama3.2
+    streamlit run app.py -- --provider ollama --model gemma3:latest
 """
 
 from __future__ import annotations
@@ -246,8 +246,8 @@ def _init_session() -> None:
         st.session_state.srs_ready        = False
         st.session_state.srs_content      = None  # str of generated markdown
         st.session_state.srs_filename     = None
-        st.session_state.provider_name    = "ollama"
-        st.session_state.model_name       = "llama3.2"
+        st.session_state.provider_name    = "openai"
+        st.session_state.model_name       = "gpt-4o"
         st.session_state.error            = None
         st.session_state.thinking         = False
 
@@ -402,9 +402,9 @@ def _render_settings_sidebar() -> None:
         "LLM Provider",
         options=["ollama", "openai", "stub"],
         index=["ollama", "openai", "stub"].index(
-            st.session_state.get("provider_name", "ollama")
+            st.session_state.get("provider_name", "openai")
         ),
-        help=_PROVIDER_HELP.get(st.session_state.get("provider_name", "ollama"), ""),
+        help=_PROVIDER_HELP.get(st.session_state.get("provider_name", "openai"), ""),
     )
     st.session_state.provider_name = provider
 
@@ -415,7 +415,7 @@ def _render_settings_sidebar() -> None:
     }
     model = st.sidebar.text_input(
         "Model",
-        value=st.session_state.get("model_name", model_defaults.get(provider, "llama3.2")),
+        value=st.session_state.get("model_name", model_defaults.get(provider, "gpt-4o")),
     )
     st.session_state.model_name = model
 

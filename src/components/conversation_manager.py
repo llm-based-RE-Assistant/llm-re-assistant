@@ -104,7 +104,7 @@ class OpenAIProvider(LLMProvider):
             raise ImportError(
                 "openai package not installed. Run: pip install openai"
             )
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
                 "OPENAI_API_KEY environment variable not set."
