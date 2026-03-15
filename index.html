@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RE Assistant — Iteration 3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <style>
+      /* ── Design tokens ──────────────────────────────────────────────── */
+      :root {
+        --bg: #0f1117;
+        --bg-panel: #161b27;
+        --bg-card: #1e2535;
+        --bg-input: #252d40;
+        --accent: #4f8ef7;
+        --accent-dim: #2a4a8a;
+        --success: #34d399;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        --text: #e2e8f0;
+        --text-muted: #6b7a99;
+        --text-dim: #8899bb;
+        --border: #252d40;
+        --border-lit: #3a4560;
+        --radius: 8px;
+        --radius-lg: 14px;
+        --mono: "IBM Plex Mono", monospace;
+        --sans: "IBM Plex Sans", sans-serif;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      /* ── Reset ──────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+      }
+
+      /* ── Layout ─────────────────────────────────────────────────────── */
+      .shell {
+        display: grid;
+        grid-template-columns: 300px 1fr 280px;
+        grid-template-rows: 52px 1fr;
+        height: 100vh;
+        gap: 0;
+      }
+
+      /* ── Top bar ─────────────────────────────────────────────────────── */
+      .topbar {
+        grid-column: 1 / -1;
+        background: var(--bg-panel);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 16px;
+        z-index: 10;
+      }
+      .topbar-logo {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--accent);
+        letter-spacing: 0.04em;
+      }
+      .topbar-logo span {
+        color: var(--text-muted);
+      }
+      .topbar-sep {
+        flex: 1;
+      }
+      .badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: var(--bg-card);
+        color: var(--text-dim);
+        border: 1px solid var(--border-lit);
+      }
+      .badge.active {
+        color: var(--success);
+        border-color: var(--success);
+        background: rgba(52, 211, 153, 0.08);
+      }
+      .badge.warn {
+        color: var(--warning);
+        border-color: var(--warning);
+        background: rgba(251, 191, 36, 0.08);
+      }
+
+      /* ── Left panel — Coverage checklist ────────────────────────────── */
+      .panel-left {
+        background: var(--bg-panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel-header {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .panel-header .cov-pct {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--accent);
+      }
+
+      /* Coverage ring */
+      .coverage-ring-wrap {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .ring-svg {
+        width: 88px;
+        height: 88px;
+      }
+      .ring-bg {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 8;
+      }
+      .ring-fill {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 251.2;
+        stroke-dashoffset: 251.2;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .ring-label {
+        font-family: var(--mono);
+        font-size: 20px;
+        font-weight: 500;
+      }
+      .ring-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      /* Category list */
+      .cat-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 0 12px;
+      }
+      .cat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 16px;
+        font-size: 12px;
+        border-left: 2px solid transparent;
+        transition: background 0.15s;
+        cursor: default;
+      }
+      .cat-item:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .cat-item.covered {
+        border-left-color: var(--success);
+      }
+      .cat-item.partial {
+        border-left-color: var(--warning);
+      }
+      .cat-item.uncovered {
+        border-left-color: var(--danger);
+      }
+      .cat-item.optional {
+        border-left-color: transparent;
+        opacity: 0.6;
+      }
+      .cat-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .cat-item.covered .cat-dot {
+        background: var(--success);
+      }
+      .cat-item.partial .cat-dot {
+        background: var(--warning);
+      }
+      .cat-item.uncovered .cat-dot {
+        background: var(--danger);
+      }
+      .cat-item.optional .cat-dot {
+        background: var(--text-muted);
+      }
+      .cat-name {
+        flex: 1;
+        color: var(--text-dim);
+      }
+      .cat-sev {
+        font-family: var(--mono);
+        font-size: 9px;
+        opacity: 0.5;
+      }
+
+      .cat-section-label {
+        padding: 10px 16px 3px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        opacity: 0.6;
+      }
+
+      /* ── Centre — Chat ───────────────────────────────────────────────── */
+      .chat-area {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Session start overlay */
+      .start-overlay {
+        position: absolute;
+        inset: 300px 300px 300px 300px;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        flex-direction: column;
+        gap: 24px;
+        padding: 40px;
+      }
+      .start-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-lit);
+        border-radius: var(--radius-lg);
+        padding: 32px 36px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
+      .start-card h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .start-card p {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+      /* Toggle switch */
+      .toggle {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+      }
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: var(--bg-card);
+        border-radius: 22px;
+        cursor: pointer;
+        border: 1px solid var(--border-lit);
+        transition: background 0.2s;
+      }
+      .toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 2px;
+        top: 2px;
+        background: var(--text-muted);
+        border-radius: 50%;
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+      .toggle input:checked + .toggle-slider {
+        background: var(--accent-dim);
+        border-color: var(--accent);
+      }
+      .toggle input:checked + .toggle-slider::before {
+        transform: translateX(18px);
+        background: var(--accent);
+      }
+
+      .btn-start {
+        width: 100%;
+        padding: 12px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        border-radius: var(--radius);
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        transition: opacity 0.15s;
+      }
+      .btn-start:hover {
+        opacity: 0.88;
+      }
+
+      /* Messages */
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        scroll-behavior: smooth;
+      }
+      .msg {
+        display: flex;
+        gap: 10px;
+        max-width: 720px;
+        animation: msgIn 0.2s ease;
+      }
+      @keyframes msgIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .msg.user {
+        flex-direction: row-reverse;
+        align-self: flex-end;
+      }
+      .msg-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .msg.assistant .msg-avatar {
+        background: var(--accent-dim);
+        color: var(--accent);
+      }
+      .msg.user .msg-avatar {
+        background: var(--bg-card);
+        color: var(--text-dim);
+      }
+      .msg-body {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 12px 16px;
+        font-size: 13.5px;
+        line-height: 1.65;
+        color: var(--text);
+        max-width: 580px;
+        white-space: pre-wrap;
+      }
+      .msg.user .msg-body {
+        background: var(--bg-card);
+        text-align: right;
+      }
+      .msg.assistant .msg-body {
+        border-color: var(--border-lit);
+      }
+
+      .msg-typing .msg-body::after {
+        content: "●●●";
+        animation: blink 1.2s infinite;
+        font-size: 10px;
+        letter-spacing: 4px;
+        color: var(--text-muted);
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 0.2;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* Input bar */
+      .input-bar {
+        border-top: 1px solid var(--border);
+        background: var(--bg-panel);
+        padding: 12px 12px 60px 16px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .input-bar textarea {
+        flex: 1;
+        background: var(--bg-input);
+        border: 1px solid var(--border-lit);
+        border-radius: var(--radius);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 13.5px;
+        padding: 10px 14px;
+        resize: none;
+        max-height: 120px;
+        line-height: 1.55;
+        transition: border-color 0.15s;
+        outline: none;
+      }
+      .input-bar textarea:focus {
+        border-color: var(--accent);
+      }
+      .input-bar textarea::placeholder {
+        color: var(--text-muted);
+      }
+      .btn-send {
+        background: var(--accent);
+        border: none;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: opacity 0.15s;
+      }
+      .btn-send:hover {
+        opacity: 0.85;
+      }
+      .btn-send:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .btn-gen {
+        background: var(--bg-card);
+        border: 1px solid var(--border-lit);
+        color: var(--text-dim);
+        font-size: 12px;
+        padding: 0 12px;
+        height: 40px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .btn-gen:hover {
+        border-color: var(--success);
+        color: var(--success);
+      }
+
+      /* ── Right panel — Gaps & Follow-ups ────────────────────────────── */
+      .panel-right {
+        background: var(--bg-panel);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 10px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .tab-btn.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      .tab-pane {
+        display: none;
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .tab-pane.active {
+        display: flex;
+      }
+
+      /* Gap cards */
+      .gap-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        border-left: 3px solid var(--border);
+        animation: fadeIn 0.3s;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .gap-card.critical {
+        border-left-color: var(--danger);
+      }
+      .gap-card.important {
+        border-left-color: var(--warning);
+      }
+      .gap-card.optional {
+        border-left-color: var(--text-muted);
+      }
+      .gap-card-label {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 3px;
+      }
+      .gap-card-desc {
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+      .gap-card-sev {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 9px;
+        padding: 2px 5px;
+        border-radius: 3px;
+        margin-bottom: 4px;
+      }
+      .gap-card.critical .gap-card-sev {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+      }
+      .gap-card.important .gap-card-sev {
+        background: rgba(251, 191, 36, 0.12);
+        color: var(--warning);
+      }
+      .gap-card.optional .gap-card-sev {
+        background: var(--bg-panel);
+        color: var(--text-muted);
+      }
+
+      /* Follow-up question cards */
+      .q-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-lit);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        animation: fadeIn 0.3s;
+      }
+      .q-card:hover {
+        border-color: var(--accent);
+        background: rgba(79, 142, 247, 0.06);
+      }
+      .q-card-for {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-family: var(--mono);
+      }
+      .q-card-text {
+        color: var(--text-dim);
+        line-height: 1.5;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        padding: 24px;
+        text-align: center;
+        gap: 8px;
+      }
+      .empty-icon {
+        font-size: 28px;
+        opacity: 0.3;
+      }
+      .empty-txt {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* SRS ready banner */
+      .srs-banner {
+        margin: 0 12px 10px;
+        background: rgba(52, 211, 153, 0.1);
+        border: 1px solid var(--success);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        display: none;
+        gap: 10px;
+        align-items: center;
+      }
+      .srs-banner.visible {
+        display: flex;
+      }
+      .srs-banner-txt {
+        font-size: 12px;
+        color: var(--success);
+        flex: 1;
+      }
+      .btn-dl {
+        background: var(--success);
+        color: #0f1117;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-lit);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell" id="shell">
+      <!-- ── Top bar ──────────────────────────────────────────────────── -->
+      <header class="topbar">
+        <span class="topbar-logo">RE<span>Assistant</span></span>
+        <span style="font-size: 12px; color: var(--text-muted)"
+          >Iteration 3 · University of Hildesheim</span
+        >
+        <span class="topbar-sep"></span>
+        <span class="badge" id="badge-provider">provider: —</span>
+        <span class="badge" id="badge-gap">gap detection: —</span>
+        <span class="badge" id="badge-turn">turn: 0</span>
+        <span class="badge" id="badge-cov">coverage: 0%</span>
+      </header>
+
+      <!-- ── Left: Coverage checklist ─────────────────────────────────── -->
+      <aside class="panel-left">
+        <div class="panel-header">
+          Coverage
+          <span class="cov-pct" id="cov-pct-label">0%</span>
+        </div>
+        <div class="coverage-ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 88 88">
+            <circle class="ring-bg" cx="44" cy="44" r="40" />
+            <circle class="ring-fill" cx="44" cy="44" r="40" id="ring-fill" />
+          </svg>
+          <span class="ring-label" id="ring-label">0%</span>
+          <span class="ring-sub" id="ring-sub">0 of 18 categories</span>
+        </div>
+        <div class="cat-list" id="cat-list">
+          <div class="empty-state">
+            <span class="empty-txt">Start a session to see coverage</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Centre: Chat ──────────────────────────────────────────────── -->
+      <main class="chat-area" style="position: relative">
+        <!-- Start overlay -->
+        <div class="start-overlay" id="start-overlay">
+          <div class="start-card">
+            <h1>Requirements Engineering Assistant</h1>
+            <p>
+              An AI-powered elicitation tool that detects missing requirements
+              and proactively asks follow-up questions based on IEEE-830 &amp;
+              Volere standards.
+            </p>
+            <div class="toggle-row">
+              <label class="toggle">
+                <input type="checkbox" id="toggle-gap" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <span
+                >Gap Detection
+                <span style="color: var(--text-muted); font-size: 11px"
+                  >(Iteration 3)</span
+                ></span
+              >
+            </div>
+            <button class="btn-start" id="btn-start" onclick="startSession()">
+              Start Elicitation Session
+            </button>
+          </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+        <div class="input-bar">
+          <textarea
+            id="input"
+            placeholder="Describe your software system…"
+            rows="1"
+            onkeydown="
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+              }
+            "
+            oninput="autoResize(this)"
+          ></textarea>
+          <button
+            class="btn-gen"
+            onclick="generateSRS()"
+            id="btn-gen"
+            title="Generate SRS document"
+          >
+            ⬇ SRS
+          </button>
+          <button class="btn-send" id="btn-send" onclick="sendMessage()">
+            ➤
+          </button>
+        </div>
+      </main>
+
+      <!-- ── Right: Gaps & Follow-up questions ────────────────────────── -->
+      <aside class="panel-right">
+        <div class="panel-tabs">
+          <button class="tab-btn active" onclick="switchTab('gaps')">
+            Gaps
+          </button>
+          <button class="tab-btn" onclick="switchTab('questions')">
+            Follow-ups
+          </button>
+        </div>
+
+        <div class="srs-banner" id="srs-banner">
+          <span class="srs-banner-txt">✓ SRS document ready</span>
+          <button class="btn-dl" onclick="downloadSRS()">Download</button>
+        </div>
+
+        <div class="tab-pane active" id="tab-gaps">
+          <div class="empty-state">
+            <span class="empty-icon">◎</span
+            ><span class="empty-txt"
+              >Gap analysis appears here after each turn</span
+            >
+          </div>
+        </div>
+        <div class="tab-pane" id="tab-questions">
+          <div class="empty-state">
+            <span class="empty-icon">💬</span
+            ><span class="empty-txt"
+              >Proactive follow-up questions appear here</span
+            >
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      /* ── State ──────────────────────────────────────────────────────────── */
+      const API = ""; // same-origin; change to 'http://localhost:5000' if needed
+      let sessionId = null;
+      let isSending = false;
+
+      /* ── Session start ──────────────────────────────────────────────────── */
+      async function startSession() {
+        const gapEnabled = document.getElementById("toggle-gap").checked;
+        document.getElementById("btn-start").disabled = true;
+        document.getElementById("btn-start").textContent = "Starting…";
+
+        try {
+          const r = await fetch(`${API}/api/session/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gap_detection: gapEnabled }),
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Failed");
+
+          sessionId = data.session_id;
+          document.getElementById("start-overlay").style.display = "none";
+          document.getElementById("badge-provider").textContent =
+            `provider: ${data.provider}`;
+          document.getElementById("badge-gap").className =
+            `badge ${gapEnabled ? "active" : ""}`;
+          document.getElementById("badge-gap").textContent =
+            `gap detection: ${gapEnabled ? "on" : "off"}`;
+
+          appendMessage("assistant", data.opening_message);
+          document.getElementById("input").focus();
+        } catch (e) {
+          alert("Could not start session: " + e.message);
+          document.getElementById("btn-start").disabled = false;
+          document.getElementById("btn-start").textContent =
+            "Start Elicitation Session";
+        }
+      }
+
+      /* ── Send turn ──────────────────────────────────────────────────────── */
+      async function sendMessage() {
+        if (isSending || !sessionId) return;
+        const ta = document.getElementById("input");
+        const msg = ta.value.trim();
+        if (!msg) return;
+
+        ta.value = "";
+        ta.style.height = "auto";
+        appendMessage("user", msg);
+        setLoading(true);
+
+        const typingEl = appendTyping();
+
+        try {
+          const r = await fetch(`${API}/api/session/turn`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId, message: msg }),
+          });
+          const data = await r.json();
+          typingEl.remove();
+
+          if (!r.ok) {
+            appendMessage("assistant", "⚠ " + (data.error || "Error"));
+          } else {
+            appendMessage("assistant", data.assistant_reply);
+            updateCoverage(data.gap_report);
+            updateGapPanel(data.gap_report);
+            updateQuestionPanel(data.follow_up_questions || []);
+            updateBadges(data);
+            if (data.srs_ready) showSRSBanner();
+          }
+        } catch (e) {
+          typingEl.remove();
+          appendMessage("assistant", "⚠ Network error: " + e.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      /* ── Generate SRS ───────────────────────────────────────────────────── */
+      async function generateSRS() {
+        if (!sessionId) return;
+        const r = await fetch(`${API}/api/session/generate_srs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        const data = await r.json();
+        if (data.success) showSRSBanner();
+        else alert("SRS generation failed: " + (data.error || "unknown error"));
+      }
+
+      function downloadSRS() {
+        window.open(
+          `${API}/api/session/download_srs?session_id=${sessionId}`,
+          "_blank",
+        );
+      }
+
+      /* ── UI helpers ─────────────────────────────────────────────────────── */
+      function appendMessage(role, text) {
+        const msgs = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = `msg ${role}`;
+        const clean_text = DOMPurify.sanitize(text);
+        div.innerHTML = `
+    <div class="msg-avatar">${role === "assistant" ? "RE" : "U"}</div>
+    <div class="msg-body">${clean_text}</div>`;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+      }
+
+      function appendTyping() {
+        const msgs = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.className = "msg assistant msg-typing";
+        div.innerHTML = `<div class="msg-avatar">RE</div><div class="msg-body"></div>`;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+      }
+
+      function setLoading(v) {
+        isSending = v;
+        document.getElementById("btn-send").disabled = v;
+        document.getElementById("btn-gen").disabled = v;
+      }
+
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 120) + "px";
+      }
+
+      function switchTab(tab) {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b, i) =>
+            b.classList.toggle(
+              "active",
+              (i === 0 && tab === "gaps") || (i === 1 && tab === "questions"),
+            ),
+          );
+        document
+          .getElementById("tab-gaps")
+          .classList.toggle("active", tab === "gaps");
+        document
+          .getElementById("tab-questions")
+          .classList.toggle("active", tab === "questions");
+      }
+
+      function showSRSBanner() {
+        document.getElementById("srs-banner").classList.add("visible");
+      }
+
+      function escHtml(s) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      /* ── Coverage ring update ────────────────────────────────────────────── */
+      function updateCoverage(gapReport) {
+        if (!gapReport) return;
+        const pct = gapReport.coverage_pct || 0;
+        const CIRC = 251.2;
+        const offset = CIRC - (pct / 100) * CIRC;
+
+        document.getElementById("ring-fill").style.strokeDashoffset = offset;
+        document.getElementById("ring-label").textContent = pct + "%";
+        document.getElementById("cov-pct-label").textContent = pct + "%";
+        document.getElementById("badge-cov").textContent = `coverage: ${pct}%`;
+
+        const covered = gapReport.covered_count || 0;
+        const total = gapReport.total_categories || 0;
+        document.getElementById("ring-sub").textContent =
+          `${covered} of ${total} categories`;
+
+        // Update ring colour based on coverage
+        const fill = document.getElementById("ring-fill");
+        if (pct >= 75) fill.style.stroke = "var(--success)";
+        else if (pct >= 40) fill.style.stroke = "var(--warning)";
+        else fill.style.stroke = "var(--danger)";
+
+        buildCategoryList(gapReport);
+      }
+
+      function buildCategoryList(gapReport) {
+        if (!gapReport || !gapReport.all_categories) return;
+        const allCats = gapReport.all_categories;
+
+        // Pull checklist info from gap arrays to get labels
+        const metaMap = {};
+        const allGaps = [
+          ...(gapReport.critical_gaps || []),
+          ...(gapReport.important_gaps || []),
+          ...(gapReport.optional_gaps || []),
+        ];
+        allGaps.forEach((g) => {
+          metaMap[g.category_key] = { label: g.label, severity: g.severity };
+        });
+
+        const SEVERITY_ORDER = ["critical", "important", "optional"];
+        const sections = { critical: [], important: [], optional: [] };
+
+        Object.entries(allCats).forEach(([key, status]) => {
+          const meta = metaMap[key] || { label: key, severity: "optional" };
+          sections[meta.severity] = sections[meta.severity] || [];
+          sections[meta.severity].push({
+            key,
+            status,
+            label: meta.label,
+            severity: meta.severity,
+          });
+        });
+
+        const list = document.getElementById("cat-list");
+        list.innerHTML = "";
+
+        SEVERITY_ORDER.forEach((sev) => {
+          const items = sections[sev] || [];
+          if (!items.length) return;
+
+          const secLabel = document.createElement("div");
+          secLabel.className = "cat-section-label";
+          secLabel.textContent = sev;
+          list.appendChild(secLabel);
+
+          items.forEach((item) => {
+            const div = document.createElement("div");
+            const cssStatus =
+              item.status === "covered"
+                ? "covered"
+                : item.status === "partial"
+                  ? "partial"
+                  : item.severity === "optional"
+                    ? "optional"
+                    : "uncovered";
+            div.className = `cat-item ${cssStatus}`;
+            div.innerHTML = `
+        <div class="cat-dot"></div>
+        <span class="cat-name">${escHtml(item.label)}</span>`;
+            list.appendChild(div);
+          });
+        });
+      }
+
+      /* ── Gap panel ───────────────────────────────────────────────────────── */
+      function updateGapPanel(gapReport) {
+        if (!gapReport) return;
+        const panel = document.getElementById("tab-gaps");
+        panel.innerHTML = "";
+
+        const allGaps = [
+          ...(gapReport.critical_gaps || []).map((g) => ({
+            ...g,
+            sev: "critical",
+          })),
+          ...(gapReport.important_gaps || []).map((g) => ({
+            ...g,
+            sev: "important",
+          })),
+          ...(gapReport.optional_gaps || []).map((g) => ({
+            ...g,
+            sev: "optional",
+          })),
+        ];
+
+        if (!allGaps.length) {
+          panel.innerHTML =
+            '<div class="empty-state"><span class="empty-icon">✓</span><span class="empty-txt">All categories covered!</span></div>';
+          return;
+        }
+
+        allGaps.forEach((g) => {
+          const card = document.createElement("div");
+          card.className = `gap-card ${g.sev}`;
+          card.innerHTML = `
+      <div><span class="gap-card-sev">${g.sev.toUpperCase()}${g.is_partial ? " · PARTIAL" : ""}</span></div>
+      <div class="gap-card-label">${escHtml(g.label)}</div>
+      <div class="gap-card-desc">${escHtml(g.description || "")}</div>`;
+          panel.appendChild(card);
+        });
+      }
+
+      /* ── Follow-up questions panel ───────────────────────────────────────── */
+      function updateQuestionPanel(questions) {
+        const panel = document.getElementById("tab-questions");
+        panel.innerHTML = "";
+
+        if (!questions.length) {
+          panel.innerHTML =
+            '<div class="empty-state"><span class="empty-icon">💬</span><span class="empty-txt">No proactive questions this turn</span></div>';
+          return;
+        }
+
+        questions.forEach((q) => {
+          const card = document.createElement("div");
+          card.className = "q-card";
+          card.title = "Click to use this question";
+          card.innerHTML = `
+      <div class="q-card-for">→ ${escHtml(q.category_label)} (${q.severity})</div>
+      <div class="q-card-text">${escHtml(q.question_text)}</div>`;
+          card.onclick = () => {
+            document.getElementById("input").value = q.question_text;
+            document.getElementById("input").focus();
+            switchTab("questions");
+          };
+          panel.appendChild(card);
+        });
+
+        // Auto-switch to questions tab when new ones appear
+        switchTab("questions");
+      }
+
+      /* ── Badge update ────────────────────────────────────────────────────── */
+      function updateBadges(data) {
+        document.getElementById("badge-turn").textContent =
+          `turn: ${data.turn_id || 0}`;
+      }
+    </script>
+  </body>
+</html>

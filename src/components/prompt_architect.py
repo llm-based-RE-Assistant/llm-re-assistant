@@ -1,8 +1,18 @@
 """
 prompt_architect.py
 ====================
-RE Assistant — Iteration 2 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Modular System Prompt Architecture
+
+Changes in Iteration 3
+-----------------------
+- Added `extra_context` attribute to PromptArchitect so that the
+  ProactiveQuestionGenerator can inject a targeted follow-up directive
+  into the system message on each turn.
+- The extra_context block is inserted between CONTEXT and TASK blocks,
+  making it clearly visible to the LLM as the highest-priority instruction.
+- Extra context is reset to "" after each build_system_message() call
+  (one-shot injection pattern).
 
 Responsibilities
 ----------------
@@ -11,11 +21,13 @@ Responsibilities
 - Inject ambiguity challenge instructions (addresses Failure Mode 1: ambiguity acceptance)
 - Inject conversation-state context so the LLM knows what is still missing
   (addresses Failure Mode 3: premature closure via fixed-template)
+- [NEW Iteration 3] Inject proactive follow-up question directive from GapDetector
 
-Design: Three-block prompt
-  [ROLE]    — who the assistant is and its expertise
-  [CONTEXT] — what IEEE-830 categories are already covered vs. still missing (dynamic)
-  [TASK]    — explicit behavioural instructions (ambiguity challenge, NFR checklist, etc.)
+Design: Four-block prompt (Iteration 3+)
+  [ROLE]            — who the assistant is and its expertise
+  [CONTEXT]         — what IEEE-830 categories are already covered vs. still missing (dynamic)
+  [GAP DIRECTIVE]   — which gap to probe next (injected by ProactiveQuestionGenerator) [NEW]
+  [TASK]            — explicit behavioural instructions (ambiguity challenge, NFR checklist, etc.)
 
 All blocks are independently replaceable, which supports ablation studies in later iterations.
 """
@@ -114,7 +126,37 @@ If a requirement cannot be phrased this way, it needs further clarification.
    (b) ALL 6 mandatory NFR categories have been addressed.
    (c) No unresolved ambiguities remain.
    (d) Stakeholder roles have been identified.
-   If not all conditions are met, continue elicitation and explain what is still missing."""
+   If not all conditions are met, continue elicitation and explain what is still missing.
+
+7. REQUIREMENT TAGGING RULE (Mandatory - affects SRS output):
+   Every time you formalise a requirement, wrap the COMPLETE requirement text
+   (including ALL sub-points and bullet lines that belong to it) inside these tags:
+
+   <REQ type="functional" category="functional">
+   The system shall [full requirement text including any bullet sub-items]
+   </REQ>
+
+   Valid values for type:     "functional" | "non_functional" | "constraint"
+   Valid values for category: "functional" | "performance" | "usability" | "security_privacy" |
+                              "reliability" | "compatibility" | "maintainability" |
+                              "interfaces" | "constraints" | "stakeholders" | "scope"
+
+   CRITICAL RULES for tagging:
+   - The opening <REQ ...> tag and closing </REQ> tag MUST each be on their own line.
+   - The ENTIRE requirement including any bulleted sub-items MUST appear BETWEEN the tags.
+     Do NOT close </REQ> before the sub-items.
+   - Do NOT split one logical requirement across multiple REQ blocks.
+   - Conversational text, questions, and explanations must appear OUTSIDE the tags.
+   - Example with sub-items:
+
+     <REQ type="functional" category="functional">
+     The system shall provide the following visualisation options:
+     - A checkbox to mark habits as complete.
+     - A progress bar showing daily completion percentage.
+     - A calendar view displaying completed days.
+     </REQ>
+
+   - Every distinct, independently testable requirement needs its own REQ block."""
 
 
 def _build_context_block(state: "ConversationState") -> str:
@@ -176,39 +218,55 @@ IEEE-830 categories STILL MISSING:
 @dataclass
 class PromptArchitect:
     """
-    Builds the complete system message from three modular blocks.
+    Builds the complete system message from modular blocks.
 
-    Blocks
-    ------
-    ROLE    — static, defines persona and expertise
-    CONTEXT — dynamic, injected from ConversationState each turn
-    TASK    — static, defines behavioural rules (ambiguity challenge, NFR checklist)
+    Blocks (Iteration 3+)
+    ---------------------
+    ROLE            — static, defines persona and expertise
+    CONTEXT         — dynamic, injected from ConversationState each turn
+    GAP DIRECTIVE   — dynamic, injected by ProactiveQuestionGenerator (NEW)
+    TASK            — static, defines behavioural rules
 
     Usage
     -----
-    architect = PromptArchitect()
-    system_msg = architect.build_system_message(state)
+        architect = PromptArchitect()
+        system_msg = architect.build_system_message(state)
+
+    Gap detection injection (Iteration 3)
+    --------------------------------------
+        architect.extra_context = question_generator.build_injection_text(q_set)
+        system_msg = architect.build_system_message(state)
+        # extra_context is automatically cleared after build to prevent stale injection
     """
 
-    role_block: str = field(default=ROLE_BLOCK)
-    task_block: str = field(default=TASK_BLOCK)
+    role_block:    str = field(default=ROLE_BLOCK)
+    task_block:    str = field(default=TASK_BLOCK)
+    extra_context: str = field(default="")   # [NEW Iteration 3] injected by ProactiveQuestionGenerator
 
     def build_system_message(self, state: "ConversationState") -> str:
         """
         Compose the full system message for a given conversation state.
         The context block is rebuilt on every call, so state changes are
         always reflected in the next LLM request.
+
+        If extra_context is set, it is injected between CONTEXT and TASK
+        blocks and then cleared (one-shot pattern).
         """
         context_block = _build_context_block(state)
 
-        return (
-            "=== ROLE ===\n"
-            f"{self.role_block}\n\n"
-            "=== CURRENT SESSION CONTEXT ===\n"
-            f"{context_block}\n\n"
-            "=== TASK INSTRUCTIONS ===\n"
-            f"{self.task_block}"
-        )
+        parts = [
+            "=== ROLE ===\n" + self.role_block,
+            "=== CURRENT SESSION CONTEXT ===\n" + context_block,
+        ]
+
+        # Inject proactive questioning directive if present [Iteration 3]
+        if self.extra_context.strip():
+            parts.append("=== GAP DETECTION DIRECTIVE (Iteration 3) ===\n" + self.extra_context)
+        self.extra_context = ""  # one-shot: always clear after build
+
+        parts.append("=== TASK INSTRUCTIONS ===\n" + self.task_block)
+
+        return "\n\n".join(parts)
 
     def get_category_labels(self) -> dict[str, str]:
         """Return the full IEEE-830 category registry."""
