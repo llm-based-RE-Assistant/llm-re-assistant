@@ -130,7 +130,7 @@ class OpenAIProvider(LLMProvider):
             messages=full_messages,  # type: ignore[arg-type]
             temperature=temperature,
         )
-        return response.choices[0].message.content or ""
+        return markdown.markdown(response.choices[0].message.content) or ""
 
 class OllamaProvider(LLMProvider):
     """
