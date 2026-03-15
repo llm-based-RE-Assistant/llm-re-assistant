@@ -358,9 +358,9 @@ def main():
     global _provider_name, _provider_kwargs
 
     parser = argparse.ArgumentParser(description="RE Assistant Web UI — Iteration 3")
-    parser.add_argument("--provider", choices=["openai", "stub", "ollama"], default="stub",
+    parser.add_argument("--provider", choices=["openai", "stub", "ollama"], default="openai",
                         help="LLM provider (default: stub)")
-    parser.add_argument("--model", default="gpt-4o", help="Model name (OpenAI)")
+    parser.add_argument("--model", default="gpt-4o", help="Model name (default: gpt-4o)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("--debug", action="store_true")
