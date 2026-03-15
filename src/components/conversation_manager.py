@@ -43,6 +43,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+import markdown
 
 import requests
  
@@ -54,6 +55,7 @@ from conversation_state import ConversationState, RequirementType, create_sessio
 from prompt_architect import PromptArchitect, IEEE830_CATEGORIES
 from srs_template import SRSTemplate, create_template
 from srs_formatter import SRSFormatter, generate_srs_document
+from requirement_extractor import RequirementExtractor, create_extractor
  
  
 # ---------------------------------------------------------------------------
@@ -137,10 +139,19 @@ class OllamaProvider(LLMProvider):
     """
 
     def __init__(self, model: str = "llama3.1:8b", timeout: int = 90):
-        base_url =  "http://localhost:11434"
+        api_key = os.getenv("OLLAMA_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "OLLAMA_API_KEY environment variable not set."
+            )
+        base_url = os.getenv("OLLAMA_BASE_URL", "https://genai-01.uni-hildesheim.de/ollama")
         self.base_url = base_url
         self._model = model
         self.api_endpoint = f"{base_url}/api/chat"
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
         self.timeout = timeout
 
     @property
@@ -154,9 +165,10 @@ class OllamaProvider(LLMProvider):
         temperature: float = 0.0,
     ) -> str:
         full_messages = [{"role": "system", "content": system_message}] + messages
-        print(f"Full message: \n{full_messages}\n")  # Debug print to check message format before API call
+        #print(f"Full message: \n{full_messages}\n")  # Debug print to check message format before API call
         response = requests.post(
             url=self.api_endpoint,
+            headers=self.headers,
             json={
                 "model": self._model,
                 "messages": full_messages,
@@ -170,7 +182,7 @@ class OllamaProvider(LLMProvider):
         response.raise_for_status()
         data = response.json()
 
-        return data["message"]["content"] or ""
+        return markdown.markdown(data["message"]["content"]) or ""
 
 
 class StubProvider(LLMProvider):
@@ -544,13 +556,14 @@ class ConversationManager:
     """
  
     provider:    LLMProvider
-    log_dir:     Path = field(default_factory=lambda: Path("logs"))
-    output_dir:  Path = field(default_factory=lambda: Path("output"))
+    log_dir:     Path = field(default_factory=lambda:  Path(__file__).parent.parent / "logs")
+    output_dir:  Path = field(default_factory=lambda: Path(__file__).parent.parent / "output")
     temperature: float = 0.0
  
     _architect:    PromptArchitect = field(default_factory=PromptArchitect, init=False)
     _srs_template: SRSTemplate     = field(default=None,   init=False, repr=False)  # type: ignore[assignment]
- 
+    _extractor:    RequirementExtractor = field(default_factory=create_extractor, init=False)
+
     def start_session(self) -> tuple[str, ConversationState, SessionLogger, SRSTemplate]:
         """
         Initialise a new session. Returns (session_id, state, logger, template).
@@ -604,6 +617,11 @@ class ConversationManager:
  
         # 4. Update conversation state (also runs heuristic coverage scan)
         turn = state.add_turn(user_message, assistant_response)
+
+        # 4a. Extract and commit formalised requirements from assistant response [Iteration 3]
+        extracted = self._extractor.extract(assistant_response)
+        if extracted:
+            self._extractor.commit(extracted, state)
  
         # 4b. Sync SRS template with any new requirements added this turn
         if self._srs_template is not None:
