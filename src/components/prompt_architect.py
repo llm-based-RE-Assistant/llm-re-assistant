@@ -1,5 +1,5 @@
 """
-prompt_architect.py
+src/components/prompt_architect.py
 ====================
 RE Assistant — Iteration 2 | University of Hildesheim
 Modular System Prompt Architecture

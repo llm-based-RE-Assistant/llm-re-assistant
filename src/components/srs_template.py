@@ -1,5 +1,5 @@
 """
-srs_template.py
+src/components/srs_template.py
 ================
 RE Assistant — Iteration 2 | University of Hildesheim
 IEEE-830 SRS Template: populated progressively during the elicitation conversation.

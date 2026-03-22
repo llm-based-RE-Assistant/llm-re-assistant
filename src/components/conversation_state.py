@@ -249,19 +249,24 @@ class ConversationState:
         assistant_message: str,
     ) -> Turn:
         """
-        Record a completed exchange. Runs heuristic coverage scan on both messages.
-        Returns the created Turn.
+        Record a completed exchange.
+
+        Runs a heuristic keyword scan on the USER message only to mark
+        IEEE-830 categories as covered.  Requirement objects are NOT extracted
+        here — that is done by a dedicated LLM extraction call in
+        ConversationManager.finalize_session() once the full conversation is
+        available.  This separation prevents the heuristic false-positives that
+        arise from treating assistant questions as requirements.
+
+        Note: do NOT scan the assistant response for coverage.
+        The assistant routinely names IEEE-830 categories in its questions
+        (e.g. "Let me ask about Security & Privacy…"), which would falsely mark
+        those categories as covered on the very first turn.
         """
         turn_id = self.turn_count + 1
         categories_updated: list[str] = []
 
-        # Heuristic scan of USER MESSAGE ONLY.
-        #
-        # Critical: do NOT scan the assistant response here.
-        # The assistant routinely lists IEEE-830 category names in its questions
-        # (e.g. "Let me ask about Security & Privacy..."), which would falsely mark
-        # those categories as covered after the very first turn.
-        # Coverage is only credited when the *user* provides relevant information.
+        # Coverage scan — USER message only
         user_text_lower = user_message.lower()
         for category, keywords in _CATEGORY_KEYWORDS.items():
             if category not in self.covered_categories:
@@ -312,7 +317,15 @@ class ConversationState:
         """
         Add a structured requirement to the store.
         Automatically assigns ID based on type and marks the category as covered.
+        Deduplicates by normalised text prefix (first 80 chars) so repeated
+        LLM extraction calls cannot produce duplicate entries.
         """
+        # Deduplication check
+        norm_key = text.lower().strip()[:80]
+        for existing in self.requirements.values():
+            if existing.text.lower().strip()[:80] == norm_key:
+                return existing
+
         if req_type == RequirementType.FUNCTIONAL:
             req_id = self._next_fr_id()
         elif req_type == RequirementType.NON_FUNCTIONAL:

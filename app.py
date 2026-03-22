@@ -97,142 +97,203 @@ st.markdown("""
 /* ── Base ──────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
+:root {
+    --bg-dark: #0e0e17;
+    --bg-panel: #151528;
+    --bg-soft: #f7f7fa;
+
+    --text-primary: #e6e8ef;
+    --text-secondary: #9aa0b3;
+
+    --accent-blue: #5b8cff;
+    --accent-green: #22c55e;
+
+    --border-subtle: #26263d;
+    --border-strong: #2f3150;
+}
+
+/* Global */
 html, body, [class*="css"] {
     font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
 }
 
 /* ── Chat messages ──────────────────────────────────── */
 .msg-user {
-    background: #1a1a2e;
-    color: #e8e8f0;
-    border-radius: 12px 12px 2px 12px;
-    padding: 12px 16px;
-    margin: 6px 0 6px 48px;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    border-left: 3px solid #4f8ef7;
+    background: linear-gradient(145deg, #1b1b32, #141427);
+    color: var(--text-primary);
+    border-radius: 10px 10px 4px 10px;
+    padding: 14px 18px;
+    margin: 8px 0 8px 52px;
+    font-size: 0.94rem;
+    line-height: 1.65;
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--accent-blue);
 }
+
 .msg-assistant {
-    background: #f5f5f7;
+    background: var(--bg-soft);
     color: #1a1a2e;
-    border-radius: 2px 12px 12px 12px;
-    padding: 12px 16px;
-    margin: 6px 48px 6px 0;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    border-left: 3px solid #22c55e;
+    border-radius: 4px 10px 10px 10px;
+    padding: 14px 18px;
+    margin: 8px 52px 8px 0;
+    font-size: 0.94rem;
+    line-height: 1.65;
+    border: 1px solid #e4e6ef;
+    border-left: 3px solid var(--accent-green);
     white-space: pre-wrap;
 }
+
+/* Labels */
 .msg-label {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #888;
-    margin-bottom: 2px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
 }
 
 /* ── Coverage badges ─────────────────────────────────── */
 .cov-badge {
     display: inline-block;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.72rem;
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin: 2px 0;
+    font-size: 0.70rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin: 3px 0;
     width: 100%;
     box-sizing: border-box;
+    border: 1px solid transparent;
 }
-.cov-covered   { background: #d1fae5; color: #065f46; }
-.cov-missing   { background: #6b1e1e; color: #7f1d1d; }
-.cov-mandatory { font-weight: 600; }
+
+.cov-covered {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.cov-missing {
+    background: #2a1414;
+    color: #fca5a5;
+    border-color: #3f1f1f;
+}
+
+.cov-mandatory {
+    font-weight: 600;
+}
 
 /* ── Progress bar ────────────────────────────────────── */
 .prog-bar-outer {
-    background: #e5e7eb;
-    border-radius: 99px;
-    height: 8px;
-    margin: 4px 0 12px 0;
+    background: #1c1c30;
+    border-radius: 999px;
+    height: 6px;
+    margin: 6px 0 14px 0;
     overflow: hidden;
+    border: 1px solid var(--border-subtle);
 }
+
 .prog-bar-inner {
     height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, #4f8ef7, #22c55e);
-    transition: width 0.4s ease;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+    transition: width 0.35s ease;
 }
 
 /* ── Sidebar ─────────────────────────────────────────── */
 section[data-testid="stSidebar"] {
-    background: #0f0f1a;
-    color: #e8e8f0;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border-subtle);
 }
+
 section[data-testid="stSidebar"] * {
-    color: #e8e8f0 !important;
+    color: var(--text-primary) !important;
 }
+
 section[data-testid="stSidebar"] .stSelectbox label,
 section[data-testid="stSidebar"] .stTextInput label {
-    color: #aaa !important;
-    font-size: 0.8rem;
+    color: var(--text-secondary) !important;
+    font-size: 0.78rem;
 }
 
 /* ── Metric boxes ────────────────────────────────────── */
 .metric-box {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
+    background: linear-gradient(145deg, #1a1a2e, #141427);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
     text-align: center;
+    transition: transform 0.15s ease, border 0.15s ease;
 }
+
+.metric-box:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-blue);
+}
+
 .metric-val {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 500;
-    color: #4f8ef7;
+    color: var(--accent-blue);
     line-height: 1.1;
 }
+
 .metric-lbl {
-    font-size: 0.72rem;
-    color: #888;
+    font-size: 0.70rem;
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
 }
 
 /* ── Title ───────────────────────────────────────────── */
 .app-title {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.85rem;
-    color: #4f8ef7;
-    letter-spacing: 0.12em;
+    font-size: 0.80rem;
+    color: var(--accent-blue);
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    margin-bottom: 0;
 }
+
 .app-subtitle {
-    font-size: 0.75rem;
-    color: #888;
-    margin-top: 2px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
 }
 
 /* ── Thinking indicator ──────────────────────────────── */
 .thinking {
-    color: #888;
-    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
     font-style: italic;
-    padding: 8px 0;
+    padding: 10px 0;
+}
+
+/* ── Scrollbar (subtle upgrade) ─────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: #2a2a44;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3a3a5a;
 }
 
 /* ── Hide Streamlit chrome ───────────────────────────── */
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1.5rem; }
+.block-container { padding-top: 1.2rem; }
+
 </style>
 """, unsafe_allow_html=True)
-
 
 # ---------------------------------------------------------------------------
 # Session state initialisation
 # ---------------------------------------------------------------------------
-
+ 
 def _init_session() -> None:
     """Initialise all st.session_state keys on first load."""
     if "initialised" not in st.session_state:
@@ -250,8 +311,8 @@ def _init_session() -> None:
         st.session_state.model_name       = "gpt-4o"
         st.session_state.error            = None
         st.session_state.thinking         = False
-
-
+ 
+ 
 def _start_new_session(provider_name: str, model_name: str) -> None:
     """Create a fresh ConversationManager and start a session."""
     try:
@@ -259,14 +320,14 @@ def _start_new_session(provider_name: str, model_name: str) -> None:
     except Exception as e:
         st.session_state.error = str(e)
         return
-
+ 
     manager = ConversationManager(
         provider=provider,
         log_dir=_LOG_DIR,
         output_dir=_OUTPUT_DIR,
     )
     session_id, conv_state, logger, template = manager.start_session()
-
+ 
     st.session_state.manager     = manager
     st.session_state.conv_state  = conv_state
     st.session_state.logger      = logger
@@ -279,30 +340,30 @@ def _start_new_session(provider_name: str, model_name: str) -> None:
         {"role": "assistant", "content": _OPENING_MESSAGE}
     ]
     st.session_state.error       = None
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Coverage sidebar rendering
 # ---------------------------------------------------------------------------
-
+ 
 def _render_coverage_sidebar() -> None:
     state: ConversationState = st.session_state.conv_state
     template: SRSTemplate    = st.session_state.template
-
+ 
     if state is None:
         st.sidebar.markdown("*Start a session to see coverage.*")
         return
-
+ 
     report = state.get_coverage_report()
     pct    = report["coverage_percentage"]
-
+ 
     # Session header
     st.sidebar.markdown(f"""
 <div class="app-title">RE Assistant</div>
 <div class="app-subtitle">Session: <code>{st.session_state.session_id}</code></div>
 """, unsafe_allow_html=True)
     st.sidebar.markdown("---")
-
+ 
     # Metrics row
     col1, col2, col3 = st.sidebar.columns(3)
     with col1:
@@ -323,7 +384,7 @@ def _render_coverage_sidebar() -> None:
   <div class="metric-val">{report['nonfunctional_count']}</div>
   <div class="metric-lbl">NFRs</div>
 </div>""", unsafe_allow_html=True)
-
+ 
     # Coverage progress bar
     st.sidebar.markdown(f"""
 <div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">
@@ -333,7 +394,7 @@ def _render_coverage_sidebar() -> None:
   <div class="prog-bar-inner" style="width:{pct}%"></div>
 </div>
 """, unsafe_allow_html=True)
-
+ 
     # Per-category badges
     covered = state.covered_categories
     badges_html = ""
@@ -355,7 +416,7 @@ def _render_coverage_sidebar() -> None:
         '● = mandatory NFR</div>',
         unsafe_allow_html=True,
     )
-
+ 
     # SMART quality if any reqs exist
     if template and template.total_requirements > 0:
         st.sidebar.markdown("---")
@@ -375,7 +436,7 @@ def _render_coverage_sidebar() -> None:
   ❌ Needs work: <b>{lo}</b> / {tot}
 </div>
 """, unsafe_allow_html=True)
-
+ 
     # Mandatory NFR status
     missing_mandatory = report.get("missing_mandatory_nfrs", [])
     if missing_mandatory:
@@ -384,12 +445,12 @@ def _render_coverage_sidebar() -> None:
             f"⚠️ **{len(missing_mandatory)} mandatory NFR(s) not yet covered:**\n"
             + "\n".join(f"- {c}" for c in missing_mandatory)
         )
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Settings sidebar (provider / model / new session)
 # ---------------------------------------------------------------------------
-
+ 
 def _render_settings_sidebar() -> None:
     st.sidebar.markdown("---")
     st.sidebar.markdown(
@@ -397,7 +458,7 @@ def _render_settings_sidebar() -> None:
         'letter-spacing:0.08em;margin-bottom:8px;">Settings</div>',
         unsafe_allow_html=True,
     )
-
+ 
     provider = st.sidebar.selectbox(
         "LLM Provider",
         options=["ollama", "openai", "stub"],
@@ -407,7 +468,7 @@ def _render_settings_sidebar() -> None:
         help=_PROVIDER_HELP.get(st.session_state.get("provider_name", "openai"), ""),
     )
     st.session_state.provider_name = provider
-
+ 
     model_defaults = {
         "ollama": "llama3.2",
         "openai": "gpt-4o",
@@ -418,16 +479,16 @@ def _render_settings_sidebar() -> None:
         value=st.session_state.get("model_name", model_defaults.get(provider, "gpt-4o")),
     )
     st.session_state.model_name = model
-
+ 
     if st.sidebar.button("🔄 New Session", use_container_width=True):
         _start_new_session(provider, model)
         st.rerun()
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Chat rendering
 # ---------------------------------------------------------------------------
-
+ 
 def _render_chat() -> None:
     messages = st.session_state.messages
     for msg in messages:
@@ -445,46 +506,43 @@ def _render_chat() -> None:
                 f'<div class="msg-assistant">{content}</div>',
                 unsafe_allow_html=True,
             )
-
+ 
     if st.session_state.thinking:
         st.markdown('<div class="thinking">▌ RE Assistant is thinking…</div>',
                     unsafe_allow_html=True)
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # SRS generation and download
 # ---------------------------------------------------------------------------
-
+ 
 def _generate_srs() -> None:
-    """Generate the SRS document and store content in session state."""
-    state: ConversationState = st.session_state.conv_state
-    template: SRSTemplate    = st.session_state.template
-    logger: SessionLogger    = st.session_state.logger
-
-    if state is None:
+    """Generate the SRS document via finalize_session (includes LLM extraction)."""
+    manager: ConversationManager = st.session_state.manager
+    state: ConversationState     = st.session_state.conv_state
+    logger: SessionLogger        = st.session_state.logger
+ 
+    if state is None or manager is None:
         return
-
-    # Finalise
-    state.session_complete = True
-    if template is not None:
-        template.update_from_requirements(state.requirements, state.project_name)
-
-    # Write to disk and also store content for download button
-    srs_path = generate_srs_document(template, state, _OUTPUT_DIR)
-    logger.log_session_end(state)
-
+ 
+    try:
+        srs_path = manager.finalize_session(state, logger)
+    except Exception as e:
+        st.session_state.error = f"SRS generation failed: {e}"
+        return
+ 
     st.session_state.srs_ready    = True
     st.session_state.srs_content  = srs_path.read_text(encoding="utf-8")
     st.session_state.srs_filename = srs_path.name
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Main layout
 # ---------------------------------------------------------------------------
-
+ 
 def main() -> None:
     _init_session()
-
+ 
     # ── Sidebar ─────────────────────────────────────────────────────────────
     with st.sidebar:
         if not st.session_state.initialised:
@@ -496,9 +554,9 @@ def main() -> None:
             st.markdown("---")
         else:
             _render_coverage_sidebar()
-
+ 
         _render_settings_sidebar()
-
+ 
     # ── Main area ────────────────────────────────────────────────────────────
     if not st.session_state.initialised:
         # ── Landing / start screen ──
@@ -514,7 +572,7 @@ def main() -> None:
   </div>
 </div>
 """, unsafe_allow_html=True)
-
+ 
         col_l, col_c, col_r = st.columns([1, 2, 1])
         with col_c:
             provider = st.selectbox(
@@ -524,12 +582,12 @@ def main() -> None:
             )
             model_default = {"ollama": "llama3.2", "openai": "gpt-4o", "stub": "stub-v1"}
             model = st.text_input("Model", value=model_default.get(provider, "llama3.2"))
-
+ 
             if provider == "ollama":
                 st.caption("💡 Make sure `ollama serve` is running and the model is pulled.")
             elif provider == "openai":
                 st.caption("💡 Set the `OPENAI_API_KEY` environment variable before starting.")
-
+ 
             if st.button("▶ Start Session", use_container_width=True, type="primary"):
                 st.session_state.provider_name = provider
                 st.session_state.model_name    = model
@@ -539,20 +597,20 @@ def main() -> None:
                 else:
                     st.rerun()
         return
-
+ 
     # ── Active session ──────────────────────────────────────────────────────
-
+ 
     # Show any error from the last turn
     if st.session_state.error:
         st.error(st.session_state.error)
         st.session_state.error = None
-
+ 
     # Chat history
     _render_chat()
-
+ 
     # ── SRS download / generate buttons ─────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-
+ 
     if st.session_state.srs_ready and st.session_state.srs_content:
         st.success("✅ SRS generated successfully.")
         st.download_button(
@@ -578,7 +636,7 @@ def main() -> None:
                     st.session_state.model_name,
                 )
                 st.rerun()
-
+ 
     elif not st.session_state.srs_ready:
         col_input, col_btn = st.columns([5, 1])
         with col_input:
@@ -592,25 +650,25 @@ def main() -> None:
                 use_container_width=True,
                 help="End the session and generate the SRS document.",
             )
-
+ 
         # ── Handle user input ────────────────────────────────────────────────
         if user_input or generate_clicked:
             msg_text = user_input if user_input else "generate srs"
-
+ 
             # Add user message to display
             st.session_state.messages.append({"role": "user", "content": msg_text})
             st.session_state.thinking = True
             st.rerun()
-
+ 
     # Processing happens on rerun when thinking=True
     if st.session_state.thinking:
         st.session_state.thinking = False
         msg_text = st.session_state.messages[-1]["content"]
-
+ 
         manager: ConversationManager = st.session_state.manager
         state: ConversationState     = st.session_state.conv_state
         logger: SessionLogger        = st.session_state.logger
-
+ 
         # Check for explicit SRS trigger
         if manager._should_generate_srs(msg_text, state) or msg_text.strip().lower() in (
             "generate srs", "generate the srs"
@@ -642,13 +700,13 @@ def main() -> None:
                 st.session_state.messages.append({"role": "assistant", "content": response})
             except RuntimeError as e:
                 st.session_state.error = str(e)
-
+ 
         st.rerun()
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
-
+ 
 if __name__ == "__main__":
     main()
