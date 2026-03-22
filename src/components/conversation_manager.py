@@ -55,7 +55,9 @@ from conversation_state import ConversationState, RequirementType, create_sessio
 from prompt_architect import PromptArchitect, IEEE830_CATEGORIES
 from srs_template import SRSTemplate, create_template
 from srs_formatter import SRSFormatter, generate_srs_document
+from dotenv import load_dotenv
  
+load_dotenv()
  
 # ---------------------------------------------------------------------------
 # LLM Provider abstraction
