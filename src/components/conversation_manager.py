@@ -665,7 +665,7 @@ class ConversationManager:
             and state.functional_count >= 1
             and state.turn_count >= MIN_TURNS_FOR_AUTO_CLOSE
         )
-        return explicit_request or coverage_complete
+        return explicit_request
  
     def finalize_session(
         self,
