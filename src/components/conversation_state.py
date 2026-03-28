@@ -1,7 +1,7 @@
 """
-conversation_state.py
+src/components/conversation_state.py
 ======================
-RE Assistant — Iteration 2 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Conversation State Management
 
 Responsibilities

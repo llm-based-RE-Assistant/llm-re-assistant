@@ -1,35 +1,59 @@
 """
-prompt_architect.py
+src/components/prompt_architect.py
 ====================
-RE Assistant — Iteration 3 | University of Hildesheim
+RE Assistant — Iteration 3 (rev-2) | University of Hildesheim
 Modular System Prompt Architecture
 
-Changes in Iteration 3
------------------------
-- Added `extra_context` attribute to PromptArchitect so that the
-  ProactiveQuestionGenerator can inject a targeted follow-up directive
-  into the system message on each turn.
-- The extra_context block is inserted between CONTEXT and TASK blocks,
-  making it clearly visible to the LLM as the highest-priority instruction.
-- Extra context is reset to "" after each build_system_message() call
-  (one-shot injection pattern).
+Change log
+----------
+Rev-1  (Iteration 3 fix)
+  FIX-1  FR-first elicitation: NFR probing blocked until ≥3 FRs recorded.
+  FIX-2  Closure rule raised from 1 FR to 3 FRs minimum.
+  FIX-3  FR-deficit warning added to context block, mirroring NFR alert.
+  FIX-4  extra_context injection path preserved for GapDetector wiring.
 
-Responsibilities
-----------------
-- Build the system message from discrete, independently-testable blocks
-- Enforce mandatory NFR coverage checklist (addresses Failure Mode 2: Privacy/Security blind spot)
-- Inject ambiguity challenge instructions (addresses Failure Mode 1: ambiguity acceptance)
-- Inject conversation-state context so the LLM knows what is still missing
-  (addresses Failure Mode 3: premature closure via fixed-template)
-- [NEW Iteration 3] Inject proactive follow-up question directive from GapDetector
+Rev-2  (Pre-Iteration 4 — addresses low elicitation completeness)
+  NEW-1  ROLE_BLOCK extended: active vs. passive elicitation philosophy
+         added so the LLM understands its job is to DRIVE the conversation,
+         not wait for the user to volunteer information.
 
-Design: Four-block prompt (Iteration 3+)
-  [ROLE]            — who the assistant is and its expertise
-  [CONTEXT]         — what IEEE-830 categories are already covered vs. still missing (dynamic)
-  [GAP DIRECTIVE]   — which gap to probe next (injected by ProactiveQuestionGenerator) [NEW]
-  [TASK]            — explicit behavioural instructions (ambiguity challenge, NFR checklist, etc.)
+  NEW-2  TASK_BLOCK completely restructured:
+         — Old design: 8 flat rules, no ordering, no phase structure.
+           The LLM treated them as equal hints and cherry-picked.
+         — New design: four explicit PHASES (Domain → Functional →
+           Non-Functional → Closure) with a per-phase checklist the LLM
+           must complete before advancing. This mirrors how a real RE
+           interview is conducted and prevents premature closure.
 
-All blocks are independently replaceable, which supports ablation studies in later iterations.
+  NEW-3  ONE-QUESTION-PER-TURN rule added (was missing entirely).
+         The old prompt allowed batched questions which caused the customer
+         to give shallow answers to many things instead of deep answers to one.
+
+  NEW-4  REDIRECT rule added: when the customer goes off-topic (feasibility,
+         costs, change management) the LLM must acknowledge in ≤1 sentence
+         then return to the last uncovered item. Turns 7–11 of the test
+         transcript were entirely wasted on off-topic discussion.
+
+  NEW-5  NEVER-ACCEPT-EARLY-CLOSURE rule added. The LLM must reject
+         "I think you have a good picture" and name the specific item
+         still missing. This directly fixes the Turn 7 failure in the
+         test transcript.
+
+  NEW-6  MANDATORY CLOSURE CHECKLIST added as a named, itemised gate.
+         Old closure rule was vague ("functional requirements identified
+         for all major features"). New checklist names 12 specific items
+         that must each be explicitly discussed before SRS generation.
+
+  NEW-7  Probing depth rule added: the LLM must ask one level deeper on
+         every answer before changing topic.
+
+Design: Four-block prompt (Iteration 3 rev-2+)
+  [ROLE]            — who the assistant is + active elicitation philosophy
+  [CONTEXT]         — live coverage state (dynamic per turn)
+  [GAP DIRECTIVE]   — targeted follow-up from GapDetector (injected one-shot)
+  [TASK]            — phase-gated behavioural rules + closure checklist
+
+All blocks are independently replaceable for ablation studies.
 """
 
 from __future__ import annotations
@@ -42,9 +66,8 @@ if TYPE_CHECKING:
 
 # ---------------------------------------------------------------------------
 # IEEE-830 category registry
-# These are the canonical categories tracked throughout the session.
-# Keys are short internal IDs; values are human-readable labels.
 # ---------------------------------------------------------------------------
+
 IEEE830_CATEGORIES: dict[str, str] = {
     "purpose":           "System Purpose & Goals",
     "scope":             "System Scope & Boundaries",
@@ -52,7 +75,7 @@ IEEE830_CATEGORIES: dict[str, str] = {
     "functional":        "Functional Requirements",
     "performance":       "Performance Requirements",
     "usability":         "Usability Requirements",
-    "security_privacy":  "Security & Privacy Requirements",   # historically missed
+    "security_privacy":  "Security & Privacy Requirements",
     "reliability":       "Reliability & Availability Requirements",
     "compatibility":     "Compatibility & Portability Requirements",
     "maintainability":   "Maintainability Requirements",
@@ -60,7 +83,6 @@ IEEE830_CATEGORIES: dict[str, str] = {
     "interfaces":        "External Interfaces",
 }
 
-# NFR categories that MUST be explicitly probed (Failure Mode 2 fix)
 MANDATORY_NFR_CATEGORIES: frozenset[str] = frozenset({
     "performance",
     "usability",
@@ -70,100 +92,146 @@ MANDATORY_NFR_CATEGORIES: frozenset[str] = frozenset({
     "maintainability",
 })
 
+# Minimum distinct FRs before NFR deep-dive is allowed
+MIN_FUNCTIONAL_REQS = 5   # raised from 3 — 5 gives a richer functional baseline
+
 
 # ---------------------------------------------------------------------------
-# Prompt blocks (static)
+# ROLE block
+# NEW-1: extended with active elicitation philosophy
 # ---------------------------------------------------------------------------
 
-ROLE_BLOCK = """You are an expert Requirements Engineer with 15 years of industry experience \
-conducting structured elicitation interviews. You are rigorous, methodical, and precise. \
-Your goal is to elicit COMPLETE, TESTABLE requirements for a software system through a \
-natural, conversational dialogue.
+ROLE_BLOCK = """\
+You are an expert Requirements Engineer with 15 years of industry experience \
+conducting structured elicitation interviews. You are rigorous, methodical, \
+and precise. You follow IEEE 830 for functional structuring and ISO/IEC 25010 \
+for software quality standards. You apply SMART criteria (Specific, Measurable, \
+Achievable, Relevant, Time-bound) to ensure every requirement is atomic and testable.
 
-You follow IEEE 830 as your specification standard. You are familiar with SMART criteria \
-(Specific, Measurable, Achievable, Relevant, Time-bound/Testable) and apply them to every \
-requirement you record."""
+YOUR FUNDAMENTAL JOB — READ THIS BEFORE ANYTHING ELSE:
+Your job is ACTIVE elicitation, not passive recording.
+
+  PASSIVE (wrong): User volunteers information → you formalize it → \
+ask "is there anything else?"
+  ACTIVE (correct): You notice what was NOT said → you ask targeted \
+questions to surface hidden requirements, edge cases, and constraints → \
+you probe each answer one level deeper before moving on.
+
+A real stakeholder does not know what a "requirement" is. They answer \
+what you ask and nothing more. They describe outcomes, not systems. They assume \
+obvious things are obvious, they go off-topic, and they try to end the \
+interview early. 
+
+YOUR job is to guide the conversation. Be professionally empathetic to their \
+business problems, but relentlessly persistent in your questioning. Keep the \
+conversation productive, structurally complete, and focused on extracting \
+granular details. Do not accept vague statements, and do not let the user \
+close the interview until your elicitation framework is fully satisfied.\
+"""
 
 
-TASK_BLOCK = """BEHAVIOURAL INSTRUCTIONS — FOLLOW THESE WITHOUT EXCEPTION:
+# ---------------------------------------------------------------------------
+# TASK block
+# NEW-2 through NEW-7: phase-gated structure, one-question rule,
+# redirect rule, never-accept-early-closure rule, closure checklist,
+# probing depth rule.
+# ---------------------------------------------------------------------------
 
-1. AMBIGUITY CHALLENGE RULE (Critical):
-   When the user provides vague qualifiers — such as "simple", "fast", "easy", "modern", \
-"user-friendly", "good performance", "automated", "high quality", "flexible", "scalable", \
-"secure", "robust", or similar adjectives — you MUST ask for a measurable operationalisation \
-BEFORE recording or accepting the term. Do not paraphrase vague terms into the SRS verbatim.
-   Example: User says "it should be fast" → You respond: "What does 'fast' mean in measurable \
-terms? For example, should the system respond within 2 seconds, 5 seconds, or something else?"
+TASK_BLOCK = """
+═══════════════════════════════════════════════════════════
+PHASE STRUCTURE — FOLLOW THIS SEQUENCE STRICTLY
+═══════════════════════════════════════════════════════════
 
-2. MANDATORY NFR COVERAGE (Critical):
-   Before ending the session, you MUST have explicitly addressed ALL of the following NFR categories:
-   - Performance (response times, throughput, capacity)
-   - Usability (who are the users? what is their technical level? any accessibility needs?)
-   - Security & Privacy (authentication, data protection, GDPR applicability, sensitive data handling)
-   - Reliability (uptime, recovery time, data persistence guarantees)
-   - Compatibility (platforms, browsers, operating systems, integrations)
-   - Maintainability (who will maintain this? update frequency? open standards?)
-   If any of these remain uncovered, you MUST ask about them before generating the SRS.
+You must complete each phase before advancing to the next. 
 
-3. MULTI-TURN ELICITATION RULE:
-   Do NOT ask all questions in one batch. Ask focused follow-up questions based on previous answers. \
-Each turn should deepen understanding of one area. Only transition to a new area when the current \
-one is adequately covered.
+── PHASE 1: Domain & Context Discovery (turns 1–3) ────────
+Goal: Establish the "Why" and "Who" before the "What."
+You must identify:
+  • The Current State: What is the manual or legacy process? What are the top 3 "pain points"?
+  • Stakeholder Ecosystem: Who interacts with the system? (Direct users, admins, external actors).
+  • High-Level Scope: What are the boundaries of the system?
+Do NOT formalize requirements yet. Just listen and build the mental model.
 
-4. CONFLICT DETECTION:
-   If the user provides contradictory information (e.g., "no budget constraints" but also \
-"we need sensors on every bin"), surface the contradiction explicitly: "I noticed a potential \
-conflict between X and Y — could you clarify how you'd like to resolve this?"
+── PHASE 2: Functional Requirements (IPOS Model) ──────────
+Goal: Decompose behaviors into atomic, testable requirements.
+You must explicitly explore each of these dimensions:
+  □ Data Entities & Storage: What core information must the system "remember" or track?
+  □ Inputs & Triggers: How does data enter the system? What events (time, sensor, user action) start a process?
+  □ Processing Logic: What are the "business rules" or calculations? How do states change (e.g., "Normal" to "Alert")?
+  □ Outputs & Notifications: What are the results? (Reports, alerts, physical actions, dashboard updates).
+  □ Search & Management: How do users find, filter, update, or delete information?
+  □ Exception Handling: What should happen when things go wrong or data is missing?
 
-5. REQUIREMENT FORMALISATION:
-   As you elicit requirements, mentally structure them as: \
-"The system shall [action] [object] [constraint]." \
-If a requirement cannot be phrased this way, it needs further clarification.
+── PHASE 3: Non-Functional Requirements (ISO 25010) ───────
+Goal: Define the quality attributes (The "How Well").
+Ask exactly one focused question for each:
+  □ Usability: Who is the "least technical" user? What are their specific needs for ease-of-use?
+  □ Performance: What are the expectations for speed, response time, or concurrent handling?
+  □ Security & Privacy: Who can see what? How is access controlled? What data is sensitive?
+  □ Reliability & Availability: What is the impact of downtime? How does the system recover from failure?
+  □ Connectivity & Portability: Does it need to work offline? What devices/platforms must it support?
 
-6. CONVERSATION CLOSURE:
-   Only suggest generating the SRS when ALL of the following are true:
-   (a) Functional requirements have been identified for all major features.
-   (b) ALL 6 mandatory NFR categories have been addressed.
-   (c) No unresolved ambiguities remain.
-   (d) Stakeholder roles have been identified.
-   If not all conditions are met, continue elicitation and explain what is still missing.
+── PHASE 4: Constraints & Final Validation ────────────────
+Goal: Capture "Hard" limits and verify saturation.
+Ask about:
+  □ Technical/Legacy Constraints: Mandated hardware, specific APIs, or forbidden technologies.
+  □ Regulatory/Legal: Are there compliance standards (GDPR, safety codes, etc.)?
+  □ Saturation Check: Summarize the key findings and ask: "Is there any edge case or scenario we haven't discussed?"
 
-7. REQUIREMENT TAGGING RULE (Mandatory - affects SRS output):
-   Every time you formalise a requirement, wrap the COMPLETE requirement text
-   (including ALL sub-points and bullet lines that belong to it) inside these tags:
+═══════════════════════════════════════════════════════════
+NON-NEGOTIABLE BEHAVIOURAL RULES
+═══════════════════════════════════════════════════════════
 
-   <REQ type="functional" category="functional">
-   The system shall [full requirement text including any bullet sub-items]
-   </REQ>
+RULE 1 — ONE QUESTION PER TURN: 
+Ask exactly ONE focused question per response. Never combine topics.
 
-   Valid values for type:     "functional" | "non_functional" | "constraint"
-   Valid values for category: "functional" | "performance" | "usability" | "security_privacy" |
-                              "reliability" | "compatibility" | "maintainability" |
-                              "interfaces" | "constraints" | "stakeholders" | "scope"
+RULE 2 — ATOMIC DECOMPOSITION: 
+If a user mentions a complex feature (e.g., "Remote Climate Control"), you must break it down into smaller parts (Viewing status, updating status, scheduling). Do not record a "bundle" as a single requirement.
 
-   CRITICAL RULES for tagging:
-   - The opening <REQ ...> tag and closing </REQ> tag MUST each be on their own line.
-   - The ENTIRE requirement including any bulleted sub-items MUST appear BETWEEN the tags.
-     Do NOT close </REQ> before the sub-items.
-   - Do NOT split one logical requirement across multiple REQ blocks.
-   - Conversational text, questions, and explanations must appear OUTSIDE the tags.
-   - Example with sub-items:
+RULE 3 — PROBE BEFORE PROGRESSING:
+When a user gives a high-level answer, ask one "deep-dive" follow-up on that specific topic before moving to a new checklist item.
 
-     <REQ type="functional" category="functional">
-     The system shall provide the following visualisation options:
-     - A checkbox to mark habits as complete.
-     - A progress bar showing daily completion percentage.
-     - A calendar view displaying completed days.
-     </REQ>
+RULE 4 — CHALLENGE VAGUE ADJECTIVES:
+If the user says "fast," "secure," "simple," or "easy," you MUST ask for a measurable definition (e.g., "How many seconds is 'fast' to you?").
 
-   - Every distinct, independently testable requirement needs its own REQ block."""
+RULE 5 — THE SATURATION PRINCIPLE:
+Do not move from Phase 2 to Phase 3 until the user stops providing new functionality details during your probes.
 
+RULE 6 — REQUIREMENT TAGGING:
+Every time a requirement is crystallized, wrap it in XML tags:
+
+<REQ type="functional|non_functional|constraint" category="[relevant_category]">
+The system shall [verb] [object] [measurable constraint].
+</REQ>
+
+═══════════════════════════════════════════════════════════
+MANDATORY CLOSURE CHECKLIST
+═══════════════════════════════════════════════════════════
+ONLY offer the SRS when:
+□ All IPOS dimensions (Input, Process, Output, Storage) have been discussed.
+□ At least 4 ISO 25010 quality categories have been defined with metrics.
+□ All named stakeholder roles have been mapped to specific functionalities.
+□ A Saturation Check has been performed and the user confirms "nothing else.
+
+If any box is unchecked: "Before I generate the SRS, I still need to
+ask about [item]. [Ask the one most important uncovered question.]"
+"""
+
+
+# ---------------------------------------------------------------------------
+# Dynamic context block (injected fresh every turn)
+# ---------------------------------------------------------------------------
 
 def _build_context_block(state: "ConversationState") -> str:
     """
-    Build a dynamic context block that injects current coverage status into
-    the system prompt. This gives the LLM explicit knowledge of what remains
-    uncovered, directly addressing Failure Mode 3 (premature closure).
+    Build a dynamic context block showing live coverage state.
+
+    Shows:
+    - Turn count and requirement counts (FR / NFR split)
+    - Phase indicator: which phase the session should be in now
+    - IEEE-830 categories covered vs. missing
+    - FR deficit warning (blocks NFR probing until MIN_FUNCTIONAL_REQS met)
+    - Mandatory NFR alert (once FR threshold is reached)
     """
     covered = [
         f"  ✓ {IEEE830_CATEGORIES[cat]}"
@@ -176,39 +244,73 @@ def _build_context_block(state: "ConversationState") -> str:
         if cat not in state.covered_categories
     ]
 
-    covered_str = "\n".join(covered) if covered else "  (none yet)"
+    covered_str = "\n".join(covered) if covered else "  (none yet — you are in Phase 1)"
     missing_str = "\n".join(missing) if missing else "  (all covered — ready to generate SRS)"
 
-    # Flag mandatory NFRs still uncovered
-    mandatory_missing = [
-        IEEE830_CATEGORIES[cat]
-        for cat in MANDATORY_NFR_CATEGORIES
-        if cat not in state.covered_categories
-    ]
-    mandatory_alert = ""
-    if mandatory_missing:
-        cats = ", ".join(mandatory_missing)
-        mandatory_alert = (
-            f"\n⚠️  MANDATORY NFR CATEGORIES NOT YET COVERED: {cats}\n"
-            "You MUST address these before offering to generate the SRS.\n"
+    # Phase indicator
+    if state.functional_count < MIN_FUNCTIONAL_REQS:
+        phase_indicator = (
+            f"CURRENT PHASE: Phase 2 — Functional Requirements\n"
+            f"  FRs recorded: {state.functional_count} / {MIN_FUNCTIONAL_REQS} minimum\n"
+            f"  ➜ Your next question MUST target a functional capability."
+        )
+    else:
+        mandatory_still_missing = [
+            cat for cat in MANDATORY_NFR_CATEGORIES
+            if cat not in state.covered_categories
+        ]
+        if mandatory_still_missing:
+            phase_indicator = (
+                f"CURRENT PHASE: Phase 3 — Non-Functional Requirements\n"
+                f"  FRs recorded: {state.functional_count} ✓ (threshold met)\n"
+                f"  ➜ Probe NFRs next. Still missing: "
+                + ", ".join(IEEE830_CATEGORIES[c] for c in mandatory_still_missing)
+            )
+        else:
+            phase_indicator = (
+                "CURRENT PHASE: Phase 4 — Constraints and Closure\n"
+                "  All mandatory categories addressed.\n"
+                "  ➜ Confirm closure checklist, then offer SRS generation."
+            )
+
+    # FR deficit warning (hard block on NFR probing)
+    fr_alert = ""
+    if state.functional_count < MIN_FUNCTIONAL_REQS:
+        fr_alert = (
+            f"\n⚠️  FR DEFICIT: {state.functional_count} FR(s) recorded, "
+            f"need ≥{MIN_FUNCTIONAL_REQS}.\n"
+            "Do NOT ask about NFRs. Your next question must target a "
+            "functional behaviour — what the system does, not how well it does it.\n"
         )
 
+    # Mandatory NFR warning (only shown once FR threshold is met)
+    mandatory_alert = ""
+    if state.functional_count >= MIN_FUNCTIONAL_REQS:
+        mandatory_missing = [
+            IEEE830_CATEGORIES[cat]
+            for cat in MANDATORY_NFR_CATEGORIES
+            if cat not in state.covered_categories
+        ]
+        if mandatory_missing:
+            cats = ", ".join(mandatory_missing)
+            mandatory_alert = (
+                f"\n⚠️  MANDATORY NFRs NOT YET COVERED: {cats}\n"
+                "You MUST address all of these before offering to generate the SRS.\n"
+            )
+
     turn_info = (
-        f"Current turn: {state.turn_count}\n"
-        f"Requirements elicited so far: {state.total_requirements}\n"
-        f"  Functional: {state.functional_count}\n"
-        f"  Non-functional: {state.nonfunctional_count}"
+        f"Turn: {state.turn_count}  |  "
+        f"Total requirements: {state.total_requirements}  "
+        f"(FR: {state.functional_count}, NFR: {state.nonfunctional_count})"
     )
 
-    return f"""CURRENT SESSION STATE:
-{turn_info}
-
-IEEE-830 categories COVERED so far:
-{covered_str}
-
-IEEE-830 categories STILL MISSING:
-{missing_str}
-{mandatory_alert}"""
+    return (
+        f"SESSION STATE:\n{turn_info}\n\n"
+        f"{phase_indicator}\n\n"
+        f"IEEE-830 categories COVERED:\n{covered_str}\n\n"
+        f"IEEE-830 categories STILL MISSING:\n{missing_str}"
+        f"{fr_alert}{mandatory_alert}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -220,37 +322,29 @@ class PromptArchitect:
     """
     Builds the complete system message from modular blocks.
 
-    Blocks (Iteration 3+)
-    ---------------------
-    ROLE            — static, defines persona and expertise
-    CONTEXT         — dynamic, injected from ConversationState each turn
-    GAP DIRECTIVE   — dynamic, injected by ProactiveQuestionGenerator (NEW)
-    TASK            — static, defines behavioural rules
+    Block order (rev-2):
+      [ROLE]          — active elicitation philosophy + persona
+      [CONTEXT]       — dynamic live state (rebuilt every turn)
+      [GAP DIRECTIVE] — one-shot injection from GapDetector (optional)
+      [TASK]          — phase-gated rules + closure checklist
 
-    Usage
-    -----
-        architect = PromptArchitect()
-        system_msg = architect.build_system_message(state)
-
-    Gap detection injection (Iteration 3)
-    --------------------------------------
+    Gap detection injection pattern:
         architect.extra_context = question_generator.build_injection_text(q_set)
         system_msg = architect.build_system_message(state)
-        # extra_context is automatically cleared after build to prevent stale injection
+        # extra_context is auto-cleared after each build (one-shot)
     """
 
     role_block:    str = field(default=ROLE_BLOCK)
     task_block:    str = field(default=TASK_BLOCK)
-    extra_context: str = field(default="")   # [NEW Iteration 3] injected by ProactiveQuestionGenerator
+    extra_context: str = field(default="")
 
     def build_system_message(self, state: "ConversationState") -> str:
         """
         Compose the full system message for a given conversation state.
-        The context block is rebuilt on every call, so state changes are
-        always reflected in the next LLM request.
-
-        If extra_context is set, it is injected between CONTEXT and TASK
-        blocks and then cleared (one-shot pattern).
+        Context block is rebuilt on every call — state changes are always
+        reflected in the next LLM request.
+        extra_context (gap directive) is injected between CONTEXT and TASK,
+        then cleared immediately (one-shot pattern).
         """
         context_block = _build_context_block(state)
 
@@ -259,10 +353,11 @@ class PromptArchitect:
             "=== CURRENT SESSION CONTEXT ===\n" + context_block,
         ]
 
-        # Inject proactive questioning directive if present [Iteration 3]
         if self.extra_context.strip():
-            parts.append("=== GAP DETECTION DIRECTIVE (Iteration 3) ===\n" + self.extra_context)
-        self.extra_context = ""  # one-shot: always clear after build
+            parts.append(
+                "=== GAP DETECTION DIRECTIVE ===\n" + self.extra_context
+            )
+        self.extra_context = ""  # always clear after build — never carry over
 
         parts.append("=== TASK INSTRUCTIONS ===\n" + self.task_block)
 
@@ -275,3 +370,7 @@ class PromptArchitect:
     def get_mandatory_nfr_categories(self) -> frozenset[str]:
         """Return the set of NFR category IDs that must be covered."""
         return MANDATORY_NFR_CATEGORIES
+
+    def get_min_functional_reqs(self) -> int:
+        """Return the minimum FR count threshold for NFR probing."""
+        return MIN_FUNCTIONAL_REQS

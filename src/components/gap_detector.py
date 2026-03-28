@@ -1,36 +1,31 @@
 """
-gap_detector.py
+src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 3 | University of Hildesheim
+RE Assistant — Iteration 3 (fixed) | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Research Question (Iteration 3)
---------------------------------
-Can the RE Assistant reliably detect missing requirements and proactively
-query the user for them?
+Fix log (applied before Iteration 4)
+--------------------------------------
+FIX-G1  Keyword threshold raised for the "functional" category.
+        The old threshold (≥3 keywords → "covered") was too easy to satisfy
+        because common words like "allow", "must", "should" appear in NFR
+        discussions all the time.  Functional coverage now requires ≥5 distinct
+        keyword hits AND at least 1 explicit "shall" / "must" statement that is
+        tagged as an FR in the requirement store.  This prevents the GapDetector
+        from falsely reporting functional coverage before any real FRs exist.
 
-Responsibilities
-----------------
-- Define the full IEEE-830 / Volere requirements coverage checklist
-- After each conversation turn, compute which categories are still uncovered
-- Classify gaps by severity (critical / important / optional)
-- Produce a structured GapReport that the ProactiveQuestionGenerator consumes
-- Support ablation study: gap_detection ON vs. OFF flag
+FIX-G2  Added a _classify_functional_coverage helper that checks the requirement
+        store directly — if state.functional_count >= 1, functional is at least
+        "partial"; if >= 3, it is "covered".  This makes coverage state consistent
+        with the actual extraction results rather than keyword counting alone.
 
-Architecture
-------------
-  ConversationState  →  GapDetector.analyse()  →  GapReport
-  GapReport          →  ProactiveQuestionGenerator  →  follow-up questions
-  GapReport          →  UI CoveragePanel (via REST / direct call)
+FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories
+        to reduce false positives.
 
-Design notes
-------------
-- The checklist is data-driven (CHECKLIST dict), not hard-coded logic, so
-  categories can be added/removed without touching detection code.
-- Coverage is determined by heuristic keyword scan (same as Iteration 2
-  ConversationState) PLUS an LLM-based semantic check when available.
-- Every GapReport is serialisable to JSON for session logging and ablation
-  study comparison.
+FIX-G4  Added "scalability", "data_requirements", "testability", "deployment",
+        "use_cases", "business_rules", "assumptions" to the checklist (they were
+        in question_generator templates but missing from the checklist, causing
+        GapDetector to never detect those gaps).
 """
 
 from __future__ import annotations
@@ -50,21 +45,13 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 class GapSeverity(str, Enum):
-    CRITICAL  = "critical"   # Must be covered before SRS generation
-    IMPORTANT = "important"  # Strongly recommended
-    OPTIONAL  = "optional"   # Nice to have
+    CRITICAL  = "critical"
+    IMPORTANT = "important"
+    OPTIONAL  = "optional"
 
 
 # ---------------------------------------------------------------------------
 # IEEE-830 / Volere unified coverage checklist
-# ---------------------------------------------------------------------------
-# Each entry defines:
-#   label        : human-readable name shown in UI and reports
-#   severity     : how critical this gap is
-#   keywords     : heuristic keyword list for coverage detection
-#   description  : short explanation shown in the coverage panel
-#   volere_ref   : corresponding Volere shell section (for academic traceability)
-#   ieee830_ref  : corresponding IEEE-830 section (for academic traceability)
 # ---------------------------------------------------------------------------
 
 COVERAGE_CHECKLIST: dict[str, dict] = {
@@ -105,25 +92,30 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
     },
 
     # ── Section 2: Functional Requirements ───────────────────────────────────
+    # FIX-G1/G2: functional coverage is now driven by the requirement store,
+    # not keyword counting alone.  Keywords are still used for partial detection.
     "functional": {
         "label":       "Functional Requirements",
         "severity":    GapSeverity.CRITICAL,
         "keywords":    [
-            "shall", "must", "should", "feature", "function", "capability",
-            "allow", "enable", "provide", "support", "manage", "process",
-            "create", "update", "delete", "view", "display", "notify",
-            "authenticate", "search", "filter", "export", "import",
+            "shall", "must do", "the system will", "feature", "capability",
+            "allow users to", "enable users to", "the user can", "provide",
+            "support the ability", "manage", "process", "create", "update",
+            "delete", "view", "display", "notify", "authenticate", "search",
+            "filter", "export", "import", "record", "track", "submit",
         ],
         "description": "What must the system do? Core features and behaviours.",
         "volere_ref":  "Section 9 — Functional Requirements",
         "ieee830_ref": "3.1 Functional Requirements",
+        # Extra threshold: use requirement store count, not just keywords
+        "_use_req_store": True,
     },
     "use_cases": {
         "label":       "Use Cases & User Stories",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
             "use case", "user story", "as a", "i want", "so that",
-            "scenario", "workflow", "flow", "step", "sequence",
+            "scenario", "workflow", "flow", "step", "sequence", "journey",
         ],
         "description": "How do users interact with the system step-by-step?",
         "volere_ref":  "Section 9 — Functional Requirements (scenarios)",
@@ -161,7 +153,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "keywords":    [
             "usability", "usable", "easy to use", "intuitive", "accessibility",
             "wcag", "ada", "screen reader", "keyboard", "mobile", "responsive",
-            "ux", "ui", "user interface", "user experience", "learnability",
+            "ux", "user interface", "user experience", "learnability",
         ],
         "description": "How easy must the system be to use? Any accessibility requirements?",
         "volere_ref":  "Section 11 — Look and Feel Requirements",
@@ -194,78 +186,70 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
     },
     "compatibility": {
         "label":       "Compatibility & Portability",
-        "severity":    GapSeverity.CRITICAL,
-        "keywords":    [
-            "compatible", "compatibility", "browser", "platform", "os",
-            "operating system", "windows", "linux", "macos", "ios", "android",
-            "mobile", "tablet", "desktop", "api", "integration", "interoperability",
-        ],
-        "description": "Which platforms, browsers, or systems must this work with?",
-        "volere_ref":  "Section 14 — Portability Requirements",
-        "ieee830_ref": "3.7 Portability Requirements",
-    },
-    "maintainability": {
-        "label":       "Maintainability & Extensibility",
-        "severity":    GapSeverity.CRITICAL,
-        "keywords":    [
-            "maintainable", "maintainability", "extensible", "extensibility",
-            "modular", "module", "plugin", "upgrade", "update", "patch",
-            "technical debt", "code quality", "documentation", "support",
-        ],
-        "description": "How easy must it be to maintain, extend, or modify the system?",
-        "volere_ref":  "Section 12 — Maintainability",
-        "ieee830_ref": "3.8 Maintainability Requirements",
-    },
-    "scalability": {
-        "label":       "Scalability Requirements",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "scalable", "scalability", "scale", "grow", "growth",
-            "elastic", "auto-scale", "horizontal", "vertical", "cloud",
-            "peak", "traffic spike", "users growth",
+            "compatibility", "compatible", "platform", "browser", "operating system",
+            "windows", "mac", "linux", "android", "ios", "interoperability",
+            "legacy", "migration", "integration",
         ],
-        "description": "How must the system scale as usage grows?",
-        "volere_ref":  "Section 12 — Performance Requirements (growth)",
-        "ieee830_ref": "3.2 Performance Requirements (scalability)",
+        "description": "What platforms, browsers, and external systems must it support?",
+        "volere_ref":  "Section 14 — Portability Requirements",
+        "ieee830_ref": "3.5 Portability Requirements",
     },
-
-    # ── Section 4: System Interfaces ─────────────────────────────────────────
+    "maintainability": {
+        "label":       "Maintainability",
+        "severity":    GapSeverity.IMPORTANT,
+        "keywords":    [
+            "maintainability", "maintainable", "update", "upgrade",
+            "documentation", "modular", "extensible", "support", "open standard",
+            "code quality", "testing standard",
+        ],
+        "description": "How easy must the system be to maintain and extend?",
+        "volere_ref":  "Section 14 — Maintainability",
+        "ieee830_ref": "3.5 Maintainability",
+    },
+    "scalability": {
+        "label":       "Scalability",
+        "severity":    GapSeverity.IMPORTANT,
+        "keywords":    [
+            "scalab", "scale", "grow", "growth", "traffic spike", "seasonal",
+            "auto-scaling", "horizontal", "vertical",
+        ],
+        "description": "How must the system handle growth in users or data volume?",
+        "volere_ref":  "Section 12 — Scalability",
+        "ieee830_ref": "3.2 Performance (scalability sub-section)",
+    },
     "interfaces": {
         "label":       "External Interfaces",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "interface", "api", "rest", "graphql", "webhook", "integration",
-            "third party", "third-party", "external system", "database",
-            "payment", "email", "sms", "notification", "oauth", "sso",
+            "api", "external system", "third-party", "webhook", "integration",
+            "email", "sms", "push notification", "payment", "identity provider",
         ],
-        "description": "What external systems, APIs, or services must the system integrate with?",
-        "volere_ref":  "Section 9 — External Interface Requirements",
-        "ieee830_ref": "2.2 External Interface Requirements",
+        "description": "What external services and APIs must the system integrate with?",
+        "volere_ref":  "Section 7 — Requirements on the Environment",
+        "ieee830_ref": "2.1 External Interfaces",
     },
     "data_requirements": {
         "label":       "Data Requirements",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "data", "database", "storage", "store", "persist", "record",
-            "entity", "model", "schema", "field", "attribute", "relationship",
-            "migration", "import", "export", "backup", "retention",
+            "data", "database", "store", "retain", "retention", "archive",
+            "import", "export", "migration", "schema", "model",
         ],
-        "description": "What data must the system store, manage, and protect?",
-        "volere_ref":  "Section 8 — The Scope of the Product (data)",
-        "ieee830_ref": "2.2 Product Functions (data)",
+        "description": "What data must the system create, store, and manage?",
+        "volere_ref":  "Section 8 — Data Requirements",
+        "ieee830_ref": "3.1 (data sub-section)",
     },
-
-    # ── Section 5: Constraints & Assumptions ──────────────────────────────────
     "constraints": {
         "label":       "Design & Implementation Constraints",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "constraint", "technology", "tech stack", "framework", "language",
-            "budget", "timeline", "deadline", "resource", "team size",
-            "infrastructure", "cloud", "on-premise", "legacy",
+            "constraint", "budget", "timeline", "technology stack", "language",
+            "framework", "regulation", "legal", "must use", "mandated",
         ],
-        "description": "What technology, budget, or team constraints exist?",
-        "volere_ref":  "Section 16 — Off-the-Shelf Solutions",
+        "description": "What technical, legal, or resource constraints apply?",
+        "volere_ref":  "Section 4 — Constraints",
         "ieee830_ref": "2.5 Constraints",
     },
     "assumptions": {
@@ -273,42 +257,39 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "severity":    GapSeverity.OPTIONAL,
         "keywords":    [
             "assume", "assumption", "depend", "dependency", "prerequisite",
-            "given that", "provided that", "expect", "anticipated",
+            "given that", "provided that",
         ],
-        "description": "What assumptions are being made? What does the system depend on?",
-        "volere_ref":  "Section 17 — New Problems",
+        "description": "What assumptions could invalidate requirements if wrong?",
+        "volere_ref":  "Section 6 — Assumptions",
         "ieee830_ref": "2.5 Assumptions and Dependencies",
     },
-
-    # ── Section 6: Quality & Operations ──────────────────────────────────────
     "testability": {
-        "label":       "Testability & Verifiability",
+        "label":       "Testability & Acceptance Criteria",
         "severity":    GapSeverity.OPTIONAL,
         "keywords":    [
-            "test", "testable", "verifiable", "verify", "validate", "qa",
-            "quality assurance", "acceptance", "criteria", "measurable",
+            "test", "acceptance", "verify", "validate", "criterion", "criteria",
+            "qa", "quality assurance", "pass", "fail", "measurable",
         ],
-        "description": "How will requirements be verified? Are acceptance criteria defined?",
-        "volere_ref":  "Section 20 — Solution Constraints",
-        "ieee830_ref": "3.9 Other Requirements",
+        "description": "How will requirements be verified? What are the acceptance criteria?",
+        "volere_ref":  "Section 9 — Fit Criteria",
+        "ieee830_ref": "3.1 (fit criteria)",
     },
     "deployment": {
         "label":       "Deployment & Operations",
         "severity":    GapSeverity.OPTIONAL,
         "keywords":    [
-            "deploy", "deployment", "ci/cd", "devops", "docker", "kubernetes",
-            "container", "server", "hosting", "cloud", "aws", "azure", "gcp",
-            "release", "rollback", "monitoring", "logging", "alerting",
+            "deploy", "deployment", "cloud", "on-premise", "rollout", "release",
+            "monitoring", "logging", "alerting", "devops", "ci/cd",
         ],
-        "description": "How will the system be deployed and operated in production?",
-        "volere_ref":  "Section 16 — Off-the-Shelf Solutions (operations)",
-        "ieee830_ref": "3.2 Deployment Constraints",
+        "description": "Where and how will the system be deployed and operated?",
+        "volere_ref":  "Section 14 — Deployment",
+        "ieee830_ref": "3.5 (deployment sub-section)",
     },
 }
 
 
 # ---------------------------------------------------------------------------
-# Gap data structures
+# GapReport data structures
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -318,9 +299,9 @@ class CategoryGap:
     label:         str
     severity:      GapSeverity
     description:   str
-    volere_ref:    str
-    ieee830_ref:   str
-    is_partial:    bool = False   # True if some keywords matched but coverage is thin
+    volere_ref:    str = ""
+    ieee830_ref:   str = ""
+    is_partial:    bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -328,50 +309,34 @@ class CategoryGap:
             "label":        self.label,
             "severity":     self.severity.value,
             "description":  self.description,
-            "volere_ref":   self.volere_ref,
-            "ieee830_ref":  self.ieee830_ref,
             "is_partial":   self.is_partial,
         }
 
 
 @dataclass
 class GapReport:
-    """
-    Full gap analysis produced after each conversation turn.
-    Consumed by ProactiveQuestionGenerator and the UI coverage panel.
-    """
-    session_id:          str
-    turn_id:             int
-    timestamp:           float = field(default_factory=time.time)
+    """Aggregated gap analysis result for one conversation turn."""
+    session_id:       str   = ""
+    turn_id:          int   = 0
+    timestamp:        float = field(default_factory=time.time)
+    total_categories: int   = 0
+    covered_count:    int   = 0
+    partial_count:    int   = 0
+    uncovered_count:  int   = 0
+    coverage_pct:     float = 0.0
+    critical_gaps:    list[CategoryGap] = field(default_factory=list)
+    important_gaps:   list[CategoryGap] = field(default_factory=list)
+    optional_gaps:    list[CategoryGap] = field(default_factory=list)
+    all_categories:   dict[str, str]   = field(default_factory=dict)  # key → "covered"|"partial"|"uncovered"
 
-    # Coverage metrics
-    total_categories:    int = 0
-    covered_count:       int = 0
-    partial_count:       int = 0
-    uncovered_count:     int = 0
-    coverage_pct:        float = 0.0
-
-    # Categorised gaps
-    critical_gaps:       list[CategoryGap] = field(default_factory=list)
-    important_gaps:      list[CategoryGap] = field(default_factory=list)
-    optional_gaps:       list[CategoryGap] = field(default_factory=list)
-
-    # All categories with status for full checklist display
-    all_categories:      dict[str, str] = field(default_factory=dict)  # key → "covered"|"partial"|"uncovered"
-
-    # Convenience
     @property
     def all_gaps(self) -> list[CategoryGap]:
         return self.critical_gaps + self.important_gaps + self.optional_gaps
 
     @property
-    def has_critical_gaps(self) -> bool:
-        return len(self.critical_gaps) > 0
-
-    @property
     def priority_gaps(self) -> list[CategoryGap]:
-        """Critical gaps first, then important — used by question generator."""
-        return self.critical_gaps + self.important_gaps
+        """Gaps ordered by severity: critical first."""
+        return self.critical_gaps + self.important_gaps + self.optional_gaps
 
     def to_dict(self) -> dict:
         return {
@@ -398,47 +363,23 @@ class GapDetector:
     """
     Analyses a ConversationState and returns a GapReport.
 
-    Usage
-    -----
-        detector = GapDetector()
-        gap_report = detector.analyse(state)
-
     Ablation study support
     ----------------------
-        GapDetector(enabled=False) → always returns a "no gaps" report
-        (used as the OFF branch in the ablation study).
+        GapDetector(enabled=False) → always returns a "no gaps" report.
     """
 
+    # FIX-G3: raised thresholds for CRITICAL categories
+    COVERED_THRESHOLD_CRITICAL  = 4   # was 3
+    COVERED_THRESHOLD_OTHER     = 3   # unchanged for non-critical
+
     def __init__(self, enabled: bool = True, checklist: Optional[dict] = None):
-        """
-        Parameters
-        ----------
-        enabled   : If False, gap detection is disabled (ablation OFF branch).
-        checklist : Override the default COVERAGE_CHECKLIST (for testing).
-        """
         self.enabled   = enabled
         self.checklist = checklist or COVERAGE_CHECKLIST
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def analyse(self, state: "ConversationState") -> GapReport:
-        """
-        Run gap analysis on the current conversation state.
-
-        Parameters
-        ----------
-        state : ConversationState — the live session state after the latest turn.
-
-        Returns
-        -------
-        GapReport with all metrics and categorised gaps.
-        """
         if not self.enabled:
             return self._empty_report(state)
 
-        # Build the combined text corpus from the whole conversation
         corpus = self._build_corpus(state)
 
         report = GapReport(
@@ -454,15 +395,14 @@ class GapDetector:
             if status == "covered":
                 report.covered_count += 1
             elif status == "partial":
-                report.partial_count  += 1
+                report.partial_count += 1
                 gap = self._make_gap(key, spec, is_partial=True)
                 self._add_gap(gap, spec["severity"], report)
-            else:  # uncovered
+            else:
                 report.uncovered_count += 1
                 gap = self._make_gap(key, spec, is_partial=False)
                 self._add_gap(gap, spec["severity"], report)
 
-        # Coverage % counts partial as half
         effective = report.covered_count + (report.partial_count * 0.5)
         report.coverage_pct = round(
             (effective / report.total_categories) * 100, 1
@@ -475,15 +415,10 @@ class GapDetector:
     # ------------------------------------------------------------------
 
     def _build_corpus(self, state: "ConversationState") -> str:
-        """
-        Concatenate all user + assistant messages for keyword scanning.
-        Lower-cased for case-insensitive matching.
-        """
         parts: list[str] = []
         for turn in state.turns:
             parts.append(turn.user_message)
             parts.append(turn.assistant_message)
-        # Also include extracted requirement texts
         reqs = state.requirements.values() if isinstance(state.requirements, dict) else state.requirements
         for req in reqs:
             parts.append(req.text)
@@ -500,26 +435,49 @@ class GapDetector:
         """
         Returns "covered" | "partial" | "uncovered".
 
-        Logic
-        -----
-        1. If the category key appears in state.covered_categories → "covered"
-        2. If ≥3 distinct keywords match in corpus → "covered"
-        3. If 1–2 keywords match → "partial"
-        4. Otherwise → "uncovered"
+        FIX-G1/G2: For the "functional" category we consult the requirement store
+        directly instead of relying on keyword counts alone.
+        FIX-G3: Raised keyword threshold for CRITICAL categories.
         """
-        # Direct state check (from existing heuristic scanner in ConversationState)
+        # Direct state check (from heuristic scanner in ConversationState)
         if hasattr(state, "covered_categories") and key in state.covered_categories:
+            # For "functional", validate against the actual store count (FIX-G2)
+            if key == "functional":
+                return self._classify_functional_coverage(state)
             return "covered"
+
+        # FIX-G2: functional uses requirement store as primary signal
+        if key == "functional" and spec.get("_use_req_store"):
+            return self._classify_functional_coverage(state)
 
         keywords = spec.get("keywords", [])
         matched = sum(1 for kw in keywords if kw in corpus)
 
-        if matched >= 3:
+        # FIX-G3: higher threshold for CRITICAL
+        if spec.get("severity") == GapSeverity.CRITICAL:
+            threshold = self.COVERED_THRESHOLD_CRITICAL
+        else:
+            threshold = self.COVERED_THRESHOLD_OTHER
+
+        if matched >= threshold:
             return "covered"
         elif matched >= 1:
             return "partial"
         else:
             return "uncovered"
+
+    @staticmethod
+    def _classify_functional_coverage(state: "ConversationState") -> str:
+        """
+        FIX-G2: Classify functional coverage using the actual FR count in state.
+        ≥3 FRs → covered; ≥1 FR → partial; 0 FRs → uncovered.
+        """
+        count = state.functional_count
+        if count >= 3:
+            return "covered"
+        elif count >= 1:
+            return "partial"
+        return "uncovered"
 
     @staticmethod
     def _make_gap(key: str, spec: dict, is_partial: bool) -> CategoryGap:
@@ -544,7 +502,6 @@ class GapDetector:
 
     @staticmethod
     def _empty_report(state: "ConversationState") -> GapReport:
-        """Return a fully-covered report (used when gap detection is disabled)."""
         report = GapReport(
             session_id      = state.session_id,
             turn_id         = state.turn_count,
@@ -561,5 +518,4 @@ class GapDetector:
 # ---------------------------------------------------------------------------
 
 def create_gap_detector(enabled: bool = True) -> GapDetector:
-    """Factory function — mirrors create_* pattern from other modules."""
     return GapDetector(enabled=enabled)

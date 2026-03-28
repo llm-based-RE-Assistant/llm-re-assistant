@@ -54,7 +54,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
 
-from src.components.conversation_manager import ConversationManager, create_provider, StubProvider
+from src.components.conversation_manager import ConversationManager, create_provider
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
 from src.components.question_generator import ProactiveQuestionGenerator, QuestionTracker, create_question_generator
@@ -212,22 +212,18 @@ def send_turn():
     # --- Run gap detection AFTER turn to report updated state ---
     post_gap_report = gap_detector.analyse(state)
 
-    # --- Check if SRS should be generated ---
-    should_generate = manager._should_generate_srs(user_message, state)
-    srs_ready = False
-    if should_generate:
-        try:
-            srs_path = manager.finalize_session(state, logger)
-            session["srs_path"] = srs_path
-            srs_ready = True
-        except Exception as e:
-            pass  # SRS generation failure is non-fatal for the API response
+    # srs_ready = False
+    # try:
+    #     srs_path = manager.finalize_session(state, logger)
+    #     session["srs_path"] = srs_path
+    #     srs_ready = True
+    # except Exception as e:
+    #     pass  # SRS generation failure is non-fatal for the API response
 
     return jsonify({
         "session_id":      session_id,
         "assistant_reply": assistant_reply,
         "turn_id":         state.turn_count,
-        "srs_ready":       srs_ready,
         "gap_report":      post_gap_report.to_dict(),
         "follow_up_questions": [q.to_dict() for q in q_set.questions],
         "coverage_pct":    post_gap_report.coverage_pct,
@@ -281,6 +277,10 @@ def generate_srs():
     state: ConversationState = session["state"]
     manager: ConversationManager = session["manager"]
     logger = session["logger"]
+
+    print(f"DEBUG: state.requirements has {len(state.requirements)} requirements")
+    for req_id, req in state.requirements.items():
+        print(f"DEBUG: Req {req_id}: type={req.req_type}, category={req.category}, text={req.text[:50]}...")
 
     try:
         srs_path = manager.finalize_session(state, logger)
