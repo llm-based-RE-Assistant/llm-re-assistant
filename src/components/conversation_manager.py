@@ -49,7 +49,7 @@ from requirement_extractor import RequirementExtractor, create_extractor
 # FIX-W1: import the two new components
 from gap_detector import GapDetector, create_gap_detector
 from question_generator import (
-    ProactiveQuestionGenerator, QuestionTracker, create_question_generator,
+    ProactiveQuestionGenerator, create_question_generator,
 )
 
 
@@ -250,10 +250,8 @@ class ConversationManager:
     _architect:          PromptArchitect = field(default_factory=PromptArchitect, init=False)
     _srs_template:       SRSTemplate     = field(default=None, init=False, repr=False)
     _extractor:          RequirementExtractor = field(default_factory=create_extractor, init=False)
-    # FIX-W1: gap detector and question generator are now proper class members
     _gap_detector:       GapDetector          = field(default=None, init=False, repr=False)
     _question_generator: ProactiveQuestionGenerator = field(default=None, init=False, repr=False)
-    _question_tracker:   QuestionTracker       = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         # FIX-W1: create gap detector
@@ -269,8 +267,7 @@ class ConversationManager:
         session_id = str(uuid.uuid4())[:8]
         state = create_session(session_id)
         self._srs_template = create_template(session_id)
-        # FIX-W2: fresh tracker per session
-        self._question_tracker = QuestionTracker()
+        # Iteration 4: tracker is internal to question_generator; no separate tracker needed
         logger = SessionLogger(log_dir=self.log_dir, session_id=session_id)
         logger.log_event("session_start", {
             "session_id": session_id,
@@ -334,16 +331,18 @@ class ConversationManager:
                 project_name=state.project_name,
             )
 
-        # 5. Run gap detection (FIX-W1)
+        # 5. Run gap detection
         gap_report = None
-        if self._gap_detector is not None and self._question_tracker is not None:
+        if self._gap_detector is not None:
             gap_report = self._gap_detector.analyse(state)
 
             # 6. Generate a context-aware follow-up question
+            # Iteration 4: tracker is now internal to the generator instance;
+            # generate() only takes gap_report, state, and project_name.
             question_set = self._question_generator.generate(
                 gap_report=gap_report,
                 state=state,
-                tracker=self._question_tracker,
+                project_name=state.project_name,
             )
 
             # 7. FIX-W4: inject directive for the NEXT turn

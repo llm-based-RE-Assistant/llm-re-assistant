@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+./src/components/__pycache__/
+./src/components/*.py[cod]
 
 # Virtual environment
 .venv/

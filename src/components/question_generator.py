@@ -1,36 +1,49 @@
 """
 src/components/question_generator.py
 =====================
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
-Fix log (applied before Iteration 4)
---------------------------------------
-FIX-A  Hard-coded question templates are REMOVED as the primary question source.
-       Your concern was correct: template questions are context-blind.  They tell
-       the LLM what to ask regardless of what the user just said, which breaks the
-       conversational flow and causes users to give shorter answers.
+Change log
+----------
+Iteration 3 fixes (FIX-A through FIX-D) — see Iteration 3 source.
 
-FIX-B  New primary mode: LLM-GENERATED questions.
-       ProactiveQuestionGenerator now calls the LLM with a meta-prompt that has
-       full access to (a) the conversation history summary, (b) the gap category
-       to probe, and (c) the project context.  The result is a single, targeted,
-       context-aware question that feels like a natural continuation of the
-       conversation rather than a scripted interrogation.
+Iteration 4 — Priority 3: Domain-Aware Probe Questions
+═══════════════════════════════════════════════════════
+The root cause of missing domains in Iteration 3 was that the question
+generator was only triggered by GapDetector's IEEE-830 category gaps.
+It had no concept of "functional domain coverage" — it could not tell
+that 'security alarm', 'appliance control', or 'scheduling' had never
+been asked about.
 
-FIX-C  Templates are KEPT as a fast fallback for cases where:
-         - no LLM provider is available (unit tests, offline mode)
-         - the LLM meta-call fails
-       This preserves backward-compatibility and ablation study support.
+Changes in Iteration 4:
+  IT4-A  Domain-first priority: when any DOMAIN_COVERAGE_GATE entry is
+         UNPROBED, the generator always produces a question for it ahead
+         of any IEEE-830 category gap. This ensures that the 8 functional
+         domains are probed exhaustively before NFR or structural gaps.
 
-FIX-D  FR-aware priority: when functional_count < MIN_FUNCTIONAL_REQS, the
-       generator always targets the "functional" gap first, overriding the
-       normal critical→important→optional ordering.
+  IT4-B  Domain probe templates: the FALLBACK_TEMPLATES dict is extended
+         with one entry per domain gate key (prefixed "domain_"). These are
+         the plain-language fallback_probe questions from DOMAIN_COVERAGE_GATE,
+         kept in sync here so that both the context block and the question
+         generator use identical wording.
 
-Architecture (updated)
-----------------------
+  IT4-C  Scope reduction probe: new "scope_reduction" template category.
+         When the gap detector signals a scope reduction event (user
+         downscoped a domain), the generator produces the Rule-8 confirmation
+         question: "Should we document [feature] as permanently out of scope,
+         or revisit it later?"
+
+  IT4-D  LLM meta-prompt extended with domain gate awareness: the meta-prompt
+         now receives the list of unprobed domains so the LLM-generated
+         question can be targeted even more precisely.
+
+Architecture (Iteration 4)
+--------------------------
   GapReport + ConversationState  →  ProactiveQuestionGenerator.generate()
-    → LLM meta-prompt call (primary)  OR  template lookup (fallback)
+    → Domain gate check first (IT4-A)
+    → GapDetector gap check second
+    → LLM meta-prompt (primary) | template lookup (fallback)
     → FollowUpQuestion
     → injected into PromptArchitect.extra_context
 """
@@ -49,10 +62,14 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Fallback question templates (retained as backup only — see FIX-A/C)
+# Fallback question templates
+# Iteration 4: extended with domain-specific probes (IT4-B) and
+# scope-reduction confirmation (IT4-C).
 # ---------------------------------------------------------------------------
 
 FALLBACK_TEMPLATES: dict[str, list[str]] = {
+
+    # ── IEEE-830 structural gaps (Iteration 3, retained) ──────────────────
     "purpose": [
         "What specific problem does {project_name} solve, and why is an automated software system the right solution?",
         "What does success look like for {project_name} — how will you know the system has achieved its purpose?",
@@ -67,11 +84,11 @@ FALLBACK_TEMPLATES: dict[str, list[str]] = {
     ],
     "functional": [
         "What are the three most important things a user must be able to DO with {project_name}?",
-        "Walk me through a typical user journey — from opening the system to completing their main task.",
+        "Walk me through a typical user journey from opening the system to completing their main task.",
         "Are there any automated processes {project_name} should perform without user interaction?",
     ],
     "use_cases": [
-        "Can you describe a concrete scenario where a user achieves their goal using {project_name} step by step?",
+        "Can you describe a concrete scenario where a user achieves their goal step by step?",
         "What happens when something goes wrong — for example, if the user makes a mistake?",
     ],
     "business_rules": [
@@ -84,14 +101,14 @@ FALLBACK_TEMPLATES: dict[str, list[str]] = {
     ],
     "usability": [
         "What is the technical skill level of the typical user of {project_name}?",
-        "Are there any accessibility requirements?",
+        "Are there any accessibility requirements (e.g. for users with limited technical skills)?",
     ],
     "security_privacy": [
         "What types of sensitive or personal data will {project_name} handle, and who should have access?",
-        "How must users authenticate — username/password, SSO, MFA, or something else?",
+        "How must users authenticate — username/password, single sign-on, or something else?",
     ],
     "reliability": [
-        "What is the acceptable downtime for {project_name}? For example, 99.9% uptime means ~8.7 hours downtime per year.",
+        "What is the acceptable downtime for {project_name}? For example, 99.9% uptime means about 8.7 hours per year.",
         "How quickly must {project_name} recover after an outage?",
     ],
     "compatibility": [
@@ -100,19 +117,20 @@ FALLBACK_TEMPLATES: dict[str, list[str]] = {
     ],
     "maintainability": [
         "How often do you expect {project_name} to receive updates after launch?",
-        "What team will maintain {project_name}?",
+        "What team will maintain {project_name} over time?",
     ],
     "scalability": [
-        "If {project_name} is successful and user numbers double, how should the system handle that growth?",
+        "If {project_name} is successful and usage doubles, how should the system handle that growth?",
     ],
     "interfaces": [
-        "What external services or APIs does {project_name} need to call or receive data from?",
+        "What external services, devices, or APIs does {project_name} need to communicate with?",
+        "How does the system physically connect to sensors or control devices — is there a central hub?",
     ],
     "data_requirements": [
         "What are the main types of data {project_name} will create, store, and manage?",
     ],
     "constraints": [
-        "Are there any technology choices already decided — e.g. a required programming language, database, or cloud platform?",
+        "Are there any technology choices already decided — e.g. a required hardware platform, protocol, or cloud provider?",
     ],
     "assumptions": [
         "What assumptions are you making that, if wrong, would change the requirements significantly?",
@@ -121,13 +139,85 @@ FALLBACK_TEMPLATES: dict[str, list[str]] = {
         "How will you verify that {project_name} meets its requirements? What does a passing acceptance test look like?",
     ],
     "deployment": [
-        "Where will {project_name} be deployed — on-premise servers, a specific cloud provider, or both?",
+        "Where will {project_name} be deployed — on local hardware, a cloud service, or both?",
+    ],
+
+    # ── Domain gate probes (IT4-B) ─────────────────────────────────────────
+    # Keys are prefixed "domain_" + DOMAIN_COVERAGE_GATE key.
+    # Wording is kept in sync with DOMAIN_COVERAGE_GATE.fallback_probe.
+
+    "domain_climate_control": [
+        "You mentioned temperature and humidity concerns — can you walk me through "
+        "exactly what you'd want to do with them? For example, would you want to just "
+        "see the readings, set a target level, or have the system automatically maintain a level?",
+        "For the rooms you want to monitor — which ones are most critical, and would "
+        "you need to control each one independently or as a group?",
+    ],
+
+    "domain_security_alarm": [
+        "You mentioned worrying about the house when travelling — do you want the system "
+        "to monitor whether doors or windows are left open, or trigger some kind of alert "
+        "if something looks wrong?",
+        "If the system detects an open door or window, what should it do — send a notification, "
+        "sound an alarm, or both?",
+    ],
+
+    "domain_appliance_lighting": [
+        "You mentioned worrying about lights being left on — would you want the system to show "
+        "you which lights or appliances are on, and let you turn them off remotely if needed?",
+        "Are there specific appliances — like a dehumidifier, space heater, or lamp — "
+        "you'd want to switch on or off from your phone?",
+    ],
+
+    "domain_scheduling_planning": [
+        "Do you ever want the system to follow a routine automatically — like setting the "
+        "heat lower at night, or switching to a lower-energy mode when the family goes on vacation?",
+        "Would you want to pre-program different 'profiles' for different situations — "
+        "for example, a weekday routine versus a weekend one?",
+    ],
+
+    "domain_remote_access": [
+        "You mentioned checking on the house from the airport — how exactly would you want "
+        "to do that? Through a phone app, a website, or something else?",
+        "When you're away, what's the most important thing you'd want to be able to check "
+        "or do from your phone?",
+    ],
+
+    "domain_user_management": [
+        "Who should be able to use this system, and should different people have different "
+        "levels of access? For example, should your kids, your mother-in-law, or a visiting "
+        "HVAC technician see the same things you do?",
+        "Should there be an 'administrator' account — someone who can add or remove users "
+        "and change system settings — separate from regular users?",
+    ],
+
+    "domain_reporting_history": [
+        "Would it be useful to look back at past temperature or humidity readings — for "
+        "example, to see what happened last month, or to show your HVAC technician the "
+        "humidity history so he can check if the dehumidifier is working?",
+        "How long should the system keep historical data — a few weeks, months, or years?",
+    ],
+
+    "domain_hardware_connectivity": [
+        "How does the system actually connect to things like your thermostats and humidity "
+        "sensors — is there a central hub device that talks to everything, or would each "
+        "sensor connect to your home Wi-Fi separately?",
+        "Do you have a preference for how the sensors communicate — for example, via "
+        "Wi-Fi, or a separate wireless protocol like Zigbee or Z-Wave?",
+    ],
+
+    # ── Scope reduction confirmation (IT4-C) ──────────────────────────────
+    "scope_reduction": [
+        "Just to confirm — should we document that as permanently out of scope for this "
+        "version, or would you like to revisit it in a future release?",
+        "To make sure I capture this correctly — are you saying the system should never "
+        "do [feature], or just not in this first version?",
     ],
 }
 
 
 # ---------------------------------------------------------------------------
-# Meta-prompt for LLM-generated questions (FIX-B)
+# LLM meta-prompt (extended for domain awareness — IT4-D)
 # ---------------------------------------------------------------------------
 
 _META_PROMPT_TEMPLATE = """\
@@ -142,22 +232,27 @@ REQUIREMENTS COLLECTED SO FAR:
   Functional: {fr_count}
   Non-functional: {nfr_count}
 
+UNPROBED FUNCTIONAL DOMAINS (highest priority — ask about these first):
+{unprobed_domains}
+
 TARGET GAP: {gap_label} ({gap_description})
 Gap severity: {gap_severity}
 
 TASK:
 Generate exactly ONE short, open-ended elicitation question that:
-1. Naturally continues the conversation above (references what was just said if possible)
-2. Targets the gap category: {gap_label}
-3. Is specific to {project_name}, not generic
-4. Is concise — one sentence, no sub-bullets
-5. Does NOT repeat a question already asked in the conversation
+1. Naturally continues the conversation (references what was just said if possible)
+2. If unprobed domains exist, targets the FIRST one listed above
+3. Otherwise targets the gap category: {gap_label}
+4. Is specific to {project_name}, not generic
+5. Is concise — one sentence, no sub-bullets
+6. Uses plain, non-technical language (the stakeholder is not an engineer)
+7. Does NOT repeat a question already asked
 
-Reply with ONLY the question text.  No preamble, no explanation, no quotes."""
+Reply with ONLY the question text. No preamble, no explanation, no quotes.\
+"""
 
 
 def _build_history_summary(state: "ConversationState", max_turns: int = 4) -> tuple[str, int]:
-    """Return a text summary of the last N turns for the meta-prompt."""
     turns = state.turns[-max_turns:]
     lines = []
     for t in turns:
@@ -166,6 +261,20 @@ def _build_history_summary(state: "ConversationState", max_turns: int = 4) -> tu
         lines.append(f"  User: {u}")
         lines.append(f"  Assistant: {a}")
     return "\n".join(lines) if lines else "  (no turns yet)", len(turns)
+
+
+def _build_unprobed_domains_text(state: "ConversationState") -> str:
+    """Build a plain-text list of unprobed domains for the meta-prompt."""
+    from prompt_architect import compute_domain_gate, DOMAIN_COVERAGE_GATE
+    from prompt_architect import DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL
+
+    gate_status = compute_domain_gate(state)
+    unprobed = [
+        f"  - {DOMAIN_COVERAGE_GATE[k]['label']}"
+        for k, s in gate_status.items()
+        if s in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL)
+    ]
+    return "\n".join(unprobed) if unprobed else "  (all domains probed)"
 
 
 # ---------------------------------------------------------------------------
@@ -182,30 +291,27 @@ class FollowUpQuestion:
     severity:       str
     is_partial:     bool
     rationale:      str = ""
-    source:         str = "llm"   # "llm" | "template"
+    source:         str = "llm"   # "llm" | "template" | "domain_gate"
 
     def to_dict(self) -> dict:
         return {
-            "question_id": self.question_id,
-            "category_key": self.category_key,
+            "question_id":    self.question_id,
+            "category_key":   self.category_key,
             "category_label": self.category_label,
-            "question_text": self.question_text,
-            "severity": self.severity,
-            "is_partial": self.is_partial,
-            "rationale": self.rationale,
-            "source": self.source,
+            "question_text":  self.question_text,
+            "severity":       self.severity,
+            "is_partial":     self.is_partial,
+            "rationale":      self.rationale,
+            "source":         self.source,
         }
 
 
 @dataclass
 class QuestionSet:
-    """All follow-up questions generated for a single turn."""
-    session_id:      str = ""
-    turn_id:         int = 0
-    total_gaps:      int = 0
-    addressed_gaps:  int = 0
+    """Collection of follow-up questions for a single turn."""
     questions:       list[FollowUpQuestion] = field(default_factory=list)
     primary_question: Optional[FollowUpQuestion] = None
+    addressed_gaps:  int = 0
 
     @property
     def has_questions(self) -> bool:
@@ -213,23 +319,23 @@ class QuestionSet:
 
 
 class QuestionTracker:
-    """Tracks which question IDs and category keys have been asked this session."""
+    """Tracks which questions have been asked to avoid repetition."""
 
-    def __init__(self):
-        self._asked_ids: set[str]          = set()
+    def __init__(self) -> None:
+        self._asked: set[str] = set()
         self._category_counts: dict[str, int] = {}
 
     def is_asked(self, question_id: str) -> bool:
-        return question_id in self._asked_ids
-
-    def times_asked(self, category_key: str) -> int:
-        return self._category_counts.get(category_key, 0)
+        return question_id in self._asked
 
     def mark_asked(self, question: FollowUpQuestion) -> None:
-        self._asked_ids.add(question.question_id)
+        self._asked.add(question.question_id)
         self._category_counts[question.category_key] = (
             self._category_counts.get(question.category_key, 0) + 1
         )
+
+    def times_asked(self, category_key: str) -> int:
+        return self._category_counts.get(category_key, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -238,27 +344,18 @@ class QuestionTracker:
 
 class ProactiveQuestionGenerator:
     """
-    Generates one targeted follow-up question per turn.
+    Generates targeted follow-up questions from gap reports and domain gate.
 
-    Mode hierarchy (FIX-B/C):
-      1. LLM mode (default): calls the LLM with a meta-prompt for a
-         context-aware, project-specific question.
-      2. Template fallback: used when LLM provider is unavailable or the
-         meta-call fails.
+    Priority order (Iteration 4):
+      1. Unprobed domain gate entries     (IT4-A — highest priority)
+      2. Critical IEEE-830 gaps           (existing logic)
+      3. Important IEEE-830 gaps          (existing logic)
+      4. Optional IEEE-830 gaps           (existing logic)
 
-    Parameters
-    ----------
-    max_questions_per_turn : int
-        Maximum questions to surface per turn (keep at 1 — do not overwhelm).
-    mode : "llm" | "template"
-        "llm"      — use LLM meta-prompt (primary, recommended).
-        "template" — use parameterised templates (fallback / ablation OFF branch).
-    llm_provider : optional LLMProvider instance
-        Required for mode="llm".  If None, falls back to template mode silently.
+    Generation modes:
+      "llm"      — LLM meta-prompt (primary, context-aware)
+      "template" — deterministic fallback
     """
-
-    # Minimum FRs before NFR questions are prioritised (mirrors prompt_architect)
-    MIN_FUNCTIONAL_REQS: int = 3
 
     def __init__(
         self,
@@ -266,60 +363,70 @@ class ProactiveQuestionGenerator:
         mode: str = "llm",
         llm_provider=None,
         templates: Optional[dict] = None,
-    ):
+    ) -> None:
         self.max_questions_per_turn = max_questions_per_turn
         self.mode = mode
         self._llm_provider = llm_provider
         self._templates = templates or FALLBACK_TEMPLATES
+        self._tracker = QuestionTracker()
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
+    @property
+    def tracker(self) -> QuestionTracker:
+        return self._tracker
 
     def generate(
         self,
         gap_report: "GapReport",
         state: "ConversationState",
-        tracker: QuestionTracker,
+        project_name: str = "the system",
     ) -> QuestionSet:
         """
-        Generate a follow-up question for the highest-priority uncovered gap.
-
-        FIX-D: If functional_count < MIN_FUNCTIONAL_REQS, the "functional"
-        gap is always surfaced first regardless of gap_report ordering.
+        Generate up to max_questions_per_turn follow-up questions.
+        Domain gate gaps are always processed before IEEE-830 category gaps.
         """
-        project_name = getattr(state, "project_name", "the system") or "the system"
+        question_set = QuestionSet()
+        tracker = self._tracker
 
-        question_set = QuestionSet(
-            session_id=gap_report.session_id,
-            turn_id=gap_report.turn_id,
-            total_gaps=len(gap_report.all_gaps),
+        # ── IT4-A: Domain gate priority pass ──────────────────────────────
+        domain_questions = self._generate_domain_gate_questions(
+            state, project_name, tracker
         )
+        for q in domain_questions:
+            if len(question_set.questions) >= self.max_questions_per_turn:
+                break
+            if not tracker.is_asked(q.question_id):
+                question_set.questions.append(q)
+                tracker.mark_asked(q)
+                question_set.addressed_gaps += 1
 
-        if not gap_report.all_gaps:
+        if len(question_set.questions) >= self.max_questions_per_turn:
+            question_set.primary_question = question_set.questions[0]
             return question_set
 
-        # FIX-D: FR deficit check — override gap ordering
-        priority_gaps = list(gap_report.priority_gaps)
-        if state.functional_count < self.MIN_FUNCTIONAL_REQS:
-            # Move functional gap to front if present
-            functional_gaps = [g for g in priority_gaps if g.category_key == "functional"]
-            other_gaps = [g for g in priority_gaps if g.category_key != "functional"]
-            priority_gaps = functional_gaps + other_gaps
+        # ── IEEE-830 gap pass (existing logic) ────────────────────────────
+        from prompt_architect import MIN_FUNCTIONAL_REQS
+        from gap_detector import GapSeverity
 
-        generated = 0
+        all_gaps = gap_report.all_gaps if gap_report else []
+
+        # FR-deficit: always probe functional gaps first
+        if state.functional_count < MIN_FUNCTIONAL_REQS:
+            functional_gaps = [g for g in all_gaps if g.category_key == "functional"]
+            other_gaps = [g for g in all_gaps if g.category_key != "functional"]
+            priority_gaps = functional_gaps + other_gaps
+        else:
+            priority_gaps = all_gaps
+
         for gap in priority_gaps:
-            if generated >= self.max_questions_per_turn:
+            if len(question_set.questions) >= self.max_questions_per_turn:
                 break
             if tracker.times_asked(gap.category_key) >= 3:
                 continue
-
-            question = self._generate_for_gap(gap, project_name, state, tracker)
-            if question and not tracker.is_asked(question.question_id):
-                question_set.questions.append(question)
-                tracker.mark_asked(question)
+            q = self._generate_for_gap(gap, project_name, state, tracker)
+            if q and not tracker.is_asked(q.question_id):
+                question_set.questions.append(q)
+                tracker.mark_asked(q)
                 question_set.addressed_gaps += 1
-                generated += 1
 
         if question_set.questions:
             question_set.primary_question = question_set.questions[0]
@@ -328,12 +435,7 @@ class ProactiveQuestionGenerator:
 
     def build_injection_text(self, question_set: QuestionSet) -> str:
         """
-        Build the directive block injected into PromptArchitect.extra_context.
-
-        The directive tells the LLM WHICH gap to probe, but does NOT dictate
-        the exact wording — the LLM weaves the question naturally.
-        If mode=llm and we have a generated question, we surface it as a
-        "suggested phrasing" rather than a mandatory script.
+        Build the directive injected into PromptArchitect.extra_context.
         """
         if not question_set.has_questions:
             return ""
@@ -345,32 +447,102 @@ class ProactiveQuestionGenerator:
         lines = [
             "── PROACTIVE QUESTIONING DIRECTIVE ──",
             f"Gap to probe next: {primary.category_label} (severity: {primary.severity.upper()})",
-            f"Why: {desc}",
-            "",
         ]
+        if desc:
+            lines.append(f"Why: {desc}")
+        lines.append("")
 
-        if primary.source == "llm":
+        if primary.source == "domain_gate":
             lines += [
-                "A context-aware question has been pre-generated for this gap:",
+                "This is an UNPROBED FUNCTIONAL DOMAIN — highest priority.",
+                f"Domain probe question: \"{primary.question_text}\"",
+                "",
+                "Use this question verbatim or adapt it to flow naturally. "
+                "Do NOT skip this domain.",
+            ]
+        elif primary.source == "llm":
+            lines += [
+                "Context-aware question pre-generated for this gap:",
                 f"  \"{primary.question_text}\"",
                 "",
-                "You MAY use this question verbatim or adapt it to flow naturally from your "
-                "previous statement.  Do NOT ignore this gap category.",
+                "You MAY use this verbatim or adapt it. Do NOT ignore this gap.",
             ]
         else:
             lines += [
                 "Suggested question (template fallback):",
                 f"  \"{primary.question_text}\"",
                 "",
-                "Integrate this naturally into your response rather than listing it as a "
-                "separate bullet point.",
+                "Integrate this naturally into your response.",
             ]
 
         lines.append("── END DIRECTIVE ──")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Internal helpers
+    # Internal: domain gate question generation (IT4-A)
+    # ------------------------------------------------------------------
+
+    def _generate_domain_gate_questions(
+        self,
+        state: "ConversationState",
+        project_name: str,
+        tracker: QuestionTracker,
+    ) -> list[FollowUpQuestion]:
+        """
+        Generate questions for UNPROBED domain gate entries.
+        Returns at most max_questions_per_turn questions, unprobed first.
+        """
+        from prompt_architect import (
+            compute_domain_gate, DOMAIN_COVERAGE_GATE,
+            DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL,
+        )
+
+        gate_status = compute_domain_gate(state)
+        questions: list[FollowUpQuestion] = []
+
+        # Process UNPROBED first, then PARTIAL
+        ordered_keys = (
+            [k for k, s in gate_status.items() if s == DOMAIN_STATUS_UNPROBED]
+            + [k for k, s in gate_status.items() if s == DOMAIN_STATUS_PARTIAL]
+        )
+
+        for domain_key in ordered_keys:
+            if len(questions) >= self.max_questions_per_turn:
+                break
+
+            template_key = f"domain_{domain_key}"
+            templates = self._templates.get(template_key, [])
+            if not templates:
+                continue
+
+            asked_count  = tracker.times_asked(template_key)
+            if asked_count >= len(templates):
+                continue
+
+            question_text = templates[asked_count % len(templates)]
+            question_id   = f"{template_key}_{asked_count}"
+
+            if tracker.is_asked(question_id):
+                continue
+
+            questions.append(FollowUpQuestion(
+                question_id    = question_id,
+                category_key   = template_key,
+                category_label = DOMAIN_COVERAGE_GATE[domain_key]["label"],
+                question_text  = question_text,
+                severity       = "critical",
+                is_partial     = gate_status[domain_key] == DOMAIN_STATUS_PARTIAL,
+                rationale      = (
+                    f"Domain gate: '{DOMAIN_COVERAGE_GATE[domain_key]['label']}' "
+                    f"is {gate_status[domain_key]} — must be probed before SRS generation."
+                ),
+                source         = "domain_gate",
+            ))
+
+        return questions
+
+    # ------------------------------------------------------------------
+    # Internal: IEEE-830 gap question generation (existing)
     # ------------------------------------------------------------------
 
     def _generate_for_gap(
@@ -380,7 +552,6 @@ class ProactiveQuestionGenerator:
         state: "ConversationState",
         tracker: QuestionTracker,
     ) -> Optional[FollowUpQuestion]:
-        """Route to LLM or template based on mode and provider availability."""
         if self.mode == "llm" and self._llm_provider is not None:
             return self._generate_llm(gap, project_name, state, tracker)
         return self._generate_template(gap, project_name, state, tracker)
@@ -392,50 +563,48 @@ class ProactiveQuestionGenerator:
         state: "ConversationState",
         tracker: QuestionTracker,
     ) -> Optional[FollowUpQuestion]:
-        """Generate a question using the LLM meta-prompt (FIX-B)."""
         history_summary, n_turns = _build_history_summary(state, max_turns=4)
+        unprobed_text = _build_unprobed_domains_text(state)
 
         meta_prompt = _META_PROMPT_TEMPLATE.format(
-            project_name=project_name,
-            n_turns=n_turns,
-            history_summary=history_summary,
-            fr_count=state.functional_count,
-            nfr_count=state.nonfunctional_count,
-            gap_label=gap.label,
-            gap_description=gap.description,
-            gap_severity=gap.severity.value,
+            project_name     = project_name,
+            n_turns          = n_turns,
+            history_summary  = history_summary,
+            fr_count         = state.functional_count,
+            nfr_count        = state.nonfunctional_count,
+            unprobed_domains = unprobed_text,
+            gap_label        = gap.label,
+            gap_description  = gap.description,
+            gap_severity     = gap.severity.value,
         )
 
         try:
-            # The meta-prompt is a self-contained single-turn call
             raw = self._llm_provider.chat(
                 system_message="You are a concise requirements engineering assistant.",
                 messages=[{"role": "user", "content": meta_prompt}],
-                temperature=0.4,   # slight creativity for question variety
+                temperature=0.4,
             )
-            # Strip any markdown or leading/trailing quotes the LLM might add
             question_text = raw.strip().strip('"').strip("'").strip()
             if not question_text or len(question_text) < 10:
-                raise ValueError("LLM returned an empty or too-short question.")
+                raise ValueError("LLM returned empty question.")
         except Exception:
-            # FIX-C: graceful fallback to template
             return self._generate_template(gap, project_name, state, tracker)
 
-        # Build a stable ID: category + hash of question text first 40 chars
-        question_id = f"{gap.category_key}_llm_{abs(hash(question_text[:40])) % 10000:04d}"
-
+        question_id = (
+            f"{gap.category_key}_llm_{abs(hash(question_text[:40])) % 10000:04d}"
+        )
         return FollowUpQuestion(
-            question_id=question_id,
-            category_key=gap.category_key,
-            category_label=gap.label,
-            question_text=question_text,
-            severity=gap.severity.value,
-            is_partial=gap.is_partial,
-            rationale=(
-                f"LLM-generated for '{gap.label}' gap "
+            question_id    = question_id,
+            category_key   = gap.category_key,
+            category_label = gap.label,
+            question_text  = question_text,
+            severity       = gap.severity.value,
+            is_partial     = gap.is_partial,
+            rationale      = (
+                f"LLM-generated for '{gap.label}' "
                 f"({'partial' if gap.is_partial else 'uncovered'}, {gap.severity.value})."
             ),
-            source="llm",
+            source         = "llm",
         )
 
     def _generate_template(
@@ -445,28 +614,27 @@ class ProactiveQuestionGenerator:
         state: "ConversationState",
         tracker: QuestionTracker,
     ) -> Optional[FollowUpQuestion]:
-        """Select and parameterise a fallback template (FIX-C)."""
         templates = self._templates.get(gap.category_key, [])
         if not templates:
             return None
 
-        asked_count  = tracker.times_asked(gap.category_key)
-        template_idx = asked_count % len(templates)
+        asked_count   = tracker.times_asked(gap.category_key)
+        template_idx  = asked_count % len(templates)
         question_text = templates[template_idx].replace("{project_name}", project_name)
-        question_id = f"{gap.category_key}_{template_idx}"
+        question_id   = f"{gap.category_key}_{template_idx}"
 
         return FollowUpQuestion(
-            question_id=question_id,
-            category_key=gap.category_key,
-            category_label=gap.label,
-            question_text=question_text,
-            severity=gap.severity.value,
-            is_partial=gap.is_partial,
-            rationale=(
+            question_id    = question_id,
+            category_key   = gap.category_key,
+            category_label = gap.label,
+            question_text  = question_text,
+            severity       = gap.severity.value,
+            is_partial     = gap.is_partial,
+            rationale      = (
                 f"Template fallback for '{gap.label}' "
                 f"({'partial' if gap.is_partial else 'uncovered'}, variant #{template_idx + 1})."
             ),
-            source="template",
+            source         = "template",
         )
 
     def _get_category_description(self, key: str) -> str:
@@ -483,15 +651,6 @@ def create_question_generator(
     mode: str = "llm",
     llm_provider=None,
 ) -> ProactiveQuestionGenerator:
-    """
-    Factory function.
-
-    Parameters
-    ----------
-    mode : "llm" (default) | "template"
-    llm_provider : LLMProvider instance (required for mode="llm").
-                   Pass the same provider used by ConversationManager.
-    """
     return ProactiveQuestionGenerator(
         max_questions_per_turn=max_questions_per_turn,
         mode=mode,

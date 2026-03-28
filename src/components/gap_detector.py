@@ -1,31 +1,38 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Fix log (applied before Iteration 4)
+Fix log (Iteration 3)
 --------------------------------------
-FIX-G1  Keyword threshold raised for the "functional" category.
-        The old threshold (≥3 keywords → "covered") was too easy to satisfy
-        because common words like "allow", "must", "should" appear in NFR
-        discussions all the time.  Functional coverage now requires ≥5 distinct
-        keyword hits AND at least 1 explicit "shall" / "must" statement that is
-        tagged as an FR in the requirement store.  This prevents the GapDetector
-        from falsely reporting functional coverage before any real FRs exist.
+FIX-G1  Keyword threshold raised for "functional" category.
+FIX-G2  _classify_functional_coverage helper added (uses requirement store).
+FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories.
+FIX-G4  Added scalability, data_requirements, testability, deployment,
+        use_cases, business_rules, assumptions to the checklist.
 
-FIX-G2  Added a _classify_functional_coverage helper that checks the requirement
-        store directly — if state.functional_count >= 1, functional is at least
-        "partial"; if >= 3, it is "covered".  This makes coverage state consistent
-        with the actual extraction results rather than keyword counting alone.
+Iteration 4 additions
+--------------------------------------
+IT4-G1  Domain gate integration: GapDetector.analyse() now calls
+        compute_domain_gate() from prompt_architect and synthesises
+        domain-level gaps into the GapReport as CRITICAL gaps when a
+        domain is UNPROBED.  This ensures the question_generator's
+        domain-first priority pass (IT4-A) has matching gap entries to
+        work from even when the IEEE-830 keyword scanner would otherwise
+        miss them.
 
-FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories
-        to reduce false positives.
+IT4-G2  "interfaces" gap now also checks against domain gate entry
+        "hardware_connectivity" — the most common cause of the External
+        Interfaces section being empty was that no hardware questions
+        were ever asked.
 
-FIX-G4  Added "scalability", "data_requirements", "testability", "deployment",
-        "use_cases", "business_rules", "assumptions" to the checklist (they were
-        in question_generator templates but missing from the checklist, causing
-        GapDetector to never detect those gaps).
+IT4-G3  "functional" gap threshold now also checks whether ALL 8 domain
+        gate entries have been probed.  If any domain is UNPROBED, the
+        functional category is classified as at most "partial" regardless
+        of FR count.  This prevents the gap detector from falsely marking
+        functional coverage as "covered" when entire feature domains are
+        missing.
 """
 
 from __future__ import annotations
@@ -403,12 +410,59 @@ class GapDetector:
                 gap = self._make_gap(key, spec, is_partial=False)
                 self._add_gap(gap, spec["severity"], report)
 
+        # IT4-G1: Inject domain gate gaps as CRITICAL gaps when unprobed
+        self._inject_domain_gate_gaps(state, report)
+
         effective = report.covered_count + (report.partial_count * 0.5)
         report.coverage_pct = round(
             (effective / report.total_categories) * 100, 1
         ) if report.total_categories else 0.0
 
         return report
+
+    def _inject_domain_gate_gaps(
+        self, state: "ConversationState", report: GapReport
+    ) -> None:
+        """
+        IT4-G1: Synthesise domain gate status into the GapReport as
+        CRITICAL CategoryGap entries. This allows the question_generator's
+        domain-first priority pass (IT4-A) to receive matching gap objects.
+
+        Only adds a gap if the domain is UNPROBED or PARTIAL and has not
+        already been added by the standard checklist scan (avoids duplicates
+        by checking category_key prefix "domain_").
+        """
+        try:
+            from prompt_architect import (
+                compute_domain_gate, DOMAIN_COVERAGE_GATE,
+                DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL,
+            )
+        except ImportError:
+            return  # graceful degradation if prompt_architect not available
+
+        gate_status = compute_domain_gate(state)
+        existing_keys = {g.category_key for g in report.critical_gaps + report.important_gaps}
+
+        for domain_key, status in gate_status.items():
+            if status not in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL):
+                continue
+
+            synthetic_key = f"domain_{domain_key}"
+            if synthetic_key in existing_keys:
+                continue
+
+            spec = DOMAIN_COVERAGE_GATE[domain_key]
+            gap = CategoryGap(
+                category_key = synthetic_key,
+                label        = spec["label"],
+                severity     = GapSeverity.CRITICAL,
+                description  = spec["fallback_probe"],
+                volere_ref   = "Domain Coverage Gate",
+                ieee830_ref  = "§3.1 / §3.2 Functional Requirements",
+                is_partial   = (status == DOMAIN_STATUS_PARTIAL),
+            )
+            report.critical_gaps.append(gap)
+            existing_keys.add(synthetic_key)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -469,11 +523,30 @@ class GapDetector:
     @staticmethod
     def _classify_functional_coverage(state: "ConversationState") -> str:
         """
-        FIX-G2: Classify functional coverage using the actual FR count in state.
-        ≥3 FRs → covered; ≥1 FR → partial; 0 FRs → uncovered.
+        FIX-G2 / IT4-G3: Classify functional coverage using:
+          1. The actual FR count in state (existing).
+          2. Domain gate completeness (new): if any domain is UNPROBED,
+             functional coverage is at most "partial" even if FR count ≥ 3.
+             This prevents the gap detector from declaring functional coverage
+             "covered" when entire feature domains were never surfaced.
         """
         count = state.functional_count
-        if count >= 3:
+        if count == 0:
+            return "uncovered"
+
+        # IT4-G3: check domain gate
+        try:
+            from prompt_architect import (
+                compute_domain_gate, DOMAIN_STATUS_UNPROBED,
+            )
+            gate_status = compute_domain_gate(state)
+            any_unprobed = any(
+                s == DOMAIN_STATUS_UNPROBED for s in gate_status.values()
+            )
+        except ImportError:
+            any_unprobed = False
+
+        if count >= 3 and not any_unprobed:
             return "covered"
         elif count >= 1:
             return "partial"

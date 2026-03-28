@@ -1,28 +1,26 @@
 """
 src/components/conversation_state.py
 ======================
-RE Assistant — Iteration 3 | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 Conversation State Management
 
-Responsibilities
-----------------
-- Track which IEEE-830 categories have been covered during elicitation
-- Store all elicited requirements (FRs and NFRs) with metadata
-- Maintain turn history with timestamps
-- Detect coverage gaps so the prompt architect can inject them into the system message
-- Provide session summary for evaluation / SRS generation
+Iteration 4 additions
+---------------------
+IT4-S1  get_coverage_report() now includes "domain_gate_status" and
+        "domain_completeness_score" keys so that evaluation scripts and
+        the SRS formatter can read both the old IEEE-830 metric and the new
+        domain completeness metric from the same dict.
 
-This module addresses Failure Mode 3 (Premature Closure):
-  In Iteration 1 the baseline LLM used a fixed 3-turn template regardless of complexity.
-  By maintaining explicit state, the RE Assistant knows what is still missing and
-  will not offer to generate the SRS until mandatory categories are covered.
+IT4-S2  is_ready_for_srs() helper method added. Wraps the combined
+        PromptArchitect.is_srs_generation_permitted() check so that
+        ConversationManager has a single clean API call to determine
+        whether the session is ready to generate the SRS.
 
-Design notes
-------------
-- No database; in-memory Python dataclasses + JSON serialisation for logs.
-- All state is serialisable so sessions can be saved and reloaded.
-- ConversationState is the single source of truth for the prompt architect,
-  the SRS generator, and the session logger.
+All original Iteration 3 responsibilities remain unchanged:
+  - Track IEEE-830 category coverage via heuristic keyword scan
+  - Store all elicited requirements with metadata
+  - Maintain turn history with timestamps
+  - Provide session summary for evaluation / SRS generation
 """
 
 from __future__ import annotations
@@ -346,21 +344,34 @@ class ConversationState:
     # ------------------------------------------------------------------
 
     def get_coverage_report(self) -> dict:
-        """Return a structured coverage report for evaluation / logging."""
-        from prompt_architect import IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES
+        """Return a structured coverage report for evaluation / logging.
+
+        Iteration 4: includes domain_gate_status and domain_completeness_score
+        alongside existing IEEE-830 metrics (IT4-S1).
+        """
+        from prompt_architect import (
+            IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES,
+            compute_domain_gate, domain_gate_completeness,
+            gate_is_satisfied,
+        )
+
+        gate_status = compute_domain_gate(self)
+        done_count, total_count = domain_gate_completeness(gate_status)
+
         return {
-            "session_id":              self.session_id,
-            "project_name":            self.project_name,
-            "turn_count":              self.turn_count,
-            "total_requirements":      self.total_requirements,
-            "functional_count":        self.functional_count,
-            "nonfunctional_count":     self.nonfunctional_count,
-            "constraint_count":        self.constraint_count,
-            "coverage_percentage":     self.coverage_percentage,
-            "mandatory_nfrs_covered":  self.mandatory_nfrs_covered,
-            "covered_categories":      sorted(self.covered_categories),
-            "uncovered_categories":    self.uncovered_categories,
-            "missing_mandatory_nfrs":  [
+            "session_id":               self.session_id,
+            "project_name":             self.project_name,
+            "turn_count":               self.turn_count,
+            "total_requirements":       self.total_requirements,
+            "functional_count":         self.functional_count,
+            "nonfunctional_count":      self.nonfunctional_count,
+            "constraint_count":         self.constraint_count,
+            # ── IEEE-830 metric (existing) ──
+            "coverage_percentage":      self.coverage_percentage,
+            "mandatory_nfrs_covered":   self.mandatory_nfrs_covered,
+            "covered_categories":       sorted(self.covered_categories),
+            "uncovered_categories":     self.uncovered_categories,
+            "missing_mandatory_nfrs": [
                 IEEE830_CATEGORIES[c]
                 for c in MANDATORY_NFR_CATEGORIES
                 if c not in self.covered_categories
@@ -368,6 +379,11 @@ class ConversationState:
             "category_status": {
                 k: v.value for k, v in self.category_status.items()
             },
+            # ── Domain completeness metric (Iteration 4 — Priority 5) ──
+            "domain_gate_status":         gate_status,
+            "domain_completeness_score":  f"{done_count}/{total_count}",
+            "domain_completeness_pct":    round(done_count / total_count * 100),
+            "domain_gate_satisfied":      gate_is_satisfied(gate_status),
         }
 
     def get_next_priority_category(self) -> Optional[str]:
@@ -376,15 +392,32 @@ class ConversationState:
         Priority order: mandatory NFRs first, then remaining categories.
         """
         from prompt_architect import IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES
-        # Mandatory NFRs first
         for cat in MANDATORY_NFR_CATEGORIES:
             if cat not in self.covered_categories:
                 return cat
-        # Then remaining IEEE-830 categories
         for cat in IEEE830_CATEGORIES:
             if cat not in self.covered_categories:
                 return cat
         return None
+
+    def is_ready_for_srs(self) -> bool:
+        """
+        IT4-S2: Single-call API for ConversationManager to check SRS readiness.
+        Delegates to PromptArchitect.is_srs_generation_permitted() which enforces:
+          - Domain gate fully satisfied (all 8 domains confirmed or excluded)
+          - All mandatory NFR categories covered
+          - Minimum FR count met
+        """
+        try:
+            from prompt_architect import PromptArchitect
+            architect = PromptArchitect()
+            return architect.is_srs_generation_permitted(self)
+        except ImportError:
+            # Graceful degradation: fall back to old logic
+            return (
+                self.mandatory_nfrs_covered
+                and self.functional_count >= 5
+            )
 
     # ------------------------------------------------------------------
     # Serialisation
