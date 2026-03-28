@@ -57,7 +57,7 @@ from flask_cors import CORS
 from src.components.conversation_manager import ConversationManager, create_provider
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
-from src.components.question_generator import ProactiveQuestionGenerator, QuestionTracker, create_question_generator
+from src.components.question_generator import ProactiveQuestionGenerator, create_question_generator
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +133,7 @@ def start_session():
 
     gap_detector = create_gap_detector(enabled=gap_detection_enabled)
     q_generator  = create_question_generator(max_questions_per_turn=2)
-    q_tracker    = QuestionTracker()
+    # Iteration 4: QuestionTracker is internal to the generator instance
 
     _sessions[session_id] = {
         "manager":      manager,
@@ -142,7 +142,6 @@ def start_session():
         "template":     template,
         "gap_detector": gap_detector,
         "q_generator":  q_generator,
-        "q_tracker":    q_tracker,
         "srs_path":     None,
         "gap_detection_enabled": gap_detection_enabled,
     }
@@ -189,14 +188,14 @@ def send_turn():
     logger = session["logger"]
     gap_detector: GapDetector = session["gap_detector"]
     q_generator: ProactiveQuestionGenerator = session["q_generator"]
-    q_tracker: QuestionTracker = session["q_tracker"]
 
     if state.session_complete:
         return jsonify({"error": "Session already complete. Generate SRS or start a new session."}), 400
 
     # --- Run gap detection BEFORE calling LLM (to inject directive into prompt) ---
     pre_gap_report = gap_detector.analyse(state)
-    q_set = q_generator.generate(pre_gap_report, state, q_tracker)
+    # Iteration 4: tracker is internal to the generator; no tracker argument
+    q_set = q_generator.generate(pre_gap_report, state)
 
     # Inject proactive question directive into manager's prompt architect
     if q_set.has_questions and hasattr(manager, "_prompt_architect"):
@@ -212,21 +211,19 @@ def send_turn():
     # --- Run gap detection AFTER turn to report updated state ---
     post_gap_report = gap_detector.analyse(state)
 
-    # srs_ready = False
-    # try:
-    #     srs_path = manager.finalize_session(state, logger)
-    #     session["srs_path"] = srs_path
-    #     srs_ready = True
-    # except Exception as e:
-    #     pass  # SRS generation failure is non-fatal for the API response
+    # Iteration 4: compute domain gate + coverage report for dual metrics in UI
+    coverage_report = state.get_coverage_report()
+    srs_ready = state.is_ready_for_srs()
 
     return jsonify({
-        "session_id":      session_id,
-        "assistant_reply": assistant_reply,
-        "turn_id":         state.turn_count,
-        "gap_report":      post_gap_report.to_dict(),
+        "session_id":          session_id,
+        "assistant_reply":     assistant_reply,
+        "turn_id":             state.turn_count,
+        "gap_report":          post_gap_report.to_dict(),
         "follow_up_questions": [q.to_dict() for q in q_set.questions],
-        "coverage_pct":    post_gap_report.coverage_pct,
+        "coverage_pct":        post_gap_report.coverage_pct,
+        "coverage_report":     coverage_report,   # NEW: domain gate + dual metrics
+        "srs_ready":           srs_ready,          # NEW: uses hard domain gate check
     })
 
 
@@ -357,7 +354,7 @@ def server_error(e):
 def main():
     global _provider_name, _provider_kwargs
 
-    parser = argparse.ArgumentParser(description="RE Assistant Web UI — Iteration 3")
+    parser = argparse.ArgumentParser(description="RE Assistant Web UI — Iteration 4")
     parser.add_argument("--provider", choices=["openai", "stub", "ollama"], default="openai",
                         help="LLM provider (default: stub)")
     parser.add_argument("--model", default="gpt-4o", help="Model name (default: gpt-4o)")
@@ -373,7 +370,7 @@ def main():
         _provider_kwargs = {"model": args.model}
 
     print(f"\n{'═' * 60}")
-    print(f"  RE Assistant — Iteration 3 | University of Hildesheim")
+    print(f"  RE Assistant — Iteration 4 | University of Hildesheim")
     print(f"  Web UI starting on http://{args.host}:{args.port}")
     print(f"  LLM Provider: {_provider_name} Model: {_provider_kwargs.get('model', 'N/A')}")
     print(f"{'═' * 60}\n")

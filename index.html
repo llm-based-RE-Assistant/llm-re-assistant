@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RE Assistant — Iteration 3</title>
+    <title>RE Assistant — Iteration 4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
@@ -706,30 +706,170 @@
       <header class="topbar">
         <span class="topbar-logo">RE<span>Assistant</span></span>
         <span style="font-size: 12px; color: var(--text-muted)"
-          >Iteration 3 · University of Hildesheim</span
+          >Iteration 4 · University of Hildesheim</span
         >
         <span class="topbar-sep"></span>
         <span class="badge" id="badge-provider">provider: —</span>
         <span class="badge" id="badge-gap">gap detection: —</span>
         <span class="badge" id="badge-turn">turn: 0</span>
-        <span class="badge" id="badge-cov">coverage: 0%</span>
+        <span class="badge" id="badge-domain">domains: 0/8</span>
+        <span class="badge" id="badge-cov">ieee-830: 0%</span>
       </header>
 
       <!-- ── Left: Coverage checklist ─────────────────────────────────── -->
       <aside class="panel-left">
         <div class="panel-header">
-          Coverage
-          <span class="cov-pct" id="cov-pct-label">0%</span>
+          Completeness
+          <span class="cov-pct" id="cov-pct-label">0/8</span>
         </div>
+
+        <!-- Dual metric rings -->
         <div class="coverage-ring-wrap">
-          <svg class="ring-svg" viewBox="0 0 88 88">
-            <circle class="ring-bg" cx="44" cy="44" r="40" />
-            <circle class="ring-fill" cx="44" cy="44" r="40" id="ring-fill" />
-          </svg>
-          <span class="ring-label" id="ring-label">0%</span>
-          <span class="ring-sub" id="ring-sub">0 of 18 categories</span>
+          <!-- Domain gate ring (primary) -->
+          <div
+            style="display: flex; gap: 16px; align-items: center; width: 100%"
+          >
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                flex: 1;
+              "
+            >
+              <svg class="ring-svg" viewBox="0 0 88 88">
+                <circle class="ring-bg" cx="44" cy="44" r="40" />
+                <circle
+                  class="ring-fill"
+                  cx="44"
+                  cy="44"
+                  r="40"
+                  id="ring-fill"
+                />
+              </svg>
+              <span class="ring-label" id="ring-label">0%</span>
+              <span class="ring-sub" id="ring-sub">0/8 domains</span>
+            </div>
+            <!-- IEEE-830 mini ring -->
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                flex: 1;
+              "
+            >
+              <svg style="width: 60px; height: 60px" viewBox="0 0 88 88">
+                <circle class="ring-bg" cx="44" cy="44" r="40" />
+                <circle
+                  class="ring-fill"
+                  cx="44"
+                  cy="44"
+                  r="40"
+                  id="ring-fill-ieee"
+                  style="stroke: var(--text-muted)"
+                />
+              </svg>
+              <span
+                style="
+                  font-family: var(--mono);
+                  font-size: 13px;
+                  font-weight: 500;
+                "
+                id="ring-label-ieee"
+                >0%</span
+              >
+              <span class="ring-sub">IEEE-830</span>
+            </div>
+          </div>
+
+          <!-- Gate status legend -->
+          <div
+            id="gate-legend"
+            style="
+              width: 100%;
+              display: flex;
+              gap: 12px;
+              justify-content: center;
+              font-size: 11px;
+              color: var(--text-muted);
+              margin-top: 4px;
+            "
+          >
+            <span id="legend-confirmed" style="color: var(--success)"
+              >✅ 0</span
+            >
+            <span id="legend-partial" style="color: var(--warning)">🔶 0</span>
+            <span id="legend-unprobed" style="color: var(--danger)">⬜ 8</span>
+            <span id="legend-excluded" style="color: var(--text-muted)"
+              >❌ 0</span
+            >
+          </div>
         </div>
-        <div class="cat-list" id="cat-list">
+
+        <!-- Tab switcher for domain gate vs IEEE-830 list -->
+        <div
+          style="
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+          "
+        >
+          <button
+            class="left-tab-btn active"
+            id="ltab-domain"
+            onclick="switchLeftTab('domain')"
+            style="
+              flex: 1;
+              padding: 7px 0;
+              font-size: 11px;
+              font-weight: 600;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              background: none;
+              border: none;
+              cursor: pointer;
+              color: var(--accent);
+              border-bottom: 2px solid var(--accent);
+            "
+          >
+            Domains
+          </button>
+          <button
+            class="left-tab-btn"
+            id="ltab-ieee"
+            onclick="switchLeftTab('ieee')"
+            style="
+              flex: 1;
+              padding: 7px 0;
+              font-size: 11px;
+              font-weight: 600;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              background: none;
+              border: none;
+              cursor: pointer;
+              color: var(--text-muted);
+              border-bottom: 2px solid transparent;
+            "
+          >
+            IEEE-830
+          </button>
+        </div>
+
+        <!-- Domain gate list -->
+        <div class="cat-list" id="domain-list">
+          <div class="empty-state">
+            <span class="empty-txt"
+              >Start a session to see domain coverage</span
+            >
+          </div>
+        </div>
+
+        <!-- IEEE-830 category list (hidden by default) -->
+        <div class="cat-list" id="cat-list" style="display: none">
           <div class="empty-state">
             <span class="empty-txt">Start a session to see coverage</span>
           </div>
@@ -753,9 +893,9 @@
                 <span class="toggle-slider"></span>
               </label>
               <span
-                >Gap Detection
+                >Gap Detection + Domain Gate
                 <span style="color: var(--text-muted); font-size: 11px"
-                  >(Iteration 3)</span
+                  >(Iteration 4)</span
                 ></span
               >
             </div>
@@ -833,6 +973,7 @@
       const API = ""; // same-origin; change to 'http://localhost:5000' if needed
       let sessionId = null;
       let isSending = false;
+      let leftTab = "domain"; // "domain" | "ieee"
 
       /* ── Session start ──────────────────────────────────────────────────── */
       async function startSession() {
@@ -895,7 +1036,8 @@
             appendMessage("assistant", "⚠ " + (data.error || "Error"));
           } else {
             appendMessage("assistant", data.assistant_reply);
-            updateCoverage(data.gap_report);
+            // Priority 5: update both metrics from coverage_report
+            updateCoverage(data.gap_report, data.coverage_report);
             updateGapPanel(data.gap_report);
             updateQuestionPanel(data.follow_up_questions || []);
             updateBadges(data);
@@ -981,6 +1123,30 @@
           .classList.toggle("active", tab === "questions");
       }
 
+      /* ── Left panel tab switcher (domain gate vs IEEE-830) ──────────────── */
+      function switchLeftTab(tab) {
+        leftTab = tab;
+        const isDomain = tab === "domain";
+
+        document.getElementById("domain-list").style.display = isDomain
+          ? ""
+          : "none";
+        document.getElementById("cat-list").style.display = isDomain
+          ? "none"
+          : "";
+
+        const dBtn = document.getElementById("ltab-domain");
+        const iBtn = document.getElementById("ltab-ieee");
+        dBtn.style.color = isDomain ? "var(--accent)" : "var(--text-muted)";
+        dBtn.style.borderBottom = isDomain
+          ? "2px solid var(--accent)"
+          : "2px solid transparent";
+        iBtn.style.color = isDomain ? "var(--text-muted)" : "var(--accent)";
+        iBtn.style.borderBottom = isDomain
+          ? "2px solid transparent"
+          : "2px solid var(--accent)";
+      }
+
       function showSRSBanner() {
         document.getElementById("srs-banner").classList.add("visible");
       }
@@ -994,37 +1160,153 @@
           .replace(/'/g, "&#039;");
       }
 
-      /* ── Coverage ring update ────────────────────────────────────────────── */
-      function updateCoverage(gapReport) {
-        if (!gapReport) return;
-        const pct = gapReport.coverage_pct || 0;
+      /* ── Coverage update (Priority 5: dual metrics) ──────────────────────── */
+      /*
+       * gapReport  — from data.gap_report  (GapDetector output)
+       * covReport  — from data.coverage_report  (ConversationState.get_coverage_report())
+       *              contains domain_gate_status, domain_completeness_score, etc.
+       */
+      function updateCoverage(gapReport, covReport) {
         const CIRC = 251.2;
-        const offset = CIRC - (pct / 100) * CIRC;
 
-        document.getElementById("ring-fill").style.strokeDashoffset = offset;
-        document.getElementById("ring-label").textContent = pct + "%";
-        document.getElementById("cov-pct-label").textContent = pct + "%";
-        document.getElementById("badge-cov").textContent = `coverage: ${pct}%`;
+        // ── Domain gate ring (primary, left panel) ────────────────────────
+        if (covReport && covReport.domain_gate_status) {
+          const gate = covReport.domain_gate_status;
+          const total = Object.keys(gate).length || 8;
+          const done = Object.values(gate).filter(
+            (s) => s === "confirmed" || s === "excluded",
+          ).length;
+          const confirmed = Object.values(gate).filter(
+            (s) => s === "confirmed",
+          ).length;
+          const partial = Object.values(gate).filter(
+            (s) => s === "partial",
+          ).length;
+          const unprobed = Object.values(gate).filter(
+            (s) => s === "unprobed",
+          ).length;
+          const excluded = Object.values(gate).filter(
+            (s) => s === "excluded",
+          ).length;
+          const domainPct = Math.round((done / total) * 100);
 
-        const covered = gapReport.covered_count || 0;
-        const total = gapReport.total_categories || 0;
-        document.getElementById("ring-sub").textContent =
-          `${covered} of ${total} categories`;
+          const offset = CIRC - (domainPct / 100) * CIRC;
+          document.getElementById("ring-fill").style.strokeDashoffset = offset;
+          document.getElementById("ring-label").textContent = domainPct + "%";
+          document.getElementById("ring-sub").textContent =
+            `${done}/${total} domains`;
+          document.getElementById("cov-pct-label").textContent = `${done}/8`;
+          document.getElementById("badge-domain").textContent =
+            `domains: ${done}/8`;
 
-        // Update ring colour based on coverage
-        const fill = document.getElementById("ring-fill");
-        if (pct >= 75) fill.style.stroke = "var(--success)";
-        else if (pct >= 40) fill.style.stroke = "var(--warning)";
-        else fill.style.stroke = "var(--danger)";
+          // Ring colour: green if gate satisfied, amber if partial, red if mostly unprobed
+          const fill = document.getElementById("ring-fill");
+          if (domainPct >= 100) fill.style.stroke = "var(--success)";
+          else if (domainPct >= 50) fill.style.stroke = "var(--warning)";
+          else fill.style.stroke = "var(--danger)";
 
-        buildCategoryList(gapReport);
+          // Legend counts
+          document.getElementById("legend-confirmed").textContent =
+            `✅ ${confirmed}`;
+          document.getElementById("legend-partial").textContent =
+            `🔶 ${partial}`;
+          document.getElementById("legend-unprobed").textContent =
+            `⬜ ${unprobed}`;
+          document.getElementById("legend-excluded").textContent =
+            `❌ ${excluded}`;
+
+          // Domain gate list
+          buildDomainGateList(gate);
+        }
+
+        // ── IEEE-830 ring (secondary, smaller) ───────────────────────────
+        if (gapReport) {
+          const ieeePct = gapReport.coverage_pct || 0;
+          const ieeeOffset = CIRC - (ieeePct / 100) * CIRC;
+          document.getElementById("ring-fill-ieee").style.strokeDashoffset =
+            ieeeOffset;
+          document.getElementById("ring-label-ieee").textContent =
+            ieeePct + "%";
+          document.getElementById("badge-cov").textContent =
+            `ieee-830: ${ieeePct}%`;
+
+          // IEEE-830 ring colour
+          const fillIeee = document.getElementById("ring-fill-ieee");
+          if (ieeePct >= 75) fillIeee.style.stroke = "var(--success)";
+          else if (ieeePct >= 40) fillIeee.style.stroke = "var(--warning)";
+          else fillIeee.style.stroke = "var(--danger)";
+
+          buildCategoryList(gapReport);
+        }
       }
 
+      /* ── Domain gate list builder ────────────────────────────────────────── */
+      const DOMAIN_LABELS = {
+        climate_control: "Climate Control",
+        security_alarm: "Security & Alarm",
+        appliance_lighting: "Appliance & Lighting",
+        scheduling_planning: "Scheduling & Plans",
+        remote_access: "Remote Access",
+        user_management: "User Accounts & Roles",
+        reporting_history: "Historical Data & Logs",
+        hardware_connectivity: "Hardware Connectivity",
+      };
+
+      const DOMAIN_STATUS_ICONS = {
+        confirmed: { cls: "covered", icon: "✅", label: "Confirmed" },
+        partial: { cls: "partial", icon: "🔶", label: "Partial" },
+        unprobed: { cls: "uncovered", icon: "⬜", label: "Unprobed" },
+        excluded: { cls: "optional", icon: "❌", label: "Excluded" },
+      };
+
+      function buildDomainGateList(gate) {
+        const list = document.getElementById("domain-list");
+        list.innerHTML = "";
+
+        // Group by status for visual ordering: unprobed → partial → confirmed → excluded
+        const order = ["unprobed", "partial", "confirmed", "excluded"];
+        const grouped = {};
+        order.forEach((s) => (grouped[s] = []));
+        Object.entries(gate).forEach(([key, status]) => {
+          if (grouped[status]) grouped[status].push(key);
+          else grouped["unprobed"].push(key);
+        });
+
+        let anyItem = false;
+        order.forEach((status) => {
+          const keys = grouped[status];
+          if (!keys.length) return;
+          anyItem = true;
+
+          const secLabel = document.createElement("div");
+          secLabel.className = "cat-section-label";
+          const meta = DOMAIN_STATUS_ICONS[status] || {};
+          secLabel.textContent = meta.label || status;
+          list.appendChild(secLabel);
+
+          keys.forEach((key) => {
+            const div = document.createElement("div");
+            div.className = `cat-item ${meta.cls || ""}`;
+            const label = DOMAIN_LABELS[key] || key;
+            div.innerHTML = `
+              <div class="cat-dot"></div>
+              <span class="cat-name">${escHtml(label)}</span>
+              <span class="cat-sev">${meta.icon || ""}</span>`;
+            list.appendChild(div);
+          });
+        });
+
+        if (!anyItem) {
+          list.innerHTML =
+            '<div class="empty-state"><span class="empty-txt">No domain data yet</span></div>';
+        }
+      }
+
+      /* ── IEEE-830 category list builder (existing, unchanged) ────────────── */
       function buildCategoryList(gapReport) {
         if (!gapReport || !gapReport.all_categories) return;
         const allCats = gapReport.all_categories;
 
-        // Pull checklist info from gap arrays to get labels
         const metaMap = {};
         const allGaps = [
           ...(gapReport.critical_gaps || []),
@@ -1039,6 +1321,8 @@
         const sections = { critical: [], important: [], optional: [] };
 
         Object.entries(allCats).forEach(([key, status]) => {
+          // Skip domain_* synthetic keys — they belong in domain-list, not cat-list
+          if (key.startsWith("domain_")) return;
           const meta = metaMap[key] || { label: key, severity: "optional" };
           sections[meta.severity] = sections[meta.severity] || [];
           sections[meta.severity].push({
@@ -1107,15 +1391,39 @@
           return;
         }
 
-        allGaps.forEach((g) => {
-          const card = document.createElement("div");
-          card.className = `gap-card ${g.sev}`;
-          card.innerHTML = `
+        // Separate domain gate gaps from IEEE-830 gaps for visual grouping
+        const domainGaps = allGaps.filter(
+          (g) => g.category_key && g.category_key.startsWith("domain_"),
+        );
+        const ieeeGaps = allGaps.filter(
+          (g) => !g.category_key || !g.category_key.startsWith("domain_"),
+        );
+
+        if (domainGaps.length) {
+          const hdr = document.createElement("div");
+          hdr.className = "cat-section-label";
+          hdr.textContent = "Domain Gate Gaps";
+          panel.appendChild(hdr);
+          domainGaps.forEach((g) => panel.appendChild(makeGapCard(g)));
+        }
+
+        if (ieeeGaps.length) {
+          const hdr = document.createElement("div");
+          hdr.className = "cat-section-label";
+          hdr.textContent = "IEEE-830 Gaps";
+          panel.appendChild(hdr);
+          ieeeGaps.forEach((g) => panel.appendChild(makeGapCard(g)));
+        }
+      }
+
+      function makeGapCard(g) {
+        const card = document.createElement("div");
+        card.className = `gap-card ${g.sev}`;
+        card.innerHTML = `
       <div><span class="gap-card-sev">${g.sev.toUpperCase()}${g.is_partial ? " · PARTIAL" : ""}</span></div>
       <div class="gap-card-label">${escHtml(g.label)}</div>
       <div class="gap-card-desc">${escHtml(g.description || "")}</div>`;
-          panel.appendChild(card);
-        });
+        return card;
       }
 
       /* ── Follow-up questions panel ───────────────────────────────────────── */
@@ -1132,9 +1440,13 @@
         questions.forEach((q) => {
           const card = document.createElement("div");
           card.className = "q-card";
+          // Highlight domain gate questions visually
+          if (q.source === "domain_gate") {
+            card.style.borderLeft = "3px solid var(--danger)";
+          }
           card.title = "Click to use this question";
           card.innerHTML = `
-      <div class="q-card-for">→ ${escHtml(q.category_label)} (${q.severity})</div>
+      <div class="q-card-for">→ ${escHtml(q.category_label)} (${q.severity}${q.source === "domain_gate" ? " · domain gate" : ""})</div>
       <div class="q-card-text">${escHtml(q.question_text)}</div>`;
           card.onclick = () => {
             document.getElementById("input").value = q.question_text;
@@ -1144,7 +1456,6 @@
           panel.appendChild(card);
         });
 
-        // Auto-switch to questions tab when new ones appear
         switchTab("questions");
       }
 
@@ -1152,6 +1463,14 @@
       function updateBadges(data) {
         document.getElementById("badge-turn").textContent =
           `turn: ${data.turn_id || 0}`;
+
+        // Domain gate badge colour: green = all done, amber = partial, red = gaps
+        const badge = document.getElementById("badge-domain");
+        if (data.coverage_report) {
+          const pct = data.coverage_report.domain_completeness_pct || 0;
+          badge.className =
+            pct >= 100 ? "badge active" : pct >= 50 ? "badge warn" : "badge";
+        }
       }
     </script>
   </body>
