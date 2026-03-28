@@ -1,5 +1,5 @@
 """
-requirement_extractor.py
+src/components/requirement_extractor.py
 ========================
 RE Assistant — Iteration 3 | University of Hildesheim
 Automatic Requirement Extraction from LLM Responses
