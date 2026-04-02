@@ -1,7 +1,7 @@
 """
 app.py
 ======
-RE Assistant — Iteration 3 | University of Hildesheim
+RE Assistant — Iteration 5 | University of Hildesheim
 Web UI Backend (Flask)
 
 Responsibilities
@@ -58,6 +58,7 @@ from src.components.conversation_manager import ConversationManager, create_prov
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
 from src.components.question_generator import ProactiveQuestionGenerator, create_question_generator
+from src.components.domain_discovery import DomainGate
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +136,10 @@ def start_session():
     q_generator  = create_question_generator(max_questions_per_turn=2)
     # Iteration 4: QuestionTracker is internal to the generator instance
 
+    # IT5: initialise DomainGate on state (seeded after turn 1 by ConversationManager)
+    if state.domain_gate is None:
+        state.domain_gate = DomainGate()
+
     _sessions[session_id] = {
         "manager":      manager,
         "state":        state,
@@ -211,9 +216,31 @@ def send_turn():
     # --- Run gap detection AFTER turn to report updated state ---
     post_gap_report = gap_detector.analyse(state)
 
-    # Iteration 4: compute domain gate + coverage report for dual metrics in UI
+    # srs_ready: True only exposes the Download button — it does NOT auto-generate.
+    # Generation is only triggered by an explicit POST to /api/session/generate_srs.
+    # We set a MAX_TURNS safety ceiling so sessions don't run forever.
+    MAX_TURNS = 60
+    at_turn_limit = state.turn_count >= MAX_TURNS
+    srs_ready = state.is_ready_for_srs() or at_turn_limit
+
+    # IT5: build domain gate payload for UI
+    # The frontend updateCoverage() reads covReport.domain_gate_status (flat dict)
+    # and covReport.domain_gate_labels (key → human label).
+    # state.get_coverage_report() puts gate data under "domain_gate" (nested),
+    # so we add the flat keys the frontend needs explicitly.
     coverage_report = state.get_coverage_report()
-    srs_ready = state.is_ready_for_srs()
+    if state.domain_gate is not None and state.domain_gate.seeded:
+        coverage_report["domain_gate_status"] = {
+            k: v.status for k, v in state.domain_gate.domains.items()
+        }
+        coverage_report["domain_gate_labels"] = {
+            k: v.label for k, v in state.domain_gate.domains.items()
+        }
+        coverage_report["domain_completeness_pct"] = state.domain_gate.completeness_pct
+    else:
+        coverage_report["domain_gate_status"] = {}
+        coverage_report["domain_gate_labels"] = {}
+        coverage_report["domain_completeness_pct"] = 0
 
     return jsonify({
         "session_id":          session_id,
@@ -222,8 +249,8 @@ def send_turn():
         "gap_report":          post_gap_report.to_dict(),
         "follow_up_questions": [q.to_dict() for q in q_set.questions],
         "coverage_pct":        post_gap_report.coverage_pct,
-        "coverage_report":     coverage_report,   # NEW: domain gate + dual metrics
-        "srs_ready":           srs_ready,          # NEW: uses hard domain gate check
+        "coverage_report":     coverage_report,
+        "srs_ready":           srs_ready,
     })
 
 
@@ -354,7 +381,7 @@ def server_error(e):
 def main():
     global _provider_name, _provider_kwargs
 
-    parser = argparse.ArgumentParser(description="RE Assistant Web UI — Iteration 4")
+    parser = argparse.ArgumentParser(description="RE Assistant Web UI — Iteration 5")
     parser.add_argument("--provider", choices=["openai", "stub", "ollama"], default="openai",
                         help="LLM provider (default: stub)")
     parser.add_argument("--model", default="gpt-4o", help="Model name (default: gpt-4o)")
@@ -370,7 +397,7 @@ def main():
         _provider_kwargs = {"model": args.model}
 
     print(f"\n{'═' * 60}")
-    print(f"  RE Assistant — Iteration 4 | University of Hildesheim")
+    print(f"  RE Assistant — Iteration 5 | University of Hildesheim")
     print(f"  Web UI starting on http://{args.host}:{args.port}")
     print(f"  LLM Provider: {_provider_name} Model: {_provider_kwargs.get('model', 'N/A')}")
     print(f"{'═' * 60}\n")
