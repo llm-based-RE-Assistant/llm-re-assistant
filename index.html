@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RE Assistant — Iteration 4</title>
+    <title>RE Assistant — Iteration 5</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
@@ -706,13 +706,13 @@
       <header class="topbar">
         <span class="topbar-logo">RE<span>Assistant</span></span>
         <span style="font-size: 12px; color: var(--text-muted)"
-          >Iteration 4 · University of Hildesheim</span
+          >Iteration 5 · University of Hildesheim</span
         >
         <span class="topbar-sep"></span>
         <span class="badge" id="badge-provider">provider: —</span>
         <span class="badge" id="badge-gap">gap detection: —</span>
         <span class="badge" id="badge-turn">turn: 0</span>
-        <span class="badge" id="badge-domain">domains: 0/8</span>
+        <span class="badge" id="badge-domain">domains: 0/0</span>
         <span class="badge" id="badge-cov">ieee-830: 0%</span>
       </header>
 
@@ -720,7 +720,7 @@
       <aside class="panel-left">
         <div class="panel-header">
           Completeness
-          <span class="cov-pct" id="cov-pct-label">0/8</span>
+          <span class="cov-pct" id="cov-pct-label">0/0</span>
         </div>
 
         <!-- Dual metric rings -->
@@ -893,9 +893,9 @@
                 <span class="toggle-slider"></span>
               </label>
               <span
-                >Gap Detection + Domain Gate
+                >Gap Detection + Dynamic Domain Gate
                 <span style="color: var(--text-muted); font-size: 11px"
-                  >(Iteration 4)</span
+                  >(Iteration 5)</span
                 ></span
               >
             </div>
@@ -945,8 +945,10 @@
         </div>
 
         <div class="srs-banner" id="srs-banner">
-          <span class="srs-banner-txt">✓ SRS document ready</span>
-          <button class="btn-dl" onclick="downloadSRS()">Download</button>
+          <span class="srs-banner-txt"
+            >✓ All gates satisfied — SRS ready to generate</span
+          >
+          <button class="btn-dl" onclick="generateSRS()">Generate SRS</button>
         </div>
 
         <div class="tab-pane active" id="tab-gaps">
@@ -1053,15 +1055,33 @@
 
       /* ── Generate SRS ───────────────────────────────────────────────────── */
       async function generateSRS() {
+        //disable button and show loading state and also show toast notification that generation has started
         if (!sessionId) return;
+        const btn = document.querySelector(".srs-banner .btn-dl");
+        showtoast("SRS generation started. This may take a moment…");
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Generating…";
+        }
         const r = await fetch(`${API}/api/session/generate_srs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId }),
         });
         const data = await r.json();
-        if (data.success) showSRSBanner();
-        else alert("SRS generation failed: " + (data.error || "unknown error"));
+        if (data.success) {
+          // Switch banner to Download mode
+          const banner = document.getElementById("srs-banner");
+          banner.innerHTML =
+            '<span class="srs-banner-txt">✓ SRS document ready</span>' +
+            '<button class="btn-dl" onclick="downloadSRS()">Download</button>';
+        } else {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Generate SRS";
+          }
+          alert("SRS generation failed: " + (data.error || "unknown error"));
+        }
       }
 
       function downloadSRS() {
@@ -1172,7 +1192,7 @@
         // ── Domain gate ring (primary, left panel) ────────────────────────
         if (covReport && covReport.domain_gate_status) {
           const gate = covReport.domain_gate_status;
-          const total = Object.keys(gate).length || 8;
+          const total = Object.keys(gate).length || 0;
           const done = Object.values(gate).filter(
             (s) => s === "confirmed" || s === "excluded",
           ).length;
@@ -1188,16 +1208,17 @@
           const excluded = Object.values(gate).filter(
             (s) => s === "excluded",
           ).length;
-          const domainPct = Math.round((done / total) * 100);
+          const domainPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
           const offset = CIRC - (domainPct / 100) * CIRC;
           document.getElementById("ring-fill").style.strokeDashoffset = offset;
           document.getElementById("ring-label").textContent = domainPct + "%";
           document.getElementById("ring-sub").textContent =
             `${done}/${total} domains`;
-          document.getElementById("cov-pct-label").textContent = `${done}/8`;
+          document.getElementById("cov-pct-label").textContent =
+            `${done}/${total}`;
           document.getElementById("badge-domain").textContent =
-            `domains: ${done}/8`;
+            `domains: ${done}/${total}`;
 
           // Ring colour: green if gate satisfied, amber if partial, red if mostly unprobed
           const fill = document.getElementById("ring-fill");
@@ -1215,6 +1236,10 @@
           document.getElementById("legend-excluded").textContent =
             `❌ ${excluded}`;
 
+          // IT5: update dynamic labels from server if provided
+          if (covReport.domain_gate_labels) {
+            _dynamicDomainLabels = covReport.domain_gate_labels;
+          }
           // Domain gate list
           buildDomainGateList(gate);
         }
@@ -1241,16 +1266,8 @@
       }
 
       /* ── Domain gate list builder ────────────────────────────────────────── */
-      const DOMAIN_LABELS = {
-        climate_control: "Climate Control",
-        security_alarm: "Security & Alarm",
-        appliance_lighting: "Appliance & Lighting",
-        scheduling_planning: "Scheduling & Plans",
-        remote_access: "Remote Access",
-        user_management: "User Accounts & Roles",
-        reporting_history: "Historical Data & Logs",
-        hardware_connectivity: "Hardware Connectivity",
-      };
+      // IT5: domain labels are dynamic — populated from server response
+      let _dynamicDomainLabels = {}; // key -> label, set from coverage_report
 
       const DOMAIN_STATUS_ICONS = {
         confirmed: { cls: "covered", icon: "✅", label: "Confirmed" },
@@ -1263,12 +1280,18 @@
         const list = document.getElementById("domain-list");
         list.innerHTML = "";
 
-        // Group by status for visual ordering: unprobed → partial → confirmed → excluded
+        if (!gate || Object.keys(gate).length === 0) {
+          list.innerHTML =
+            '<div class="empty-state"><span class="empty-txt">Waiting for first message to seed domains...</span></div>';
+          return;
+        }
+
         const order = ["unprobed", "partial", "confirmed", "excluded"];
         const grouped = {};
         order.forEach((s) => (grouped[s] = []));
         Object.entries(gate).forEach(([key, status]) => {
-          if (grouped[status]) grouped[status].push(key);
+          const s = typeof status === "string" ? status : "unprobed";
+          if (grouped[s]) grouped[s].push(key);
           else grouped["unprobed"].push(key);
         });
 
@@ -1287,7 +1310,10 @@
           keys.forEach((key) => {
             const div = document.createElement("div");
             div.className = `cat-item ${meta.cls || ""}`;
-            const label = DOMAIN_LABELS[key] || key;
+            // IT5: use dynamic label from server, fall back to formatted key
+            const label =
+              _dynamicDomainLabels[key] ||
+              key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
             div.innerHTML = `
               <div class="cat-dot"></div>
               <span class="cat-name">${escHtml(label)}</span>

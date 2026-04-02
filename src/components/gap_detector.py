@@ -1,38 +1,16 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 5 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Fix log (Iteration 3)
+Iteration 6 changes
 --------------------------------------
-FIX-G1  Keyword threshold raised for "functional" category.
-FIX-G2  _classify_functional_coverage helper added (uses requirement store).
-FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories.
-FIX-G4  Added scalability, data_requirements, testability, deployment,
-        use_cases, business_rules, assumptions to the checklist.
+IT6-G1  _inject_domain_gate_gaps() now includes domains that have requirements
+        but need deeper probing (needs_deeper_probing property).
 
-Iteration 4 additions
---------------------------------------
-IT4-G1  Domain gate integration: GapDetector.analyse() now calls
-        compute_domain_gate() from prompt_architect and synthesises
-        domain-level gaps into the GapReport as CRITICAL gaps when a
-        domain is UNPROBED.  This ensures the question_generator's
-        domain-first priority pass (IT4-A) has matching gap entries to
-        work from even when the IEEE-830 keyword scanner would otherwise
-        miss them.
-
-IT4-G2  "interfaces" gap now also checks against domain gate entry
-        "hardware_connectivity" — the most common cause of the External
-        Interfaces section being empty was that no hardware questions
-        were ever asked.
-
-IT4-G3  "functional" gap threshold now also checks whether ALL 8 domain
-        gate entries have been probed.  If any domain is UNPROBED, the
-        functional category is classified as at most "partial" regardless
-        of FR count.  This prevents the gap detector from falsely marking
-        functional coverage as "covered" when entire feature domains are
-        missing.
+IT6-G2  Added gap entries for user_roles and documentation if not yet covered
+        in the final phase of elicitation.
 """
 
 from __future__ import annotations
@@ -62,7 +40,6 @@ class GapSeverity(str, Enum):
 # ---------------------------------------------------------------------------
 
 COVERAGE_CHECKLIST: dict[str, dict] = {
-    # ── Section 1: Product Overview ──────────────────────────────────────────
     "purpose": {
         "label":       "System Purpose & Goals",
         "severity":    GapSeverity.CRITICAL,
@@ -91,16 +68,12 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "keywords":    [
             "user", "stakeholder", "actor", "admin", "administrator",
             "customer", "client", "operator", "manager", "role", "persona",
-            "end user", "who will use",
+            "end user", "who will use", "technician", "master user",
         ],
         "description": "Who are the users and stakeholders of the system?",
         "volere_ref":  "Section 3 — The Client, the Customer, and Other Stakeholders",
         "ieee830_ref": "2.2 User Classes and Characteristics",
     },
-
-    # ── Section 2: Functional Requirements ───────────────────────────────────
-    # FIX-G1/G2: functional coverage is now driven by the requirement store,
-    # not keyword counting alone.  Keywords are still used for partial detection.
     "functional": {
         "label":       "Functional Requirements",
         "severity":    GapSeverity.CRITICAL,
@@ -114,7 +87,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "description": "What must the system do? Core features and behaviours.",
         "volere_ref":  "Section 9 — Functional Requirements",
         "ieee830_ref": "3.1 Functional Requirements",
-        # Extra threshold: use requirement store count, not just keywords
         "_use_req_store": True,
     },
     "use_cases": {
@@ -140,8 +112,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "volere_ref":  "Section 15 — Business Rules",
         "ieee830_ref": "2.5 Assumptions and Dependencies",
     },
-
-    # ── Section 3: Non-Functional Requirements ────────────────────────────────
     "performance": {
         "label":       "Performance Requirements",
         "severity":    GapSeverity.CRITICAL,
@@ -187,128 +157,74 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "fault", "failure", "recovery", "backup", "redundancy", "failover",
             "sla", "service level", "99", "mtbf", "mttr", "resilient",
         ],
-        "description": "How reliable must the system be? Expected uptime / recovery time?",
-        "volere_ref":  "Section 12 — Reliability & Availability",
-        "ieee830_ref": "3.4 Reliability Requirements",
+        "description": "How reliable must the system be? What happens when it fails?",
+        "volere_ref":  "Section 14 — Reliability Requirements",
+        "ieee830_ref": "3.5 Reliability Requirements",
     },
     "compatibility": {
         "label":       "Compatibility & Portability",
-        "severity":    GapSeverity.IMPORTANT,
+        "severity":    GapSeverity.CRITICAL,
         "keywords":    [
-            "compatibility", "compatible", "platform", "browser", "operating system",
-            "windows", "mac", "linux", "android", "ios", "interoperability",
-            "legacy", "migration", "integration",
+            "compatible", "compatibility", "platform", "os", "windows", "linux",
+            "macos", "ios", "android", "browser", "chrome", "firefox", "safari",
+            "integration", "interoperability", "portability", "migrate",
         ],
-        "description": "What platforms, browsers, and external systems must it support?",
-        "volere_ref":  "Section 14 — Portability Requirements",
-        "ieee830_ref": "3.5 Portability Requirements",
+        "description": "What platforms must the system run on? What must it integrate with?",
+        "volere_ref":  "Section 16 — Portability Requirements",
+        "ieee830_ref": "3.7 Portability Requirements",
     },
     "maintainability": {
-        "label":       "Maintainability",
-        "severity":    GapSeverity.IMPORTANT,
+        "label":       "Maintainability & Extensibility",
+        "severity":    GapSeverity.CRITICAL,
         "keywords":    [
-            "maintainability", "maintainable", "update", "upgrade",
-            "documentation", "modular", "extensible", "support", "open standard",
-            "code quality", "testing standard",
+            "maintain", "maintenance", "maintainable", "extensible", "modular",
+            "plugin", "update", "upgrade", "patch", "version", "deprecate",
+            "documentation", "code quality", "test", "testable",
         ],
-        "description": "How easy must the system be to maintain and extend?",
-        "volere_ref":  "Section 14 — Maintainability",
-        "ieee830_ref": "3.5 Maintainability",
-    },
-    "scalability": {
-        "label":       "Scalability",
-        "severity":    GapSeverity.IMPORTANT,
-        "keywords":    [
-            "scalab", "scale", "grow", "growth", "traffic spike", "seasonal",
-            "auto-scaling", "horizontal", "vertical",
-        ],
-        "description": "How must the system handle growth in users or data volume?",
-        "volere_ref":  "Section 12 — Scalability",
-        "ieee830_ref": "3.2 Performance (scalability sub-section)",
+        "description": "How will the system be maintained, updated, and extended over time?",
+        "volere_ref":  "Section 17 — Maintenance Requirements",
+        "ieee830_ref": "3.8 Maintainability Requirements",
     },
     "interfaces": {
         "label":       "External Interfaces",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "api", "external system", "third-party", "webhook", "integration",
-            "email", "sms", "push notification", "payment", "identity provider",
+            "interface", "api", "rest", "graphql", "soap", "web service",
+            "import", "export", "integration", "external system", "third party",
+            "gateway", "sensor", "device", "hardware", "wireless", "protocol",
         ],
-        "description": "What external services and APIs must the system integrate with?",
-        "volere_ref":  "Section 7 — Requirements on the Environment",
-        "ieee830_ref": "2.1 External Interfaces",
-    },
-    "data_requirements": {
-        "label":       "Data Requirements",
-        "severity":    GapSeverity.IMPORTANT,
-        "keywords":    [
-            "data", "database", "store", "retain", "retention", "archive",
-            "import", "export", "migration", "schema", "model",
-        ],
-        "description": "What data must the system create, store, and manage?",
-        "volere_ref":  "Section 8 — Data Requirements",
-        "ieee830_ref": "3.1 (data sub-section)",
+        "description": "What external systems, devices, or APIs must the system interact with?",
+        "volere_ref":  "Section 8 — Interfaces",
+        "ieee830_ref": "3.1 External Interface Requirements",
     },
     "constraints": {
         "label":       "Design & Implementation Constraints",
         "severity":    GapSeverity.IMPORTANT,
         "keywords":    [
-            "constraint", "budget", "timeline", "technology stack", "language",
-            "framework", "regulation", "legal", "must use", "mandated",
+            "constraint", "technology", "framework", "language", "database",
+            "cloud", "on-premise", "budget", "timeline", "deadline",
+            "standard", "regulation", "compliance",
         ],
-        "description": "What technical, legal, or resource constraints apply?",
-        "volere_ref":  "Section 4 — Constraints",
-        "ieee830_ref": "2.5 Constraints",
-    },
-    "assumptions": {
-        "label":       "Assumptions & Dependencies",
-        "severity":    GapSeverity.OPTIONAL,
-        "keywords":    [
-            "assume", "assumption", "depend", "dependency", "prerequisite",
-            "given that", "provided that",
-        ],
-        "description": "What assumptions could invalidate requirements if wrong?",
-        "volere_ref":  "Section 6 — Assumptions",
-        "ieee830_ref": "2.5 Assumptions and Dependencies",
-    },
-    "testability": {
-        "label":       "Testability & Acceptance Criteria",
-        "severity":    GapSeverity.OPTIONAL,
-        "keywords":    [
-            "test", "acceptance", "verify", "validate", "criterion", "criteria",
-            "qa", "quality assurance", "pass", "fail", "measurable",
-        ],
-        "description": "How will requirements be verified? What are the acceptance criteria?",
-        "volere_ref":  "Section 9 — Fit Criteria",
-        "ieee830_ref": "3.1 (fit criteria)",
-    },
-    "deployment": {
-        "label":       "Deployment & Operations",
-        "severity":    GapSeverity.OPTIONAL,
-        "keywords":    [
-            "deploy", "deployment", "cloud", "on-premise", "rollout", "release",
-            "monitoring", "logging", "alerting", "devops", "ci/cd",
-        ],
-        "description": "Where and how will the system be deployed and operated?",
-        "volere_ref":  "Section 14 — Deployment",
-        "ieee830_ref": "3.5 (deployment sub-section)",
+        "description": "What constraints exist on the design or implementation?",
+        "volere_ref":  "Section 5 — Design Constraints",
+        "ieee830_ref": "3.4 Design Constraints",
     },
 }
 
 
 # ---------------------------------------------------------------------------
-# GapReport data structures
+# Gap report structures
 # ---------------------------------------------------------------------------
 
 @dataclass
 class CategoryGap:
-    """Represents a single uncovered or partially-covered category."""
-    category_key:  str
-    label:         str
-    severity:      GapSeverity
-    description:   str
-    volere_ref:    str = ""
-    ieee830_ref:   str = ""
-    is_partial:    bool = False
+    category_key: str
+    label:        str
+    severity:     GapSeverity
+    description:  str
+    volere_ref:   str = ""
+    ieee830_ref:  str = ""
+    is_partial:   bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -322,38 +238,26 @@ class CategoryGap:
 
 @dataclass
 class GapReport:
-    """Aggregated gap analysis result for one conversation turn."""
-    session_id:       str   = ""
-    turn_id:          int   = 0
-    timestamp:        float = field(default_factory=time.time)
-    total_categories: int   = 0
-    covered_count:    int   = 0
-    partial_count:    int   = 0
-    uncovered_count:  int   = 0
-    coverage_pct:     float = 0.0
-    critical_gaps:    list[CategoryGap] = field(default_factory=list)
-    important_gaps:   list[CategoryGap] = field(default_factory=list)
-    optional_gaps:    list[CategoryGap] = field(default_factory=list)
-    all_categories:   dict[str, str]   = field(default_factory=dict)  # key → "covered"|"partial"|"uncovered"
+    session_id:      str
+    turn_id:         int
+    total_categories: int
+    covered_count:   int
+    coverage_pct:    float
+    critical_gaps:   list[CategoryGap] = field(default_factory=list)
+    important_gaps:  list[CategoryGap] = field(default_factory=list)
+    optional_gaps:   list[CategoryGap] = field(default_factory=list)
+    all_categories:  dict[str, str]    = field(default_factory=dict)
 
     @property
     def all_gaps(self) -> list[CategoryGap]:
-        return self.critical_gaps + self.important_gaps + self.optional_gaps
-
-    @property
-    def priority_gaps(self) -> list[CategoryGap]:
-        """Gaps ordered by severity: critical first."""
         return self.critical_gaps + self.important_gaps + self.optional_gaps
 
     def to_dict(self) -> dict:
         return {
             "session_id":       self.session_id,
             "turn_id":          self.turn_id,
-            "timestamp":        self.timestamp,
             "total_categories": self.total_categories,
             "covered_count":    self.covered_count,
-            "partial_count":    self.partial_count,
-            "uncovered_count":  self.uncovered_count,
             "coverage_pct":     self.coverage_pct,
             "critical_gaps":    [g.to_dict() for g in self.critical_gaps],
             "important_gaps":   [g.to_dict() for g in self.important_gaps],
@@ -363,25 +267,16 @@ class GapReport:
 
 
 # ---------------------------------------------------------------------------
-# Gap Detector
+# GapDetector
 # ---------------------------------------------------------------------------
 
 class GapDetector:
-    """
-    Analyses a ConversationState and returns a GapReport.
 
-    Ablation study support
-    ----------------------
-        GapDetector(enabled=False) → always returns a "no gaps" report.
-    """
+    COVERED_THRESHOLD_CRITICAL = 3
+    COVERED_THRESHOLD_OTHER    = 2
 
-    # FIX-G3: raised thresholds for CRITICAL categories
-    COVERED_THRESHOLD_CRITICAL  = 4   # was 3
-    COVERED_THRESHOLD_OTHER     = 3   # unchanged for non-critical
-
-    def __init__(self, enabled: bool = True, checklist: Optional[dict] = None):
-        self.enabled   = enabled
-        self.checklist = checklist or COVERAGE_CHECKLIST
+    def __init__(self, enabled: bool = True):
+        self.enabled = enabled
 
     def analyse(self, state: "ConversationState") -> GapReport:
         if not self.enabled:
@@ -390,79 +285,66 @@ class GapDetector:
         corpus = self._build_corpus(state)
 
         report = GapReport(
-            session_id      = state.session_id,
-            turn_id         = state.turn_count,
-            total_categories= len(self.checklist),
+            session_id       = state.session_id,
+            turn_id          = state.turn_count,
+            total_categories = len(COVERAGE_CHECKLIST),
+            covered_count    = 0,
+            coverage_pct     = 0.0,
         )
 
-        for key, spec in self.checklist.items():
+        for key, spec in COVERAGE_CHECKLIST.items():
             status = self._classify_coverage(key, spec, corpus, state)
             report.all_categories[key] = status
-
             if status == "covered":
                 report.covered_count += 1
-            elif status == "partial":
-                report.partial_count += 1
-                gap = self._make_gap(key, spec, is_partial=True)
-                self._add_gap(gap, spec["severity"], report)
-            else:
-                report.uncovered_count += 1
-                gap = self._make_gap(key, spec, is_partial=False)
+            elif status in ("partial", "uncovered"):
+                gap = self._make_gap(key, spec, is_partial=(status == "partial"))
                 self._add_gap(gap, spec["severity"], report)
 
-        # IT4-G1: Inject domain gate gaps as CRITICAL gaps when unprobed
+        report.coverage_pct = round(
+            report.covered_count / report.total_categories * 100, 1
+        ) if report.total_categories > 0 else 0.0
+
+        # Inject domain gate gaps
         self._inject_domain_gate_gaps(state, report)
 
-        effective = report.covered_count + (report.partial_count * 0.5)
-        report.coverage_pct = round(
-            (effective / report.total_categories) * 100, 1
-        ) if report.total_categories else 0.0
-
         return report
+
+    # ------------------------------------------------------------------
+    # Domain gate gap injection — IT6-G1
+    # ------------------------------------------------------------------
 
     def _inject_domain_gate_gaps(
         self, state: "ConversationState", report: GapReport
     ) -> None:
-        """
-        IT4-G1: Synthesise domain gate status into the GapReport as
-        CRITICAL CategoryGap entries. This allows the question_generator's
-        domain-first priority pass (IT4-A) to receive matching gap objects.
+        gate = getattr(state, "domain_gate", None)
+        if gate is None or not gate.seeded:
+            return
 
-        Only adds a gap if the domain is UNPROBED or PARTIAL and has not
-        already been added by the standard checklist scan (avoids duplicates
-        by checking category_key prefix "domain_").
-        """
-        try:
-            from prompt_architect import (
-                compute_domain_gate, DOMAIN_COVERAGE_GATE,
-                DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL,
-            )
-        except ImportError:
-            return  # graceful degradation if prompt_architect not available
-
-        gate_status = compute_domain_gate(state)
         existing_keys = {g.category_key for g in report.critical_gaps + report.important_gaps}
 
-        for domain_key, status in gate_status.items():
-            if status not in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL):
-                continue
+        for key, domain in gate.domains.items():
+            # IT6-G1: also include domains that need deeper probing
+            if domain.status in ("unprobed", "partial") or domain.needs_deeper_probing:
+                if domain.status == "excluded":
+                    continue
 
-            synthetic_key = f"domain_{domain_key}"
-            if synthetic_key in existing_keys:
-                continue
+                synthetic_key = f"domain_{key}"
+                if synthetic_key in existing_keys:
+                    continue
 
-            spec = DOMAIN_COVERAGE_GATE[domain_key]
-            gap = CategoryGap(
-                category_key = synthetic_key,
-                label        = spec["label"],
-                severity     = GapSeverity.CRITICAL,
-                description  = spec["fallback_probe"],
-                volere_ref   = "Domain Coverage Gate",
-                ieee830_ref  = "§3.1 / §3.2 Functional Requirements",
-                is_partial   = (status == DOMAIN_STATUS_PARTIAL),
-            )
-            report.critical_gaps.append(gap)
-            existing_keys.add(synthetic_key)
+                probe = domain.probe_question or f"Can you tell me more about {domain.label}?"
+                gap = CategoryGap(
+                    category_key = synthetic_key,
+                    label        = domain.label,
+                    severity     = GapSeverity.CRITICAL,
+                    description  = probe,
+                    volere_ref   = "Dynamic Domain Gate",
+                    ieee830_ref  = "§3.1 / §3.2 Functional Requirements",
+                    is_partial   = (domain.status != "unprobed"),
+                )
+                report.critical_gaps.append(gap)
+                existing_keys.add(synthetic_key)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -486,28 +368,33 @@ class GapDetector:
         corpus: str,
         state: "ConversationState",
     ) -> str:
-        """
-        Returns "covered" | "partial" | "uncovered".
+        from domain_discovery import NFR_CATEGORIES
 
-        FIX-G1/G2: For the "functional" category we consult the requirement store
-        directly instead of relying on keyword counts alone.
-        FIX-G3: Raised keyword threshold for CRITICAL categories.
-        """
-        # Direct state check (from heuristic scanner in ConversationState)
-        if hasattr(state, "covered_categories") and key in state.covered_categories:
-            # For "functional", validate against the actual store count (FIX-G2)
-            if key == "functional":
-                return self._classify_functional_coverage(state)
-            return "covered"
+        # Mandatory NFR categories — use requirement-driven signal
+        if key in NFR_CATEGORIES:
+            covered = getattr(state, "covered_categories", set())
+            if key in covered:
+                return "covered"
+            nfr_cov = getattr(state, "nfr_coverage", {})
+            if nfr_cov.get(key, 0) >= 1:
+                return "covered"
+            keywords = spec.get("keywords", [])
+            if any(kw in corpus for kw in keywords):
+                return "partial"
+            return "uncovered"
 
-        # FIX-G2: functional uses requirement store as primary signal
+        # functional: use requirement store + domain gate
         if key == "functional" and spec.get("_use_req_store"):
             return self._classify_functional_coverage(state)
+
+        # structural categories
+        covered_cats = getattr(state, "covered_categories", set())
+        if key in covered_cats:
+            return "covered"
 
         keywords = spec.get("keywords", [])
         matched = sum(1 for kw in keywords if kw in corpus)
 
-        # FIX-G3: higher threshold for CRITICAL
         if spec.get("severity") == GapSeverity.CRITICAL:
             threshold = self.COVERED_THRESHOLD_CRITICAL
         else:
@@ -517,34 +404,20 @@ class GapDetector:
             return "covered"
         elif matched >= 1:
             return "partial"
-        else:
-            return "uncovered"
+        return "uncovered"
 
     @staticmethod
     def _classify_functional_coverage(state: "ConversationState") -> str:
-        """
-        FIX-G2 / IT4-G3: Classify functional coverage using:
-          1. The actual FR count in state (existing).
-          2. Domain gate completeness (new): if any domain is UNPROBED,
-             functional coverage is at most "partial" even if FR count ≥ 3.
-             This prevents the gap detector from declaring functional coverage
-             "covered" when entire feature domains were never surfaced.
-        """
         count = state.functional_count
         if count == 0:
             return "uncovered"
 
-        # IT4-G3: check domain gate
-        try:
-            from prompt_architect import (
-                compute_domain_gate, DOMAIN_STATUS_UNPROBED,
-            )
-            gate_status = compute_domain_gate(state)
+        gate = getattr(state, "domain_gate", None)
+        any_unprobed = False
+        if gate is not None and gate.seeded:
             any_unprobed = any(
-                s == DOMAIN_STATUS_UNPROBED for s in gate_status.values()
+                d.status == "unprobed" for d in gate.domains.values()
             )
-        except ImportError:
-            any_unprobed = False
 
         if count >= 3 and not any_unprobed:
             return "covered"
