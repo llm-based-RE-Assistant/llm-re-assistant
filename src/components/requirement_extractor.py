@@ -4,29 +4,6 @@ src/components/requirement_extractor.py
 RE Assistant — Iteration 3 | University of Hildesheim
 Automatic Requirement Extraction from LLM Responses
 
-Extraction Strategy (Iteration 3 — revised)
---------------------------------------------
-The LLM is instructed (via TASK_BLOCK Rule 7 in prompt_architect.py) to wrap
-every formalised requirement in explicit XML-style delimiters:
-
-    <REQ type="functional" category="functional">
-    The system shall allow the user to record water intake in litres.
-    </REQ>
-
-This is the PRIMARY extraction strategy. It reliably captures multi-line
-requirements with bullet sub-items intact, and gives us type + category
-without regex inference.
-
-Two FALLBACK strategies are kept for backward-compatibility:
-  - PATTERN: explicit "Requirement N (Type):" numbered format
-  - SHALL:    "The system shall ..." sentence
-
-Root Cause of the original bug
---------------------------------
-The old extractor used a single-line regex that captured only the first line:
-    "The system shall deliver the following reminders at the specified times:"
-and discarded the bullet sub-lines. The REQ-tag approach solves this by design:
-everything between <REQ> and </REQ> is captured, including all sub-items.
 """
 
 from __future__ import annotations

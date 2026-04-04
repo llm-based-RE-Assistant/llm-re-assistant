@@ -1,57 +1,9 @@
 """
 src/components/prompt_architect.py
 ====================
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Modular System Prompt Architecture
 
-Change log
-----------
-Iteration 3 Rev-1/Rev-2 — see Iteration 3 source for earlier changes.
-
-Iteration 4 — High-Completeness Overhaul
-═════════════════════════════════════════
-Implements all five priorities from the Iteration-3 post-mortem analysis.
-
-PRIORITY 1 — Domain Coverage Gate (blocks SRS generation)
-  Root cause of 37% completeness: huge feature domains were never surfaced
-  because the assistant only recorded what the user volunteered.
-  Fix: DOMAIN_COVERAGE_GATE — 8 canonical functional domains the elicitation
-  MUST explicitly CONFIRM or EXCLUDE before SRS generation is allowed.
-  Each domain carries detection keywords, exclusion keywords, and a
-  plain-language fallback probe question.
-  The gate status is computed from the conversation corpus every turn and
-  injected into the context block so the LLM can see exactly what is missing.
-
-PRIORITY 2 — Scope Reduction Handling Rule (RULE 8)
-  Root cause: when Patricia said "I just want to know what's going on",
-  the assistant silently dropped all control/actuation requirements.
-  Fix: RULE 8 forces the assistant to distinguish between a preference
-  statement and an out-of-scope decision. Every downscoped feature must be
-  confirmed excluded (with a constraint tag) or deferred (with a note).
-
-PRIORITY 3 — Mandatory Domain Probe Questions
-  Each domain in DOMAIN_COVERAGE_GATE carries a non-technical fallback_probe
-  written in plain language. These surface in the context block when a domain
-  is UNPROBED after Turn 4. The next-unprobed domain's probe question is
-  explicitly shown as "USE THIS PROBE:" so the LLM cannot miss it.
-
-PRIORITY 4 — Design-Derived Placeholder Injection
-  Implemented in srs_formatter.py. This file exports DOMAIN_COVERAGE_GATE and
-  the helper functions compute_domain_gate() / gate_is_satisfied() so the
-  formatter can read gate status and inject [D — architecture review required]
-  stubs for uncovered domains.
-
-PRIORITY 5 — Dual Metrics in Context Block
-  _build_context_block() now shows two separate scores every turn:
-    • Domain Completeness Score  N/8 (new, primary completeness signal)
-    • IEEE-830 Elicitation Coverage  N/12 (existing, unchanged)
-  SRS generation is blocked until Domain Completeness reaches 8/8.
-
-Design: Four-block prompt (Iteration 4)
-  [ROLE]          — active elicitation philosophy + persona
-  [CONTEXT]       — live state + domain gate + dual metrics (dynamic)
-  [GAP DIRECTIVE] — targeted follow-up from GapDetector (one-shot)
-  [TASK]          — phase-gated rules + domain gate closure checklist (new)
 """
 
 from __future__ import annotations

@@ -1,43 +1,12 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Fix log (Iteration 3)
---------------------------------------
-FIX-G1  Keyword threshold raised for "functional" category.
-FIX-G2  _classify_functional_coverage helper added (uses requirement store).
-FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories.
-FIX-G4  Added scalability, data_requirements, testability, deployment,
-        use_cases, business_rules, assumptions to the checklist.
-
-Iteration 4 additions
---------------------------------------
-IT4-G1  Domain gate integration: GapDetector.analyse() now calls
-        compute_domain_gate() from prompt_architect and synthesises
-        domain-level gaps into the GapReport as CRITICAL gaps when a
-        domain is UNPROBED.  This ensures the question_generator's
-        domain-first priority pass (IT4-A) has matching gap entries to
-        work from even when the IEEE-830 keyword scanner would otherwise
-        miss them.
-
-IT4-G2  "interfaces" gap now also checks against domain gate entry
-        "hardware_connectivity" — the most common cause of the External
-        Interfaces section being empty was that no hardware questions
-        were ever asked.
-
-IT4-G3  "functional" gap threshold now also checks whether ALL 8 domain
-        gate entries have been probed.  If any domain is UNPROBED, the
-        functional category is classified as at most "partial" regardless
-        of FR count.  This prevents the gap detector from falsely marking
-        functional coverage as "covered" when entire feature domains are
-        missing.
 """
 
 from __future__ import annotations
-
-import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum

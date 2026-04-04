@@ -1,63 +1,17 @@
 """
 src/components/question_generator.py
 =====================
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
-Change log
-----------
-Iteration 3 fixes (FIX-A through FIX-D) — see Iteration 3 source.
-
-Iteration 4 — Priority 3: Domain-Aware Probe Questions
-═══════════════════════════════════════════════════════
-The root cause of missing domains in Iteration 3 was that the question
-generator was only triggered by GapDetector's IEEE-830 category gaps.
-It had no concept of "functional domain coverage" — it could not tell
-that 'security alarm', 'appliance control', or 'scheduling' had never
-been asked about.
-
-Changes in Iteration 4:
-  IT4-A  Domain-first priority: when any DOMAIN_COVERAGE_GATE entry is
-         UNPROBED, the generator always produces a question for it ahead
-         of any IEEE-830 category gap. This ensures that the 8 functional
-         domains are probed exhaustively before NFR or structural gaps.
-
-  IT4-B  Domain probe templates: the FALLBACK_TEMPLATES dict is extended
-         with one entry per domain gate key (prefixed "domain_"). These are
-         the plain-language fallback_probe questions from DOMAIN_COVERAGE_GATE,
-         kept in sync here so that both the context block and the question
-         generator use identical wording.
-
-  IT4-C  Scope reduction probe: new "scope_reduction" template category.
-         When the gap detector signals a scope reduction event (user
-         downscoped a domain), the generator produces the Rule-8 confirmation
-         question: "Should we document [feature] as permanently out of scope,
-         or revisit it later?"
-
-  IT4-D  LLM meta-prompt extended with domain gate awareness: the meta-prompt
-         now receives the list of unprobed domains so the LLM-generated
-         question can be targeted even more precisely.
-
-Architecture (Iteration 4)
---------------------------
-  GapReport + ConversationState  →  ProactiveQuestionGenerator.generate()
-    → Domain gate check first (IT4-A)
-    → GapDetector gap check second
-    → LLM meta-prompt (primary) | template lookup (fallback)
-    → FollowUpQuestion
-    → injected into PromptArchitect.extra_context
 """
 
 from __future__ import annotations
-
-import re
-import time
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gap_detector import GapReport, CategoryGap, GapSeverity
+    from gap_detector import GapReport, CategoryGap
     from conversation_state import ConversationState
 
 

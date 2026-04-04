@@ -1,390 +1,386 @@
-# LLM-Based Requirements Engineering Assistant — Iteration 4
+# RE Assistant — Iteration 3
 
-**University of Hildesheim · DSR Project**
+### Requirements Engineering Assistant · University of Hildesheim
 
 ---
 
 ## Overview
 
-Iteration 4 addresses a root-cause finding from the Iteration-3 post-mortem: **37% average SRS completeness** despite high IEEE-830 keyword coverage. The problem was that the assistant recorded only what users explicitly volunteered, leaving entire functional domains unprobed. Iteration 4 introduces a **Domain Coverage Gate** as the primary completeness signal, replacing keyword counting as the gating mechanism for SRS generation.
-
-| Issue                           | Iteration 3 Problem                                                                                                                      | Iteration 4 Fix                                                                                                                                                        |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Missing Functional Domains**  | Entire feature areas (e.g., appliance control, scheduling) were never surfaced because the assistant waited for the user to mention them | `DOMAIN_COVERAGE_GATE` — 8 canonical domains the session must explicitly CONFIRM or EXCLUDE before SRS generation is allowed (Priority 1)                              |
-| **Silent Scope Reduction**      | When a user said "I just want to know what's going on", the assistant silently dropped all actuation requirements                        | RULE 8 forces the assistant to confirm whether a downscoped feature is permanently excluded or deferred (Priority 2)                                                   |
-| **Context-Blind Domain Probes** | The system had no concept of functional domain coverage — follow-up questions targeted IEEE-830 structural gaps only                     | Domain-first priority pass in `ProactiveQuestionGenerator` (IT4-A): unprobed domains are always addressed before NFR or structural gaps (Priority 3)                   |
-| **False Functional Coverage**   | FR count ≥ 3 could mark functional coverage as "covered" even when whole domains had never been discussed                                | Domain gate check integrated into `_classify_functional_coverage()` (IT4-G3): functional remains at most "partial" while any domain is UNPROBED                        |
-| **Single Completeness Metric**  | The UI and logs showed only IEEE-830 percentage, which could reach 80%+ while SRS completeness was 37%                                   | Dual metrics: **Domain Completeness Score N/8** (new, primary gate) + **IEEE-830 Elicitation Coverage N/12** (retained) shown in context block every turn (Priority 5) |
-
-The system continues to run as a **Flask web application** with a single-page HTML/JS UI.
+RE Assistant is an AI-powered requirements elicitation tool that conducts structured interviews with stakeholders and produces IEEE-830-compliant Software Requirements Specifications (SRS). Iteration 3 introduces **proactive gap detection** and a **question generation pipeline** that actively identifies missing requirements and injects targeted follow-up prompts into the LLM's context window — preventing premature session closure and improving SRS completeness.
 
 ---
 
-## What's New in Iteration 4
+## What's New in Iteration 3
 
-### Priority 1 — Domain Coverage Gate (`prompt_architect.py`)
+Iteration 3 addresses three failure modes identified in the Iteration 2 evaluation:
 
-`DOMAIN_COVERAGE_GATE` defines 8 canonical functional domains that any elicitation session must explicitly address. Each domain carries detection keywords, exclusion keywords, and a plain-language fallback probe question.
+| Failure Mode                 | Description                                                                | Iteration 3 Fix                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **FM-1: Silent Gaps**        | LLM would finish elicitation without covering mandatory NFR categories     | `GapDetector` runs after every turn and reports uncovered categories                                |
+| **FM-2: Static Questioning** | Follow-up questions were generic templates recycled across sessions        | `ProactiveQuestionGenerator` calls the LLM with a meta-prompt to produce context-aware questions    |
+| **FM-3: Premature Closure**  | Baseline offered to generate SRS after just 3 turns regardless of coverage | Phase-gated `PromptArchitect` blocks SRS generation until a checklist of 18 categories is addressed |
 
-The 8 domains are:
-
-| Domain Key              | Label                                               |
-| ----------------------- | --------------------------------------------------- |
-| `climate_control`       | Climate Control (temperature & humidity)            |
-| `security_alarm`        | Security & Alarm System (doors, windows, intrusion) |
-| `appliance_lighting`    | Appliance & Lighting Control                        |
-| `scheduling_planning`   | Scheduling & Automation Plans                       |
-| `remote_access`         | Remote Access & Mobile Interface                    |
-| `notifications_alerts`  | Notifications & Alerts                              |
-| `user_management`       | User Management & Access Control                    |
-| `hardware_connectivity` | Hardware & Connectivity Infrastructure              |
-
-Each domain's status is computed from the conversation corpus every turn and is one of: `CONFIRMED`, `PARTIAL`, `UNPROBED`, or `EXCLUDED`. **SRS generation is blocked until all 8 domains are CONFIRMED or EXCLUDED.**
-
-The domain gate is prominently displayed in the context block every turn:
-
-```
-━━━ DOMAIN COVERAGE GATE  [5/8 — 62%] ━━━
-  ✅  Climate Control (temperature & humidity)
-  ✅  Security & Alarm System
-  🔶  Appliance & Lighting Control
-      ↳ Probe: "You mentioned worrying about lights being left on — ..."
-  ⬜  Scheduling & Automation Plans
-      ↳ Probe: "Do you ever want the system to follow a routine automatically — ..."
-  ...
-⚠️  GATE NOT SATISFIED — Do NOT offer SRS generation yet.
-NEXT ACTION: Ask about → Scheduling & Automation Plans
-USE THIS PROBE: "Do you ever want the system to follow a routine automatically — ..."
-```
-
-The `PromptArchitect.is_srs_generation_permitted()` method enforces a hard three-way gate: domain gate satisfied **AND** all mandatory NFR categories covered **AND** minimum FR count met.
-
-### Priority 2 — Scope Reduction Handling (RULE 8, `prompt_architect.py`)
-
-RULE 8 is added to the `TASK_BLOCK`. When the user's statement implies they do not want a feature, the assistant must explicitly ask whether it should be documented as out-of-scope with a constraint tag, or simply deferred. Silent removal of requirements from scope is no longer permitted.
-
-### Priority 3 — Mandatory Domain Probe Questions (`question_generator.py`)
-
-`ProactiveQuestionGenerator` gains a **domain-first priority pass** (IT4-A). Before targeting any IEEE-830 structural gap, the generator checks whether any domain gate entry is UNPROBED. If so, a domain probe question is generated and returned ahead of all other follow-up questions.
-
-Domain probe templates are added to `FALLBACK_TEMPLATES` under `domain_<key>` prefixes (IT4-B), with wording kept in sync with `DOMAIN_COVERAGE_GATE.fallback_probe`. The LLM meta-prompt is also extended with the list of unprobed domains so that LLM-generated questions can target them precisely (IT4-D).
-
-A new `scope_reduction` template category (IT4-C) surfaces the RULE 8 confirmation question when the gap detector signals a scope reduction event.
-
-### Priority 4 — Design-Derived Placeholder Injection (`srs_formatter.py`)
-
-`SRSFormatter` reads the domain gate status from `PromptArchitect.compute_domain_gate_status()` and injects `[D — architecture review required]` stubs for any domain that was never confirmed or excluded. This ensures the generated SRS always contains placeholder sections for every functional domain rather than silently omitting them.
-
-### Priority 5 — Dual Metrics (`prompt_architect.py`, `conversation_state.py`, `app.py`)
-
-Every turn's context block now shows two separate completeness scores side by side:
-
-- **Domain Completeness Score N/8** — the new primary completeness signal. Counts how many of the 8 canonical domains are CONFIRMED or EXCLUDED.
-- **IEEE-830 Elicitation Coverage N/12** — the existing keyword-based metric, unchanged.
-
-The `/api/session/turn` response now includes a `coverage_report` field with both metrics and the full domain gate status, alongside the existing `coverage_pct` field.
-
-`ConversationState` gains two supporting additions:
-
-- **IT4-S1** — `get_coverage_report()` now includes `domain_gate_status` and `domain_completeness_score` keys.
-- **IT4-S2** — `is_ready_for_srs()` helper method wraps `PromptArchitect.is_srs_generation_permitted()` so `ConversationManager` has a single API call to determine readiness. The `/api/session/turn` response exposes this as the `srs_ready` boolean field.
-
-### Gap Detector Integration (`gap_detector.py`)
-
-Three additions integrate the domain gate into the gap detection pipeline:
-
-- **IT4-G1 — Domain gate gap injection.** `GapDetector.analyse()` calls `compute_domain_gate()` after the IEEE-830 checklist scan and synthesises UNPROBED or PARTIAL domains as CRITICAL `CategoryGap` entries with the `domain_` prefix. This gives the question generator matching gap objects to work from even when keyword scanning would miss them.
-- **IT4-G2 — Interfaces gap cross-check.** The `interfaces` coverage check now also tests against the `hardware_connectivity` domain gate entry, since the most common cause of an empty External Interfaces section was that hardware questions were never asked.
-- **IT4-G3 — Functional coverage domain gate check.** `_classify_functional_coverage()` now validates both FR count and domain gate completeness. Even with FR count ≥ 3, the functional category is classified as at most "partial" if any domain remains UNPROBED.
+Two new components were added (`gap_detector.py`, `question_generator.py`) and the `PromptArchitect` and `ConversationManager` were extended to use them.
 
 ---
 
 ## Architecture
 
 ```
-app.py                              ← Flask REST API + HTML/JS UI
-src/components/
-├── conversation_manager.py         ← Session orchestration, LLM providers, turn loop
-├── conversation_state.py           ← Session state, requirement store, coverage tracking
-├── prompt_architect.py             ← 4-block dynamic prompt + Domain Coverage Gate
-├── gap_detector.py                 ← IEEE-830/Volere checklist + domain gate gap injection
-├── question_generator.py           ← Domain-first proactive question generation
-├── requirement_extractor.py        ← Multi-strategy requirement extraction from responses
-├── srs_template.py                 ← IEEE-830 data model, progressively populated
-└── srs_formatter.py                ← Renders SRSTemplate to Markdown / plain text / JSON
-output/                             ← Generated SRS documents (.md)
-logs/                               ← JSON session logs (per-session, per-turn gap reports)
+Browser  ←→  Flask REST API  ←→  ConversationManager
+                                       │
+                              ┌────────┴────────┐
+                              │                 │
+                        PromptArchitect    RequirementExtractor
+                              │
+                        ┌─────┴──────┐
+                        │            │
+                   GapDetector  ProactiveQuestionGenerator
+                        │            │
+                   GapReport    QuestionSet  ←→  QuestionTracker
+                        └─────┬──────┘
+                               │
+                    [injected into extra_context]
+                               │
+                           LLM Turn
+                               │
+                    ConversationState (updated)
+                               │
+                    SRSTemplate (updated)
+                               │
+                    SRSFormatter → SRS .md file
 ```
 
-### System Prompt Structure (Iteration 4)
+### Component Summary
 
-The prompt is built from four ordered blocks by `PromptArchitect.build_system_message()`:
+| Component                    | File                       | Responsibility                                                                              |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
+| `ConversationManager`        | `conversation_manager.py`  | Orchestrates the full elicitation loop; coordinates all sub-components                      |
+| `ConversationState`          | `conversation_state.py`    | Single source of truth: turns, requirements, coverage tracking                              |
+| `PromptArchitect`            | `prompt_architect.py`      | Builds the system message from modular blocks; injects gap directives                       |
+| `GapDetector`                | `gap_detector.py`          | Analyses state against an 18-category IEEE-830/Volere checklist; returns `GapReport`        |
+| `ProactiveQuestionGenerator` | `question_generator.py`    | Generates one targeted follow-up question per turn via LLM meta-prompt or template fallback |
+| `RequirementExtractor`       | `requirement_extractor.py` | Parses `<REQ>` tags and "shall" patterns from LLM responses into structured requirements    |
+| `SRSTemplate`                | `srs_template.py`          | IEEE-830 data container; populated progressively; applies SMART heuristic scoring           |
+| `SRSFormatter`               | `srs_formatter.py`         | Renders `SRSTemplate` + `ConversationState` to Markdown, plain text, or JSON                |
+| `app.py`                     | `app.py`                   | Flask REST API backend; serves the web UI                                                   |
+| `index.html`                 | `index.html`               | Single-page chat UI with live coverage ring, gap panel, and follow-up question panel        |
+
+---
+
+## Gap Detection
+
+The `GapDetector` maintains an 18-category checklist combining IEEE-830 and Volere standards. After every conversation turn it scans the full corpus (user messages, assistant messages, and extracted requirements) and classifies each category as `covered`, `partial`, or `uncovered`.
+
+### Coverage Checklist
+
+| Category                          | Severity  |
+| --------------------------------- | --------- |
+| System Purpose & Goals            | Critical  |
+| System Scope & Boundaries         | Critical  |
+| Stakeholders & User Classes       | Critical  |
+| Functional Requirements           | Critical  |
+| Performance Requirements          | Critical  |
+| Usability & Accessibility         | Critical  |
+| Security & Privacy Requirements   | Critical  |
+| Reliability & Availability        | Critical  |
+| Use Cases & User Stories          | Important |
+| Business Rules & Constraints      | Important |
+| Compatibility & Portability       | Important |
+| Maintainability                   | Important |
+| Scalability                       | Important |
+| External Interfaces               | Important |
+| Data Requirements                 | Important |
+| Design Constraints                | Important |
+| Assumptions & Dependencies        | Optional  |
+| Testability & Acceptance Criteria | Optional  |
+| Deployment & Operations           | Optional  |
+
+Coverage percentage is computed as: `(covered + 0.5 × partial) / total × 100`.
+
+### Ablation Study Support
+
+The gap detector can be disabled for controlled experiments:
+
+```python
+# Gap detection ON (default)
+manager = ConversationManager(provider=provider, gap_enabled=True)
+
+# Gap detection OFF (ablation baseline)
+manager = ConversationManager(provider=provider, gap_enabled=False)
+```
+
+When disabled, `GapDetector.analyse()` returns a "100% covered" report and no directives are injected into the prompt.
+
+---
+
+## Question Generation
+
+`ProactiveQuestionGenerator` selects the highest-priority uncovered category from the `GapReport` and generates one targeted follow-up question per turn.
+
+### Mode Hierarchy
+
+1. **LLM mode (default)** — calls the LLM with a meta-prompt that includes the last 4 turns of conversation history and the target gap category. Produces context-aware, project-specific questions.
+2. **Template fallback** — used when the LLM provider is unavailable or the meta-call fails. Parameterised templates exist for all 19 categories.
+
+### Injection Pattern
+
+The generated question is injected into `PromptArchitect.extra_context` as a one-shot directive before the next LLM call. The prompt architect automatically clears the directive after each build, ensuring it is used exactly once.
 
 ```
-[ROLE]          — active elicitation philosophy + persona
-[CONTEXT]       — live state + domain gate (8-domain grid) + dual metrics (dynamic)
-[GAP DIRECTIVE] — targeted follow-up from GapDetector (one-shot, cleared after use)
-[TASK]          — phase-gated rules + domain gate closure checklist + RULE 8
-```
+── PROACTIVE QUESTIONING DIRECTIVE ──
+Gap to probe next: Performance Requirements (severity: CRITICAL)
+Why: How fast must the system respond? What load must it handle?
 
-### Request Lifecycle (per turn)
+A context-aware question has been pre-generated for this gap:
+  "Given that your users will be submitting reports during peak hours,
+   what response time would be acceptable for the dashboard to reload?"
 
-```
-Browser POST /api/session/turn
-    ↓
-ConversationManager.send_turn()
-    1. Build system message  (domain gate + dual metrics + gap directive from previous turn)
-    2. Call LLM with full history
-    3. Update ConversationState (heuristic coverage scan)
-    4. Extract requirements via RequirementExtractor → commit → sync SRS template
-    5. GapDetector.analyse(state)  → GapReport  (incl. IT4-G1 domain gate gaps)
-    6. ProactiveQuestionGenerator.generate(gap_report, state) → QuestionSet
-       → Domain-first pass (IT4-A): UNPROBED domains probed before IEEE-830 gaps
-    7. PromptArchitect.extra_context ← injection text for NEXT turn
-    8. Log turn + gap report to JSON
-    ↓
-JSON response: {
-    assistant_reply, gap_report, follow_up_questions,
-    coverage_pct, coverage_report,   ← dual metrics + domain gate status
-    srs_ready                         ← hard domain gate check
-}
+You MAY use this question verbatim or adapt it to flow naturally.
+── END DIRECTIVE ──
 ```
 
 ---
 
-## REST API
+## Prompt Architecture
 
-| Method | Endpoint                    | Description                                                 |
-| ------ | --------------------------- | ----------------------------------------------------------- |
-| POST   | `/api/session/start`        | Start a new session. Body: `{ "gap_detection": true }`      |
-| POST   | `/api/session/turn`         | Send a user message. Body: `{ "session_id", "message" }`    |
-| GET    | `/api/session/status`       | Coverage report + gap report. Query: `?session_id=...`      |
-| POST   | `/api/session/generate_srs` | Finalise session and generate SRS. Body: `{ "session_id" }` |
-| GET    | `/api/session/download_srs` | Download the generated SRS file. Query: `?session_id=...`   |
-| GET    | `/api/health`               | Health check.                                               |
+The system message is composed of four modular blocks assembled fresh on every turn:
 
-Each `/api/session/turn` response now includes:
+```
+=== ROLE ===
+Active elicitation philosophy + 15-year RE expert persona
 
-- `assistant_reply` — the LLM's response
-- `gap_report` — full post-turn gap analysis (including injected domain gate gaps)
-- `follow_up_questions` — domain-first proactive questions (for UI display)
-- `coverage_pct` — current IEEE-830 coverage percentage
-- `coverage_report` — **new**: domain gate status + domain completeness score + IEEE-830 score
-- `srs_ready` — **new**: boolean hard gate check (domain gate + NFRs + FR count)
+=== CURRENT SESSION CONTEXT ===
+Live state: turn count, FR/NFR counts, phase indicator,
+covered/missing IEEE-830 categories, FR deficit warning,
+mandatory NFR alert
+
+=== GAP DETECTION DIRECTIVE ===          ← injected only when a gap is found
+One-shot: target category + pre-generated question
+
+=== TASK INSTRUCTIONS ===
+Phase-gated structure (4 phases), 6 non-negotiable rules,
+mandatory closure checklist
+```
+
+### Phase Structure
+
+| Phase                                   | Turns        | Goal                                           |
+| --------------------------------------- | ------------ | ---------------------------------------------- |
+| Phase 1: Domain & Context Discovery     | 1–3          | Establish "Why" and "Who" before "What"        |
+| Phase 2: Functional Requirements (IPOS) | Ongoing      | Decompose behaviours into atomic, testable FRs |
+| Phase 3: Non-Functional Requirements    | After ≥5 FRs | ISO 25010 quality attributes with metrics      |
+| Phase 4: Constraints & Final Validation | Closure      | Hard limits, saturation check                  |
+
+The assistant is blocked from advancing to Phase 3 until at least 5 distinct functional requirements have been recorded. SRS generation is blocked until the mandatory closure checklist is complete.
 
 ---
 
-## Directory Structure
+## Requirement Extraction
+
+The `RequirementExtractor` parses assistant responses for formalised requirements using three strategies in priority order:
+
+**Strategy 1 — REQ tags (primary)**
+
+```xml
+<REQ type="functional" category="functional">
+The system shall allow users to log in with email and password.
+</REQ>
+
+<REQ type="non_functional" category="performance">
+The system shall respond to all dashboard requests within 2 seconds
+under a load of 500 concurrent users.
+</REQ>
+```
+
+**Strategy 2 — Numbered explicit pattern (fallback)**
 
 ```
-re-assistant/
-├── app.py                          # Flask application entry point
-├── index.html                      # Single-page UI (served by Flask)
-├── requirements.txt                # Python dependencies
-├── .env                            # API keys (not committed to version control)
-├── src/
-│   └── components/
-│       ├── conversation_manager.py
-│       ├── conversation_state.py
-│       ├── prompt_architect.py
-│       ├── gap_detector.py
-│       ├── question_generator.py
-│       ├── requirement_extractor.py
-│       ├── srs_template.py
-│       └── srs_formatter.py
-├── output/                         # Generated SRS files
-└── logs/                           # Session logs (JSON)
+Requirement 1 (Functional): The system shall...
 ```
+
+**Strategy 3 — "shall" pattern (last resort)**
+
+```
+The system shall authenticate users...
+```
+
+Extracted requirements are committed to `ConversationState` and scored against SMART criteria (Specific, Measurable, Achievable, Relevant, Testable) using a heuristic checker.
 
 ---
 
-## Installation & Running
+## SRS Output
+
+The generated SRS follows IEEE 830-1998 structure:
+
+```
+§1  Introduction
+    1.1 Purpose · 1.2 Scope · 1.3 Definitions · 1.4 References · 1.5 Overview
+§2  Overall Description
+    2.1 Product Perspective · 2.2 Product Functions · 2.3 User Characteristics
+    2.4 General Constraints · 2.5 Assumptions and Dependencies
+§3  Specific Requirements
+    3.1 Functional Requirements
+    3.2 External Interface Requirements (User/Hardware/Software/Communication)
+    3.3 Performance Requirements
+    3.4 Logical Database Requirements
+    3.5 Design Constraints
+    3.6 Software System Attributes (Reliability/Availability/Security/
+        Maintainability/Portability/Usability)
+§4  Open Issues and Conflicts
+Appendix A  Traceability Matrix
+Appendix B  Elicitation Coverage & Quality Report
+Appendix C  Conversation Transcript Summary
+```
+
+Each requirement is annotated with its SMART score (0–5), priority (Must-have / Should-have / Nice-to-have), IEEE-830 section reference, and source turn.
+
+---
+
+## Web UI
+
+The single-page UI (`index.html`) provides three panels:
+
+- **Left panel** — live IEEE-830 coverage ring with per-category status (covered / partial / uncovered), colour-coded by severity
+- **Centre** — chat interface with typing indicator and session start overlay
+- **Right panel** — two tabs: _Gaps_ (current `GapReport`) and _Follow-ups_ (clickable question cards that pre-fill the input)
+
+---
+
+## Installation & Setup
 
 ### Prerequisites
 
 ```bash
 pip install flask flask-cors requests
-# For OpenAI provider:
-pip install openai
+# Plus one of:
+pip install openai          # for OpenAI provider
+# or ensure Ollama is running locally / on the university server
 ```
 
 ### Environment Variables
 
-```bash
-# OpenAI
-export OPENAI_API_KEY=sk-...
+| Variable          | Required for    | Description                                                     |
+| ----------------- | --------------- | --------------------------------------------------------------- |
+| `OPENAI_API_KEY`  | OpenAI provider | Your OpenAI API key                                             |
+| `OLLAMA_API_KEY`  | Ollama provider | Bearer token for the Ollama server                              |
+| `OLLAMA_BASE_URL` | Ollama provider | Base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
 
-# Ollama (Hildesheim server)
-export OLLAMA_API_KEY=...
-export OLLAMA_BASE_URL=https://genai-01.uni-hildesheim.de/ollama   # optional
-```
-
-### Starting the Server
+### Running
 
 ```bash
-# Stub provider (no API key required — for UI testing)
+# With OpenAI GPT-4o (default for production)
+OPENAI_API_KEY=sk-... python app.py --provider openai --model gpt-4o
+
+# With Ollama (university server)
+OLLAMA_API_KEY=... python app.py --provider ollama --model llama3.1:8b
+
+# With stub provider (no API key needed, for UI testing)
 python app.py --provider stub
-
-# OpenAI GPT-4o
-python app.py --provider openai --model gpt-4o
-
-# Ollama (Hildesheim)
-python app.py --provider ollama --model llama3.1:8b
 
 # Custom host/port
 python app.py --provider openai --host 0.0.0.0 --port 8080
+
+# Debug mode
+python app.py --provider stub --debug
 ```
 
-Open `http://localhost:5000` in a browser to use the UI.
-
-### Generating the SRS
-
-Trigger SRS generation with any of:
-
-- Phrases such as `generate srs`, `I'm done`, `end session`, `export srs`
-- The **Generate SRS** button in the UI
-- Automatic closure once the domain gate is satisfied, all mandatory NFR categories are covered, and the minimum FR count (≥ 5) is met
-
-The SRS is saved to `output/` and available for download via the UI or the `/api/session/download_srs` endpoint.
+Open `http://127.0.0.1:5000` in your browser.
 
 ---
 
-## Gap Detection: IEEE-830 Coverage Checklist
+## REST API
 
-The `GapDetector` tracks 19 categories across three severity levels. In addition to the checklist scan, domain gate gaps are synthesised as CRITICAL entries when any of the 8 domains is UNPROBED (IT4-G1).
+| Method | Endpoint                    | Description                                                                   |
+| ------ | --------------------------- | ----------------------------------------------------------------------------- |
+| `GET`  | `/api/health`               | Health check; returns provider name                                           |
+| `POST` | `/api/session/start`        | Start a new session; returns `session_id` and opening message                 |
+| `POST` | `/api/session/turn`         | Send user message; returns assistant reply + gap report + follow-up questions |
+| `GET`  | `/api/session/status`       | Current coverage and gap report for a session                                 |
+| `POST` | `/api/session/generate_srs` | Finalise session and generate SRS document                                    |
+| `GET`  | `/api/session/download_srs` | Download the generated SRS `.md` file                                         |
 
-| Category                            | Severity  |
-| ----------------------------------- | --------- |
-| System Purpose & Goals              | CRITICAL  |
-| System Scope & Boundaries           | CRITICAL  |
-| Stakeholders & User Classes         | CRITICAL  |
-| Functional Requirements             | CRITICAL  |
-| Performance Requirements            | CRITICAL  |
-| Usability & Accessibility           | CRITICAL  |
-| Security & Privacy Requirements     | CRITICAL  |
-| Reliability & Availability          | CRITICAL  |
-| Compatibility & Portability         | CRITICAL  |
-| Maintainability Requirements        | CRITICAL  |
-| Use Cases & User Stories            | IMPORTANT |
-| Business Rules & Constraints        | IMPORTANT |
-| Scalability                         | IMPORTANT |
-| External Interfaces                 | IMPORTANT |
-| Data Requirements                   | OPTIONAL  |
-| Design & Implementation Constraints | OPTIONAL  |
-| Assumptions & Dependencies          | OPTIONAL  |
-| Testability                         | OPTIONAL  |
-| Deployment                          | OPTIONAL  |
+### Example: Start Session
+
+```json
+POST /api/session/start
+{ "gap_detection": true }
+
+Response:
+{
+  "session_id": "a3f9c12b",
+  "opening_message": "Hello! I'm your Requirements Engineering assistant...",
+  "gap_detection": true,
+  "provider": "openai"
+}
+```
+
+### Example: Send Turn
+
+```json
+POST /api/session/turn
+{ "session_id": "a3f9c12b", "message": "I want to build a task management app for remote teams." }
+
+Response:
+{
+  "session_id": "a3f9c12b",
+  "assistant_reply": "Great. To understand the purpose more deeply — ...",
+  "turn_id": 1,
+  "gap_report": { "coverage_pct": 12.5, "critical_gaps": [...], ... },
+  "follow_up_questions": [{ "category_label": "Stakeholders", "question_text": "...", ... }],
+  "coverage_pct": 12.5
+}
+```
 
 ---
 
-## Domain Coverage Gate: SRS Generation Readiness
+## Project Structure
 
-SRS generation is blocked until all three conditions are met:
-
-1. **Domain gate satisfied** — all 8 domains are CONFIRMED or EXCLUDED
-2. **All 6 mandatory NFR categories covered** — performance, usability, security_privacy, reliability, compatibility, maintainability
-3. **Minimum FR count reached** — ≥ 5 functional requirements extracted
-
-The gate status is visible in the UI coverage panel and is returned in every `/api/session/turn` response as `srs_ready`.
+```
+iteration-3/
+├── app.py                      # Flask web server & REST API
+├── index.html                  # Single-page web UI
+├── conversation_manager.py     # Core orchestration loop
+├── conversation_state.py       # Session state: turns, requirements, coverage
+├── prompt_architect.py         # Modular system message builder
+├── gap_detector.py             # IEEE-830/Volere 18-category gap analyser  ← NEW
+├── question_generator.py       # LLM meta-prompt question generator        ← NEW
+├── requirement_extractor.py    # <REQ> tag + pattern-based extraction
+├── srs_template.py             # IEEE-830 data container with SMART scoring
+├── srs_formatter.py            # Markdown/plain-text/JSON SRS renderer
+├── logs/                       # Per-session JSON logs (auto-created)
+└── output/                     # Generated SRS .md files (auto-created)
+```
 
 ---
 
-## Ablation Study Support
+## Known Limitations
 
-Iteration 4 retains the ablation study flag from Iteration 3:
+- **Heuristic SMART scoring** — the current SMART checker uses keyword and pattern matching. LLM-based quality assessment is planned for Iteration 4.
+- **In-memory session store** — sessions are lost on server restart. Production deployment would require Redis or a database.
+- **Single-file SRS output** — only Markdown output is currently supported. DOCX/PDF export is planned.
+- **LLM keyword extraction** — the `RequirementExtractor` relies on the LLM correctly using `<REQ>` tags. If the LLM deviates from the format, extraction quality degrades to the regex fallbacks.
+
+---
+
+## Evaluation Notes (Ablation Study)
+
+To run the ablation study comparing gap detection ON vs. OFF:
 
 ```bash
-# Gap detection ON (default)
-python app.py --provider ollama
+# Condition A: Gap detection ON
+python app.py --provider openai
 
-# Gap detection OFF — pass gap_detection=false in the /api/session/start body
-curl -X POST http://localhost:5000/api/session/start \
-     -H "Content-Type: application/json" \
-     -d '{"gap_detection": false}'
+# Condition B: Gap detection OFF
+# In app.py, set gap_detection_enabled = False in the start_session body,
+# or pass gap_detection: false in the POST /api/session/start body.
 ```
 
-When `gap_detection=false`, `GapDetector` returns a fully-covered dummy report, domain gate injection is bypassed, no questions are generated, and no directive is injected into the prompt. All other behaviour is identical, isolating the effect of the gap detection and domain coverage components.
-
-Session logs record `gap_detection_enabled` at session start and include the full `GapReport` (including domain gate status) per turn.
+Session logs in `logs/session_<id>.json` record per-turn gap reports, category updates, and extracted requirements for offline analysis.
 
 ---
 
-## Output Files
+## Authors
 
-### SRS Document (`output/srs_<session_id>.md`)
-
-A full IEEE 830-1998 compliant specification including:
-
-- §1 Introduction (purpose, scope, definitions, overview)
-- §2 Overall Description (product perspective, functions, user characteristics, constraints, assumptions)
-- §3 Specific Requirements (functional, interface, performance, reliability, security, maintainability, compatibility, usability)
-- Appendix A: Traceability Matrix (req_id → section → source turn → SMART score)
-- Appendix B: Coverage & Quality Report (including domain completeness score)
-- Appendix C: Conversation Transcript Summary
-
-Uncovered domains receive `[D — architecture review required]` stubs injected by `SRSFormatter` (Priority 4). Each requirement is annotated with a SMART quality badge and a priority indicator (🔴 Must-have / 🟡 Should-have / 🟢 Nice-to-have).
-
-### Session Log (`logs/session_<session_id>.json`)
-
-A structured JSON log including per-turn gap reports and domain gate status. Each turn entry contains:
-
-- `turn_id`, `user_message`, `assistant_message`
-- `categories_updated` — IEEE-830 categories touched this turn
-- `gap_report` — full `GapReport` snapshot (IEEE-830 gaps + synthesised domain gate gaps)
-
----
-
-## LLM Providers
-
-| Provider | Class            | Env Var          | Notes                                           |
-| -------- | ---------------- | ---------------- | ----------------------------------------------- |
-| `openai` | `OpenAIProvider` | `OPENAI_API_KEY` | GPT-4o by default                               |
-| `ollama` | `OllamaProvider` | `OLLAMA_API_KEY` | Hildesheim server; `OLLAMA_BASE_URL` optional   |
-| `stub`   | `StubProvider`   | —                | Deterministic scripted responses for UI testing |
-
-Temperature is fixed at `0.0` for the main conversation loop for reproducible evaluation runs. The question generator meta-prompt uses `temperature=0.4` to produce varied follow-up questions across turns.
-
----
-
-## Troubleshooting
-
-**Ollama connection error**
-Verify that `OLLAMA_API_KEY` is set and the university VPN is active if required.
-
-**OpenAI authentication error**
-Verify that `OPENAI_API_KEY` is set and has sufficient quota.
-
-**SRS contains only `NOT ELICITED` placeholders**
-The conversation was too short or did not contain clear requirement statements. The coverage panel shows both the domain gate status and IEEE-830 scores — address any UNPROBED domains and uncovered NFR categories before generating the SRS.
-
-**`srs_ready` stays `false` after many turns**
-Check the domain gate status in the coverage panel. The most common cause is one or more domains remaining UNPROBED. The assistant will surface probe questions automatically, but you can also ask directly about the indicated domain.
-
-**Gap report shows 0% coverage after several turns**
-Check that `gap_detection` was not set to `false` when the session was started. Confirm via `GET /api/session/status`.
-
-**Port already in use**
-
-```bash
-python app.py --port 5001
-```
-
----
-
-## Research Foundation
-
-Iteration 4 directly addresses the 37% average SRS completeness finding from the Iteration-3 evaluation:
-
-- **Domain Coverage Gate** ensures that functional domains are exhaustively surfaced, not just recorded when volunteered
-- **Domain-first question priority** guarantees that structural domain gaps are addressed before NFR or stylistic gaps
-- **Dual completeness metrics** expose the divergence between keyword-based coverage (which can be misleadingly high) and actual domain coverage
-- **RULE 8 scope reduction handling** prevents silent requirement loss when users use preference language rather than out-of-scope language
-- **Design-derived SRS stubs** ensure the generated document always acknowledges uncovered domains rather than omitting them
-
----
-
-## License
-
-Academic Research Project — University of Hildesheim
-
-Team members: Hunain Murtaza (1750471) · David Tashjian (1750243) · Saad Younas (1750124) · Amine Rafai (1749821) · Khaled Shaban (1750283) · Mohammad Alsaiad (1750755)
+Integrated Research Project — Requirements Engineering Assistant  
+Department of Computer Science · University of Hildesheim

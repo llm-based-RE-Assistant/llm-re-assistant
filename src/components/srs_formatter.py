@@ -1,49 +1,9 @@
 """
 src/components/srs_formatter.py
 =================
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 SRS Output Formatter: renders an SRSTemplate to a readable IEEE-830 document.
 
-Purpose
--------
-This module owns the *presentation* side of SRS generation.
-It takes a fully (or partially) populated SRSTemplate and renders it to:
-  - Markdown (.md)  — primary output, readable in any editor
-  - Plain text      — for evaluation scripts that need raw content
-
-Iteration 4 changes
--------------------
-PRIORITY 4 — Design-Derived Placeholder Injection
-  New method _inject_design_derived_stubs() runs as a post-pass after all
-  sections are rendered. For every IEEE-830 section that has zero elicited
-  content, it inserts a structured placeholder block:
-
-    [D — Architecture Review Required]
-    Domain: <domain label>
-    Rationale: <why this section is expected to exist>
-    Action required: A system architect or domain expert must confirm
-    whether requirements exist in this area and document them before
-    development begins.
-
-  This closes the structural SRS gap without inventing fake requirements.
-  The stubs are tagged [D] (design-derived) to match the ground-truth
-  convention. They are also listed in a new Appendix D: Design-Derived
-  Requirements Inventory.
-
-PRIORITY 5 — Dual Metrics in SRS Header
-  The header now shows two separate completeness metrics:
-    • Domain Completeness Score  N/8 (primary signal — how many functional
-      domains were fully elicited)
-    • IEEE-830 Elicitation Coverage  N/12 (existing category-level metric)
-  The old single "IEEE-830 Coverage" percentage is retained but now sits
-  alongside the new domain score so evaluators can distinguish topic coverage
-  from structural coverage.
-
-Design
-------
-  SRSFormatter.to_markdown(template, state)  → str (full IEEE-830 document)
-  SRSFormatter.to_plain_text(template, state)→ str (evaluator-friendly)
-  SRSFormatter.write(template, state, path)  → Path (writes .md to disk)
 """
 
 from __future__ import annotations
@@ -56,10 +16,8 @@ from srs_template import (
     AnnotatedRequirement,
     SRSTemplate,
     SmartFlag,
-    InterfaceRequirements,
-    SystemAttributes,
 )
-from conversation_state import ConversationState, RequirementType
+from conversation_state import ConversationState
 from prompt_architect import (
     IEEE830_CATEGORIES,
     MANDATORY_NFR_CATEGORIES,

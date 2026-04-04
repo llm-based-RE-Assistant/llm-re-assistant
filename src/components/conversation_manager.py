@@ -1,29 +1,9 @@
 """
 src/components/conversation_manager.py
 ========================
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Core Conversation Loop: User → LLM → Response with History
 
-Fix log (applied before Iteration 4)
---------------------------------------
-FIX-W1  GapDetector and ProactiveQuestionGenerator are now WIRED into send_turn().
-        In the original iteration-3 code, both components were implemented but
-        never called.  The gap_detector.analyse() + question_generator.generate()
-        pipeline is now executed after every turn, and the result is injected
-        into PromptArchitect.extra_context BEFORE the next turn's system message
-        is built.
-
-FIX-W2  QuestionTracker is created in start_session() and carried throughout
-        the session so repeated questions are avoided.
-
-FIX-W3  The question_generator is created with the same LLM provider as the
-        main conversation loop, enabling LLM-generated context-aware questions
-        (see question_generator.py FIX-B).
-
-FIX-W4  extra_context injection timing: the directive is set on self._architect
-        AFTER the current turn's state update so the NEXT turn's system message
-        contains the fresh directive — not the stale one from the previous turn.
-        This matches the one-shot injection design in PromptArchitect.
 """
 
 from __future__ import annotations
@@ -41,16 +21,14 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from conversation_state import ConversationState, RequirementType, create_session
-from prompt_architect import PromptArchitect, IEEE830_CATEGORIES
+from conversation_state import ConversationState, create_session
+from prompt_architect import PromptArchitect
 from srs_template import SRSTemplate, create_template
-from srs_formatter import SRSFormatter, generate_srs_document
+from srs_formatter import generate_srs_document
 from requirement_extractor import RequirementExtractor, create_extractor
 # FIX-W1: import the two new components
 from gap_detector import GapDetector, create_gap_detector
-from question_generator import (
-    ProactiveQuestionGenerator, create_question_generator,
-)
+from question_generator import ProactiveQuestionGenerator, create_question_generator
 
 
 # ---------------------------------------------------------------------------

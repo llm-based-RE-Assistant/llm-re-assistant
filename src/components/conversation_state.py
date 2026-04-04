@@ -1,26 +1,9 @@
 """
 src/components/conversation_state.py
 ======================
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Conversation State Management
 
-Iteration 4 additions
----------------------
-IT4-S1  get_coverage_report() now includes "domain_gate_status" and
-        "domain_completeness_score" keys so that evaluation scripts and
-        the SRS formatter can read both the old IEEE-830 metric and the new
-        domain completeness metric from the same dict.
-
-IT4-S2  is_ready_for_srs() helper method added. Wraps the combined
-        PromptArchitect.is_srs_generation_permitted() check so that
-        ConversationManager has a single clean API call to determine
-        whether the session is ready to generate the SRS.
-
-All original Iteration 3 responsibilities remain unchanged:
-  - Track IEEE-830 category coverage via heuristic keyword scan
-  - Store all elicited requirements with metadata
-  - Maintain turn history with timestamps
-  - Provide session summary for evaluation / SRS generation
 """
 
 from __future__ import annotations
