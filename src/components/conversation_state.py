@@ -3,11 +3,11 @@ src/components/conversation_state.py — Iteration 6
 University of Hildesheim
 
 Changes:
-  IT8-NFR-DEPTH   mandatory_nfrs_covered now requires MIN_NFR_PER_CATEGORY (2)
+  IT6-NFR-DEPTH   mandatory_nfrs_covered now requires MIN_NFR_PER_CATEGORY (2)
                   per NFR sub-category, not just >= 1.
-  IT8-PHASE4      Added srs_section_content dict and phase4_sections_covered set.
+  IT6-PHASE4      Added srs_section_content dict and phase4_sections_covered set.
                   is_ready_for_srs() now also requires Phase 4 complete.
-  IT8-VOLERE      All Volere references removed. IEEE-830 only.
+  IT6-VOLERE      All Volere references removed. IEEE-830 only.
 """
 from __future__ import annotations
 import json, re, time

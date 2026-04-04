@@ -4,7 +4,7 @@ src/components/question_generator.py
 RE Assistant — Iteration 6 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
-Iteration 55 changes
+Iteration 6 changes
 ═══════════════════════════════════════
 IT6-A  Domain gate questions now target SPECIFIC missing sub-dimensions
        rather than generic "tell me more about X" probes.

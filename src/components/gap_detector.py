@@ -4,11 +4,11 @@ src/components/gap_detector.py
 RE Assistant — Iteration 6 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-IT8 changes
+IT6 changes
 --------------------------------------
-IT8-VOLERE  All Volere references removed from COVERAGE_CHECKLIST, CategoryGap,
+IT6-VOLERE  All Volere references removed from COVERAGE_CHECKLIST, CategoryGap,
             and _inject_domain_gate_gaps. IEEE-830 only.
-IT8-NFR     _classify_coverage() for NFR categories now uses MIN_NFR_PER_CATEGORY
+IT6-NFR     _classify_coverage() for NFR categories now uses MIN_NFR_PER_CATEGORY
             threshold (2) consistently — partial = count > 0 but < threshold,
             covered = count >= threshold. Removes old ">= 1 = covered" bypass.
 

@@ -2,7 +2,7 @@
 src/components/srs_coverage.py — Iteration 6
 University of Hildesheim
 
-IT8 Changes
+IT6 Changes
 ===========
 CONSUMER-FIRST: enrich() now reads state.srs_section_content (populated by
 Phase 4 interactive elicitation) BEFORE falling back to LLM synthesis.
