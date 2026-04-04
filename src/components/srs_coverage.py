@@ -1,51 +1,17 @@
 """
-src/components/srs_coverage.py — Iteration 6
+src/components/srs_coverage.py — Iteration 4
 University of Hildesheim
 
-IT6 Changes
-===========
-CONSUMER-FIRST: enrich() now reads state.srs_section_content (populated by
-Phase 4 interactive elicitation) BEFORE falling back to LLM synthesis.
-Sections collected from the live customer conversation take priority over
-any inferred/hallucinated content.
-
-VOLERE REMOVED: All Volere references removed. IEEE-830 only.
-
-RISK TIER REASSIGNMENT
------------------------
-Sections now covered by Phase 4 interactive elicitation (consumer-first):
-  §1.2   Scope                  → populated from <SECTION id="1.2">
-  §2.1   Product Perspective    → populated from <SECTION id="2.1">
-  §2.3   User Classes           → populated from <SECTION id="2.3">
-  §2.4   Operating Environment  → populated from <SECTION id="2.4">
-  §2.5   Assumptions            → populated from <SECTION id="2.5">
-  §3.1.1 User Interfaces        → populated from <SECTION id="3.1.1">
-  §3.1.3 Software Interfaces    → populated from <SECTION id="3.1.3">
-  §3.1.4 Communication Interfaces → populated from <SECTION id="3.1.4">
-
-Sections NOT in Phase 4 (LLM synthesis / stub only):
-  §2.2   Product Functions      ← synthesis from domain gate FRs (low risk)
-  §3.1.2 Hardware Interfaces    ← stub (high risk, no customer data)
-  §3.4   Logical Database Reqs  ← stub (high risk, no customer data)
-  §3.5   Design Constraints     ← stub if no CON reqs elicited (high risk)
-
-INTEGRATION
------------
-Called from ConversationManager.finalize_session() BEFORE SRSFormatter runs.
-The enricher reads state.srs_section_content for Phase 4 content first,
-then falls back to LLM synthesis for remaining empty sections.
 """
 
 from __future__ import annotations
-
-import json
 import re
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from conversation_state import ConversationState
-    from srs_template import SRSTemplate, Section1, Section2, UserClass
+    from srs_template import SRSTemplate
 
 # ---------------------------------------------------------------------------
 # Section-level prompts

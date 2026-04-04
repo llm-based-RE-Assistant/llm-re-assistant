@@ -1,202 +1,279 @@
-# LLM-Based Requirements Engineering Assistant - Iteration 1 MVP
+# LLM-Based Requirements Engineering Assistant — Iteration 6
 
-## Project Overview
+**University of Hildesheim · DSR Project**
 
-This is the initial phase of Iteration 1 for an LLM-based Requirements Engineering Assistant. The system provides conversational requirements elicitation using Ollama's Llama 3.1 model and generates IEEE-830 compliant SRS drafts.
+---
 
-### Implemented Features (Iteration 1 - Initial Phase)
+## Overview
 
-✅ **Conversational Elicitation**
-- Multi-turn dialogue with context memory
-- Chain-of-Thought prompting for adaptive questioning
-- Natural language interaction
+Iteration 6 builds on the five root-cause fixes from Iteration 5 by addressing three new issues: **shallow NFR coverage** (a single requirement was enough to satisfy each of the six mandatory NFR categories, so the LLM could satisfy the gate with low-quality data), **incomplete IEEE-830 structural sections** (the SRS was offered before narrative sections such as §1.2 Scope or §2.3 User Classes had been explicitly elicited), and **Volere artefacts** (Volere-specific framing lingered in prompts and state even though the project standardised on IEEE 830-1998 exclusively).
 
-✅ **Interactive Clarification** 
-- Ambiguity detection (vague words, weak phrases)
-- 4W analysis framework (Who/What/When/Where)
-- Follow-up question generation
+| Issue                           | Iteration 5 Problem                                                                                                                                                                     | Iteration 6 Fix                                                                                                                                                                                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Shallow NFR Coverage**        | `MIN_NFR_PER_CATEGORY = 1` — one vague requirement cleared a mandatory NFR gate                                                                                                         | `IT6-NFR-DEPTH`: `MIN_NFR_PER_CATEGORY` raised to **2**. `mandatory_nfrs_covered` now requires at least 2 requirements per category. Phase 3 hard stop is tiered: first probe opens the topic, depth probe fires when count == 1 and demands specific measurable follow-up                       |
+| **Missing Structural Sections** | SRS was offered immediately after NFRs were covered; narrative sections (scope, user classes, operating environment, etc.) were left empty or filled by the hallucination-risk enricher | `IT6-PHASE4`: A new **Phase 4** is inserted between NFR completion and the SRS offer. The assistant must elicit 8 IEEE-830 narrative sections in order before `is_ready_for_srs()` returns `True`. Answers are captured with `<SECTION id="X.Y">` tags and stored in `state.srs_section_content` |
+| **Volere References**           | Volere template labels ("Fit Criterion", "Customer", "Stakeholder") appeared in prompts and reports                                                                                     | `IT6-VOLERE`: All Volere references removed from `prompt_architect.py`, `conversation_state.py`, and `gap_detector.py`. IEEE-830 section numbering and terminology used exclusively throughout                                                                                                   |
 
-✅ **Basic Specification Generation**
-- IEEE-830 template structure
-- Automated SRS draft generation
-- Sections: Introduction, Overall Description, Functional/Non-Functional Requirements
+The system continues to run as a **Flask web application** with a single-page HTML/JS UI.
 
-✅ **Session Management**
-- Persistent conversation storage
-- Artifact generation and storage
-- Multi-session support
+---
 
-## Directory Structure
+## What's New in Iteration 6
 
-```
-llm-re-assistant/
-├── artifacts/
-│   ├── conversations/      # Stored conversation history (JSON)
-│   └── specifications/     # Generated SRS documents
-├── docs/                   # Documentation
-├── src/
-│   ├── elicitation/
-│   │   └── elicitation_engine.py   # Core elicitation logic
-│   ├── modeling/                    # (Future: Iteration 1 Phase 2)
-│   ├── specification/               # (Future: Iteration 1 Phase 2)
-│   ├── verification/                # (Future: Iteration 1 Phase 2)
-│   └── utils/
-│       ├── ollama_client.py         # Ollama API integration
-│       └── conversation_manager.py  # Session & history management
-├── templates/
-│   └── index.html          # Web interface
-├── tests/                  # Unit tests (Future)
-├── venv/                   # Python virtual environment
-├── app.py                  # Flask application entry point
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
-```
+### IT6-NFR-DEPTH — Raised NFR Depth Threshold (`prompt_architect.py`, `conversation_state.py`)
 
-## Prerequisites
+`MIN_NFR_PER_CATEGORY` is now **2** (previously 1). Every mandatory NFR category must have at least two distinct requirements before the NFR gate clears.
 
-1. **Python 3.8+** installed
-2. **Ollama** server api key
-3. **Llama 3.1:8b model** check on ollama server or choose any other.
+`ConversationState.mandatory_nfrs_covered` enforces this:
 
-
-## Installation
-
-### 1. Clone/Setup Project
-
-```bash
-cd llm-re-assistant
-```
-
-### 2. Create Virtual Environment
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-# On Linux/Mac:
-source venv/bin/activate
-
-# On Windows:
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Verify Directory Structure
-
-Ensure the following directories exist:
-```bash
-mkdir -p artifacts/conversations
-mkdir -p artifacts/specifications
-mkdir -p templates
-mkdir -p src/elicitation
-mkdir -p src/utils
-```
-
-## Running the Application
-
-### 1. Get Ollama Server API
-
-```bash
-# Generate ollama server api from University LLM Server
-Visit this link https://genai-01.uni-hildesheim.de/
-```
-If you don't have access to University Server then you can also locally setup ollama server.
-To download ollama server, visit this link `https://ollama.com/download`
-
-### 2. Run Flask Application
-
-```bash
-# Make sure virtual environment is activated
-python app.py
-```
-
-The application will start on `http://localhost:5000`
-
-### 3. Access Web Interface
-
-Open your browser and navigate to:
-```
-http://localhost:5000
-```
-
-## Using the Application
-
-### Starting a Conversation
-
-1. The interface will greet you with a welcome message
-2. Type your project idea or requirements (e.g., "I want to build a library management system")
-3. The assistant will ask adaptive follow-up questions to elicit requirements
-4. Answer questions naturally - the system uses 4W analysis to ensure completeness
-
-### Generating SRS Document
-
-1. After discussing requirements, click **"Generate SRS"** button
-2. The system will create an IEEE-830 compliant specification
-3. The specification appears in the chat and is saved to `artifacts/specifications/`
-
-### Starting New Session
-
-1. Click **"New Session"** button
-2. Current conversation is saved automatically
-3. A fresh session begins for a new project
-
-## API Endpoints
-
-### POST `/api/chat`
-Send a message to the assistant
-```json
-Request: {"message": "I want to build a CRM system"}
-Response: {"status": "success", "response": "Great! Let me help you..."}
-```
-
-### POST `/api/generate-spec`
-Generate SRS specification from conversation
-```json
-Response: {
-  "status": "success", 
-  "specification": "# SOFTWARE REQUIREMENTS SPECIFICATION...",
-  "filename": "artifacts/specifications/srs_xxx.txt"
-}
-```
-
-### POST `/api/new-session`
-Start a new conversation session
-```json
-Response: {"status": "success", "session_id": "uuid", "message": "..."}
-```
-
-### GET `/api/health`
-Health check endpoint
-```json
-Response: {"status": "healthy", "timestamp": "2025-01-15T10:30:00"}
-```
-
-## Configuration
-
-### Changing LLM Model
-
-Edit `app.py` line 16:
 ```python
-ollama_client = OllamaClient(model="llama3.1:8b")  # Change model here
+@property
+def mandatory_nfrs_covered(self):
+    from domain_discovery import NFR_CATEGORIES
+    from prompt_architect import MIN_NFR_PER_CATEGORY
+    return all(self.nfr_coverage.get(c, 0) >= MIN_NFR_PER_CATEGORY for c in NFR_CATEGORIES)
 ```
 
-Available models (after pulling with `ollama pull`):
-- `llama3.1:8b` (default)
-- `llama3.1:70b` (better quality, slower)
-- `mistral:7b`
-- `codellama:13b`
+`_build_context_block()` in `prompt_architect.py` uses a two-tier hard stop for NFRs. When a category has zero coverage, the standard opening probe is issued. When a category has exactly one requirement (below the new threshold of 2), a dedicated depth probe fires:
 
-### Adjusting Temperature
+```
+⛔ HARD STOP — NFR DEPTH REQUIRED: Performance Requirements [1/2]
+You have 1 requirement(s) but need 2.
+Ask for a MEASURABLE follow-up: "..."
+Do NOT accept vague answers. Push for specific numbers/ranges.
+```
 
-Edit `src/elicitation/elicitation_engine.py`:
-- Line 114: `temperature=0.7` (conversational responses)
-- Line 137: `temperature=0.3` (specification generation - more consistent)
+The NFR panel in the context block is updated to show `(count/MIN_NFR_PER_CATEGORY)` per category with a `🔶` partial icon when coverage is non-zero but below threshold.
+
+### IT6-PHASE4 — Structured IEEE-830 Documentation Phase (`prompt_architect.py`, `conversation_state.py`, `requirement_extractor.py`)
+
+After all six NFR categories reach depth ≥ 2, a new Phase 4 begins. Eight IEEE-830 narrative sections are elicited one by one in a fixed order before the SRS is offered:
+
+| Section ID | Label                            | Follow-up Allowed |
+| ---------- | -------------------------------- | ----------------- |
+| §1.2       | Scope                            | No                |
+| §2.3       | User Classes and Characteristics | Yes               |
+| §2.4       | Operating Environment            | Yes               |
+| §2.5       | Assumptions and Dependencies     | Yes               |
+| §3.1.1     | User Interfaces                  | Yes               |
+| §3.1.3     | Software Interfaces              | Yes               |
+| §3.1.4     | Communications Interfaces        | Yes               |
+| §2.1       | Product Perspective              | No                |
+
+The assistant transitions into Phase 4 with a one-time message: _"Great, I have all the requirements I need! I just have a few quick documentation questions to make sure the specification is complete."_
+
+For each section the assistant asks the configured plain-language probe. If `can_ask_followup=True`, one clarifying question is allowed before the section is synthesised. Once the answer is captured, the assistant emits:
+
+```
+<SECTION id="2.3">
+  IEEE-830 formal prose synthesised from the stakeholder's answer.
+</SECTION>
+```
+
+`RequirementExtractor.extract_sections()` parses these tags using `_PATTERN_SECTION_TAG` and `commit_sections()` stores content into `state.srs_section_content` and marks the section as covered in `state.phase4_sections_covered`.
+
+`ConversationState.is_ready_for_srs()` now requires Phase 4 to be fully complete:
+
+```python
+def is_ready_for_srs(self):
+    if self.functional_count < MIN_FUNCTIONAL_REQS: return False
+    if not self.mandatory_nfrs_covered: return False
+    if self.domain_gate and self.domain_gate.seeded:
+        if not self.domain_gate.is_satisfied: return False
+    if len(self.phase4_sections_covered) < len(PHASE4_SECTIONS): return False
+    return True
+```
+
+The `srs_ready` flag in `/api/session/turn` is also updated to account for Phase 4 progress, preventing premature display of the "Generate SRS" button.
+
+The context block shows a Phase 4 progress panel on every turn:
+
+```
+PHASE 4 SECTIONS (3/8):
+  ✅ §1.2 Scope
+  ✅ §2.3 User Classes and Characteristics
+  ✅ §2.4 Operating Environment
+  ⬜ §2.5 Assumptions and Dependencies
+  ⬜ §3.1.1 User Interfaces
+  ...
+```
+
+### IT6-VOLERE — IEEE-830 Only (`prompt_architect.py`, `conversation_state.py`, `gap_detector.py`)
+
+All references to Volere template fields ("Fit Criterion", "Customer Satisfaction", "Stakeholder") have been removed. The project now uses exclusively IEEE 830-1998 terminology and section numbering throughout all prompts, state structures, coverage reports, and generated SRS documents.
+
+---
+
+## Four-Phase Elicitation Flow
+
+The elicitation session now follows four sequential phases, each gated by a `⛔ HARD STOP` directive:
+
+| Phase                          | Trigger               | Gate Condition                                            |
+| ------------------------------ | --------------------- | --------------------------------------------------------- |
+| **Phase 1 — Domain Discovery** | Session start, turn 1 | Domain gate seeded; all domains `confirmed` or `excluded` |
+| **Phase 2 — Functional Depth** | Domain gate satisfied | `functional_count >= MIN_FUNCTIONAL_REQS (10)`            |
+| **Phase 3 — NFR Coverage**     | FR threshold met      | All 6 NFR categories have `nfr_coverage >= 2` (IT6)       |
+| **Phase 4 — Documentation**    | NFRs at depth         | All 8 `PHASE4_SECTIONS` covered with `<SECTION>` tags     |
+| **SRS Offer**                  | Phase 4 complete      | `is_ready_for_srs()` returns `True`                       |
+
+A `✅ ALL GATES SATISFIED` message replaces the hard stop only when all four phases are complete.
+
+---
+
+## Architecture
+
+```
+app.py                              ← Flask REST API + HTML/JS UI
+src/components/
+├── conversation_manager.py         ← Session orchestration, LLM providers, turn loop
+│                                     FIX-LOOP, FIX-MATCH, FIX-DEDUP, FIX-CAP
+├── conversation_state.py           ← Session state, requirement store, coverage tracking
+│                                     IT6-NFR-DEPTH (MIN=2), IT6-PHASE4 (srs_section_content,
+│                                     phase4_sections_covered), IT6-VOLERE (IEEE-830 only)
+├── domain_discovery.py             ← Dynamic domain gate: seed, reseed, probe, match, decompose
+│                                     FIX-SEED, FIX-MATCH, FIX-2 (plain probes), FIX-3 (dedup context)
+├── prompt_architect.py             ← 4-block dynamic prompt + 4-phase structure
+│                                     IT6-NFR-DEPTH (tiered depth probes), IT6-PHASE4 (PHASE4_SECTIONS,
+│                                     <SECTION> tag rules), IT6-VOLERE (IEEE-830 labels only)
+├── srs_coverage.py                 ← IEEE-830 section completion with hallucination risk tiers
+├── gap_detector.py                 ← IEEE-830 checklist + domain gate gap injection
+│                                     IT6-VOLERE (Volere references removed)
+├── question_generator.py           ← Domain-first proactive question generation
+├── requirement_extractor.py        ← Multi-strategy requirement extraction from responses
+│                                     IT6-PHASE4 (extract_sections, commit_sections)
+├── srs_template.py                 ← IEEE-830 data model, progressively populated
+└── srs_formatter.py                ← Renders SRSTemplate to Markdown / plain text / JSON
+output/                             ← Generated SRS documents (.md)
+logs/                               ← JSON session logs (per-session, per-turn gap reports)
+```
+
+### System Prompt Structure (Iteration 6)
+
+`PromptArchitect.build_system_message()` assembles four ordered blocks each turn:
+
+```
+=== ROLE ===
+  ROLE_BLOCK — identity, communication style, jargon ban
+               Phase 4 constraint: session cannot close until Phase 4 complete
+
+=== CURRENT SESSION CONTEXT ===
+  _build_context_block() output:
+  - Turn count, FR/NFR counts
+  - ⛔ HARD STOP / ✅ directive (domain gate | NFR gap | NFR depth gap | Phase 4 section)
+  - Domain gate table with status icons
+  - NFR coverage checklist (count/MIN_NFR_PER_CATEGORY per category, 🔶 partial icon)
+  - Phase 4 section progress checklist (IT6)
+  - IEEE-830 structural coverage percentage
+
+=== GAP DETECTION DIRECTIVE ===         (injected only when gap detector fires)
+  ProactiveQuestionGenerator output
+
+=== TASK INSTRUCTIONS ===
+  TASK_BLOCK — Phase 1→2→3→4 structure, rules, <SECTION> tag format (IT6)
+```
+
+---
+
+## Installation & Running
+
+**Dependencies:**
+
+```bash
+pip install flask flask-cors openai requests
+```
+
+**Start the server:**
+
+```bash
+# OpenAI (default, recommended for evaluation)
+OPENAI_API_KEY=sk-... python app.py --provider openai --model gpt-4o
+
+# Ollama (university server)
+OLLAMA_API_KEY=... python app.py --provider ollama --model llama3.1:8b
+
+# Stub provider (UI testing, no API key required)
+python app.py --provider stub
+```
+
+Navigate to `http://127.0.0.1:5000` in a browser.
+
+**Options:**
+
+| Flag         | Default     | Description                             |
+| ------------ | ----------- | --------------------------------------- |
+| `--provider` | `openai`    | LLM backend: `openai`, `ollama`, `stub` |
+| `--model`    | `gpt-4o`    | Model name passed to the provider       |
+| `--host`     | `127.0.0.1` | Bind address                            |
+| `--port`     | `5000`      | Port number                             |
+| `--debug`    | off         | Flask debug mode                        |
+
+---
+
+## REST API
+
+| Method | Endpoint                    | Description                                               |
+| ------ | --------------------------- | --------------------------------------------------------- |
+| `POST` | `/api/session/start`        | Start a new elicitation session                           |
+| `POST` | `/api/session/turn`         | Send a user message; receive assistant reply + gap report |
+| `GET`  | `/api/session/status`       | Current coverage + gap report                             |
+| `POST` | `/api/session/generate_srs` | Finalise session and generate SRS                         |
+| `GET`  | `/api/session/download_srs` | Download the generated SRS file                           |
+| `GET`  | `/api/health`               | Health check                                              |
+
+The `/api/session/turn` response now includes `phase4_progress` and `phase4_sections_covered` within the `coverage_report` payload.
+
+---
+
+## Ablation Study
+
+The ablation study flag from previous iterations is retained:
+
+```bash
+# Gap detection ON (default)
+python app.py --provider ollama
+
+# Gap detection OFF — pass in /api/session/start body
+curl -X POST http://localhost:5000/api/session/start \
+     -H "Content-Type: application/json" \
+     -d '{"gap_detection": false}'
+```
+
+When `gap_detection=false`, `GapDetector` returns a fully-covered dummy report, no proactive questions are generated, and no directive is injected into the prompt. All other behaviour — domain gate, NFR phase (with depth), Phase 4 — is unaffected.
+
+---
+
+## Output Files
+
+### SRS Document (`output/srs_<session_id>.md`)
+
+A full IEEE 830-1998 compliant specification including:
+
+- §1 Introduction (purpose, scope, definitions, overview)
+- §2 Overall Description (product perspective, functions, user characteristics, constraints, assumptions) — now populated from Phase 4 `<SECTION>` tags before finalisation, with `srs_coverage.py` filling any remaining gaps
+- §3 Specific Requirements (functional, interface, performance, reliability, security, maintainability, compatibility, usability)
+- Appendix A: Traceability Matrix (req_id → section → source turn → SMART score)
+- Appendix B: Coverage & Quality Report (domain completeness score, NFR depth coverage, Phase 4 section fill status)
+- Appendix C: Conversation Transcript Summary
+
+`srs_coverage.py` fills only sections not already populated by Phase 4. HIGH-risk sections (Hardware Interfaces, Logical Database Requirements, Design Constraints) contain formal stubs with architect checklists. MEDIUM-risk inferred sentences are marked `[inferred]`.
+
+### Session Log (`logs/session_<session_id>.json`)
+
+Structured JSON log with per-turn gap reports, domain gate status, NFR depth counters, Phase 4 section fill events, and a `srs_coverage_fill` event at finalisation.
+
+---
+
+## LLM Providers
+
+| Provider | Class            | Env Var          | Notes                                           |
+| -------- | ---------------- | ---------------- | ----------------------------------------------- |
+| `openai` | `OpenAIProvider` | `OPENAI_API_KEY` | GPT-4o by default                               |
+| `ollama` | `OllamaProvider` | `OLLAMA_API_KEY` | Hildesheim server; `OLLAMA_BASE_URL` optional   |
+| `stub`   | `StubProvider`   | —                | Deterministic scripted responses for UI testing |
+
+Temperature is fixed at `0.0` for the main conversation loop and all classification calls. Domain probe generation uses `temperature=0.3`. Decomposition uses `temperature=0.2`.
+
+---
 
 ## Troubleshooting
 
@@ -224,36 +301,187 @@ See Iteration 5 `FIX-JARGON`. Ensure `domain_discovery.py` is current and the pr
 **Ollama connection error**
 Verify `OLLAMA_API_KEY` is set and the university VPN is active if required.
 
-**OpenAI authentication error**
-Verify `OPENAI_API_KEY` is set and has sufficient quota.
+**Query params:** `session_id=a1b2c3d4`
 
-**Port already in use**
+Returns the Markdown file as a download attachment.
 
-```bash
-python app.py --port 5001
+---
+
+### `GET /api/health`
+
+```json
+{ "status": "ok", "provider": "openai" }
 ```
 
 ---
 
-## Research Foundation
+## Component Reference
 
-Iteration 6 addresses three failure modes identified in the Iteration-5 post-mortem:
+### `DomainDiscovery`
 
-- **`IT6-NFR-DEPTH`** closes a gating loophole where one vague requirement was sufficient to satisfy a mandatory NFR category. Raising `MIN_NFR_PER_CATEGORY` to 2 and adding a depth probe forces the assistant to elicit at least one measurable follow-up per category.
-- **`IT6-PHASE4`** addresses the persistent gap between high domain/NFR coverage scores and low SRS structural completeness. By making Phase 4 a hard gate before the SRS offer, all eight narrative IEEE-830 sections are explicitly elicited from the stakeholder rather than inferred or left empty.
-- **`IT6-VOLERE`** removes conceptual ambiguity introduced by mixing two incompatible standards. All artefacts now use IEEE 830-1998 exclusively, ensuring consistent section numbering and terminology across prompts, state, and output documents.
+The central new component of Iteration 4. Manages the functional domain gate through the session lifecycle.
+
+**Seeding (`seed()`):** On turn 1, an LLM prompt identifies 8–12 functional domains from the stakeholder's first message. For every physical device or sensor mentioned, the prompt forces a corresponding control domain (e.g., thermostat → Temperature Control).
+
+**Re-seeding (`reseed()`):** At turns 4 and 8, a second LLM prompt inspects requirements captured so far and adds any missing domains not in the original seed.
+
+**LLM domain matching (`match_requirement_to_domain()`):** Each extracted requirement is matched to its domain via an LLM call against the full domain key list. Falls back to partial key matching.
+
+**NFR classification (`classify_nfr()`):** Classifies each non-functional requirement into one of 6 mandatory categories (`performance`, `usability`, `security_privacy`, `reliability`, `compatibility`, `maintainability`).
+
+**Sub-dimension classification (`classify_subdimension()`):** Tags each requirement as one of `data`, `actions`, `constraints`, `automation`, or `edge_cases` for intra-domain coverage depth.
+
+**Decomposition (`decompose_requirements()`):** For confirmed domains with ≥ 2 requirements, generates 2–5 missing atomic requirements using a prompt that sees both domain-specific and all-other requirements as context.
+
+**Domain status transitions:**
+
+- `unprobed` → `partial` (≥ 1 requirement matched)
+- `partial` → `confirmed` (≥ 3 requirements matched)
+- `excluded` (set directly if stakeholder rules out a domain)
+
+---
+
+### `PromptArchitect`
+
+Builds a four-block system message on every turn. The context block (`_build_context_block`) now contains a phase-aware `⛔ HARD STOP` or `✅ ALL GATES SATISFIED` directive:
+
+| Phase                  | Trigger                       | Hard Stop Content                                           |
+| ---------------------- | ----------------------------- | ----------------------------------------------------------- |
+| Gate unseeded          | Turn 1                        | Prompt to listen and build context                          |
+| Domain gate incomplete | Gate not satisfied            | Next unprobed/partial domain + pre-generated probe question |
+| NFR Phase 3            | Gate satisfied, NFR count < 2 | Category with lowest count; depth probe if count = 1        |
+| Phase 4                | All NFRs at depth             | Next uncovered IEEE 830 section + probe question            |
+| All complete           | All gates met                 | Offer SRS generation                                        |
+
+The `PHASE4_SECTIONS` list defines 8 ordered sections, each with a section ID, label, probe question, and a `can_ask_followup` flag.
+
+---
+
+### `GapDetector`
+
+Analyses a `ConversationState` and returns a `GapReport`. Covers 18 categories drawn from IEEE 830.
+
+**In Iteration 4**, NFR categories use the `nfr_coverage` counter against `MIN_NFR_PER_CATEGORY = 2` (raised from 1). A category with count 1 is `partial`; count ≥ 2 is `covered`.
+
+**Domain gate gap injection:** After standard analysis, any `unprobed` or `partial` domain is injected as a synthetic critical gap with its pre-generated probe question as the description, visually separated in the UI.
+
+---
+
+### `RequirementExtractor`
+
+Parses `<REQ type="..." category="..."> ... </REQ>` tags from LLM responses. Falls back to numbered "Requirement N (Type):" patterns, then to bare "The system shall ..." sentences. Deduplicates by normalised text before committing to state.
+
+**New in Iteration 4:** `extract_sections()` and `commit_sections()` parse `<SECTION id="X.Y"> ... </SECTION>` tags from Phase 4 responses and store them in `state.srs_section_content` and `state.phase4_sections_covered`.
+
+---
+
+### `SRSCoverageEnricher`
+
+New in Iteration 4. Fills empty IEEE 830 SRS sections before document rendering using a consumer-first strategy:
+
+1. **Phase 4 content (highest priority):** If the customer answered a section during Phase 4, their answer is used verbatim.
+2. **LLM synthesis (low-risk sections):** Scope, product perspective, product functions, user classes, assumptions, operating environment, user documentation, and interface sections are synthesised from elicited requirements using targeted prompts.
+3. **Architect-review stubs (high-risk sections):** Hardware interfaces, logical database requirements, and design constraints always receive clearly marked stubs with an architect checklist rather than LLM fabrication.
+
+`render_section2_extras()` and `render_section35_stub()` are helper functions called by `SRSFormatter` to emit sentinel-prefixed content stored in `general_constraints` and `section1.references`.
+
+---
+
+### `SRSTemplate`
+
+Progressive IEEE 830 data model. Updated after every turn via `update_from_requirements()`. Runs a heuristic SMART check on every new requirement:
+
+| Dimension   | Heuristic                                            |
+| ----------- | ---------------------------------------------------- |
+| Specific    | Starts with a defined actor (system / user / admin)  |
+| Measurable  | Contains a numeric value or unit                     |
+| Testable    | Uses IEEE "shall" form                               |
+| Unambiguous | Contains no vague adjectives (fast, simple, good, …) |
+| Relevant    | Non-empty text (assumed true)                        |
+
+---
+
+### `SRSFormatter`
+
+Renders an `SRSTemplate` to IEEE 830 Markdown. New in Iteration 4:
+
+- **Dual metrics in header:** Domain Completeness Score and IEEE-830 Elicitation Coverage reported separately
+- **Appendix D — Design-Derived Requirements Inventory:** Dynamic stubs for all unconfirmed domains and uncovered structural sections, replacing the hard-coded domain-specific lists from earlier iterations
+- **Phase 4 section rendering:** `render_section2_extras()` emits §2.4 Operating Environment and §2.6 User Documentation; `render_section35_stub()` emits architect-review stubs for §3.5
+
+---
+
+## SRS Output Format
+
+Generated documents are IEEE 830-1998 Markdown files saved to `output/`. Each document contains:
+
+| Section                            | Content                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| Header                             | Project name, session metadata, dual coverage metrics, quality summary       |
+| §1 Introduction                    | Purpose, scope (Phase 4 or LLM-synthesised), definitions, references         |
+| §2.1 Product Perspective           | Phase 4 or LLM-synthesised                                                   |
+| §2.2 Product Functions             | Per-domain LLM narrative summaries                                           |
+| §2.3 User Characteristics          | Phase 4 or LLM-synthesised with Markdown table                               |
+| §2.4 Operating Environment         | Phase 4 or LLM-synthesised                                                   |
+| §2.5 Assumptions & Dependencies    | Phase 4 or LLM-synthesised numbered list                                     |
+| §2.6 User Documentation            | LLM-synthesised from usability requirements                                  |
+| §3.1 Functional Requirements       | Extracted FRs with SMART badges and priority labels                          |
+| §3.2 External Interfaces           | Phase 4 or LLM-synthesised; hardware always stubbed                          |
+| §3.3 Performance Requirements      | Extracted NFRs (performance category)                                        |
+| §3.4 Logical Database Requirements | Architect-review stub with implied-data checklist                            |
+| §3.5 Design Constraints            | Extracted CON requirements or architect-review stub                          |
+| §3.6 System Attributes             | Reliability, availability, security, maintainability, portability, usability |
+| Appendix A                         | Traceability matrix (all requirements × metadata)                            |
+| Appendix B                         | Elicitation coverage and SMART quality report                                |
+| Appendix C                         | Turn-by-turn conversation transcript summary                                 |
+| Appendix D                         | Design-derived stubs for unconfirmed domains and uncovered IEEE 830 sections |
+
+---
+
+## Ablation Study Support
+
+Gap detection can be disabled per session for controlled evaluation:
+
+**Via the UI:** toggle the "Gap Detection" switch before starting a session.
+
+**Via the API:**
+
+```json
+POST /api/session/start
+{ "gap_detection": false }
+```
+
+**Programmatically:**
+
+```python
+manager = ConversationManager(provider=..., gap_enabled=False)
+```
+
+When disabled, `GapDetector` returns a full-coverage report (100%, no gaps) and `ProactiveQuestionGenerator` receives no gap targets.
+
+---
+
+## Configuration
+
+| Environment Variable | Description                                                            |
+| -------------------- | ---------------------------------------------------------------------- |
+| `OPENAI_API_KEY`     | Required for the OpenAI provider                                       |
+| `OLLAMA_API_KEY`     | Required for the Ollama provider                                       |
+| `OLLAMA_BASE_URL`    | Ollama base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
+
+Key thresholds in `prompt_architect.py`:
+
+| Constant               | Default | Description                                                                     |
+| ---------------------- | ------- | ------------------------------------------------------------------------------- |
+| `MIN_FUNCTIONAL_REQS`  | 10      | Minimum functional requirements before Phase 3 NFR probing begins               |
+| `MIN_NFR_PER_CATEGORY` | 2       | Minimum measurable requirements per NFR category (raised from 1 in Iteration 4) |
+
+Log files are written to `logs/session_<id>.json`. Generated SRS files are written to `output/SRS_<id>_<timestamp>.md`. Both directories are created automatically on first run.
 
 ---
 
 ## License
 
-Academic Research Project - Team Members:
-- Hunain Murtaza
-- David Tashjian
-- Saad Younas
-- Khaled Shaban
-- Mohammad Alsaiad
+Academic Research Project — University of Hildesheim
 
----
-
-**Note:** This is an MVP (Minimum Viable Product) for initial testing and evaluation. Future iterations will add more sophisticated features based on the DSR methodology.
+Team members: Hunain Murtaza (1750471) · David Tashjian (1750243) · Saad Younas (1750124) · Amine Rafai (1749821) · Khaled Shaban (1750283) · Mohammad Alsaiad (1750755)

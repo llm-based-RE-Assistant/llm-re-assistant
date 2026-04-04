@@ -1,42 +1,21 @@
 """
 src/components/srs_formatter.py
 =================
-RE Assistant — Iteration 6 | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 SRS Output Formatter: renders an SRSTemplate to a readable IEEE-830 document.
 
-Iteration 5 changes
--------------------
-IT5-F1  Removed all imports of hard-coded DOMAIN_COVERAGE_GATE,
-        compute_domain_gate(), gate_is_satisfied(), and related constants
-        from prompt_architect.  These no longer exist in Iteration 5.
-
-IT5-F2  _render_header() reads state.domain_gate (DomainGate object) directly
-        for dual metrics.  Falls back gracefully if the gate was never seeded.
-
-IT5-F3  _render_appendix_b() B.1.1 domain gate breakdown now iterates over
-        state.domain_gate.domains (dynamic, scenario-specific) instead of
-        the hard-coded DOMAIN_COVERAGE_GATE dict.
-
-IT5-F4  _render_appendix_d() D.1 now generates generic architecture-review
-        stubs for every unconfirmed dynamic domain.  The hard-coded
-        DigitalHome-specific expected-requirement lists are removed.
-        D.2 structural stubs and D.3 summary are updated accordingly.
 """
 
 from __future__ import annotations
-
 import time
 from pathlib import Path
 from typing import Optional
-
 from srs_template import (
     AnnotatedRequirement,
     SRSTemplate,
-    SmartFlag,
-    InterfaceRequirements,
-    SystemAttributes,
+    SmartFlag
 )
-from conversation_state import ConversationState, RequirementType
+from conversation_state import ConversationState
 from prompt_architect import IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES
 from domain_discovery import NFR_CATEGORIES
 

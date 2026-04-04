@@ -1,7 +1,7 @@
 """
 app.py
 ======
-RE Assistant — Iteration 6 | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 Web UI Backend (Flask)
 
 Responsibilities

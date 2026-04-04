@@ -1,16 +1,7 @@
 """
-src/components/conversation_manager.py — Iteration 6
+src/components/conversation_manager.py — Iteration 4
 University of Hildesheim
 
-IT6: extract_sections() called on every turn to capture <SECTION> tags from
-     Phase 4 responses. Sections stored in state.srs_section_content.
-     srs_coverage.enrich() now reads state.srs_section_content consumer-first.
-FIX-LOOP  Duplicate turn detection — if user message is >80% similar to
-          a previous turn, skip reprocessing and force move to next domain.
-FIX-MATCH Use LLM-based domain matching instead of substring.
-FIX-NFR   is_ready_for_srs() now requires ALL 6 mandatory NFRs at depth >= 2.
-FIX-DEDUP Decomposed reqs checked for semantic overlap before adding.
-FIX-CAP   Limit decomposition to max 3 domains per turn to avoid latency.
 """
 from __future__ import annotations
 import json,os,sys,time,uuid
@@ -23,7 +14,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).parent))
 
 from conversation_state import ConversationState, RequirementType, create_session
-from prompt_architect import PromptArchitect, IEEE830_CATEGORIES, PHASE4_SECTIONS
+from prompt_architect import PromptArchitect, PHASE4_SECTIONS
 from srs_template import SRSTemplate, create_template
 from srs_formatter import SRSFormatter, generate_srs_document
 from requirement_extractor import RequirementExtractor, create_extractor
