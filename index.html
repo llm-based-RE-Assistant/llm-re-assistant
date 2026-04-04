@@ -1055,14 +1055,6 @@
 
       /* ── Generate SRS ───────────────────────────────────────────────────── */
       async function generateSRS() {
-        //disable button and show loading state and also show toast notification that generation has started
-        if (!sessionId) return;
-        const btn = document.querySelector(".srs-banner .btn-dl");
-        showtoast("SRS generation started. This may take a moment…");
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = "Generating…";
-        }
         const r = await fetch(`${API}/api/session/generate_srs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
