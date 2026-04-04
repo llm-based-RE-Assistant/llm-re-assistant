@@ -1,5 +1,5 @@
 """
-src/components/prompt_architect.py — Iteration 8
+src/components/prompt_architect.py — Iteration 6
 University of Hildesheim
 
 IT8-VOLERE      Volere removed. IEEE-830 only throughout.

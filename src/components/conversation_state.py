@@ -1,5 +1,5 @@
 """
-src/components/conversation_state.py — Iteration 8
+src/components/conversation_state.py — Iteration 6
 University of Hildesheim
 
 Changes:
