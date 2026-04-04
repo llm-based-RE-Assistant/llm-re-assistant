@@ -1,281 +1,300 @@
-# LLM-Based Requirements Engineering Assistant - Iteration 1 MVP
+# LLM-Based Requirements Engineering Assistant — Iteration 2
 
-## Project Overview
+**University of Hildesheim · DSR Project**
 
-This is the initial phase of Iteration 1 for an LLM-based Requirements Engineering Assistant. The system provides conversational requirements elicitation using Ollama's Llama 3.1 model and generates IEEE-830 compliant SRS drafts.
+---
 
-### Implemented Features (Iteration 1 - Initial Phase)
+## Overview
 
-✅ **Conversational Elicitation**
-- Multi-turn dialogue with context memory
-- Chain-of-Thought prompting for adaptive questioning
-- Natural language interaction
+Iteration 2 is a complete redesign of the RE Assistant, addressing three systemic failure modes identified during Iteration 1 evaluation:
 
-✅ **Interactive Clarification** 
-- Ambiguity detection (vague words, weak phrases)
-- 4W analysis framework (Who/What/When/Where)
-- Follow-up question generation
+| Failure Mode                          | Iteration 1 Problem                                                                                     | Iteration 2 Fix                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **FM-1: Ambiguity Acceptance**        | Vague terms ("fast", "secure", "simple") were recorded verbatim into the SRS without challenge          | Ambiguity Challenge Rule: the assistant must demand measurable operationalisation before accepting any vague qualifier           |
+| **FM-2: Privacy/Security Blind Spot** | NFR categories — especially Security & Privacy — were routinely skipped                                 | Mandatory NFR Coverage Checklist: 6 NFR categories must be addressed before SRS generation is permitted                          |
+| **FM-3: Premature Closure**           | The assistant used a fixed 3-turn template and generated the SRS before sufficient coverage was reached | Dynamic conversation state injected into every system prompt, blocking SRS generation until all mandatory categories are covered |
 
-✅ **Basic Specification Generation**
-- IEEE-830 template structure
-- Automated SRS draft generation
-- Sections: Introduction, Overall Description, Functional/Non-Functional Requirements
+The system now runs as a **Streamlit web application** (replacing the previous Flask + CLI interface) and supports multiple LLM backends.
 
-✅ **Session Management**
-- Persistent conversation storage
-- Artifact generation and storage
-- Multi-session support
+---
+
+## What's New in Iteration 2
+
+### Architecture
+
+Iteration 2 introduces a fully modular component architecture. Every component has a single responsibility and is independently testable:
+
+```
+app.py                          ← Streamlit UI entry point
+src/components/
+├── prompt_architect.py         ← Modular 3-block system prompt builder
+├── conversation_state.py       ← Session state, requirement store, coverage tracking
+├── conversation_manager.py     ← Conversation loop, LLM providers, session logger
+├── srs_template.py             ← IEEE-830 data model, progressively populated
+└── srs_formatter.py            ← Renders SRSTemplate to Markdown / plain text / JSON
+output/                         ← Generated SRS documents (.md)
+logs/                           ← JSON session logs for evaluation traceability
+```
+
+### Modular Prompt Architecture (`prompt_architect.py`)
+
+The system prompt is built from three independently-replaceable blocks on every turn:
+
+- **ROLE block** (static): Expert RE persona with 15 years of experience, IEEE-830 and SMART criteria expertise
+- **CONTEXT block** (dynamic): Current session state — which IEEE-830 categories are covered vs. missing, requirements elicited so far, mandatory NFR alert if categories remain unaddressed
+- **TASK block** (static): Six hard behavioural rules covering ambiguity challenge, NFR coverage, multi-turn elicitation, conflict detection, requirement formalisation, and closure conditions
+
+This design supports ablation studies: any block can be replaced or disabled without touching the others.
+
+### Conversation State Management (`conversation_state.py`)
+
+`ConversationState` is the single source of truth for the session, tracking:
+
+- All 12 IEEE-830 categories with per-category coverage status (`NOT_STARTED`, `PARTIALLY_COVERED`, `COVERED`)
+- A structured requirement store keyed by ID (`FR-001`, `NFR-001`, `CON-001`) with deduplication
+- Full turn history (user + assistant messages) for context window management
+- A two-layer coverage detection strategy: lightweight keyword heuristics run on every turn, plus explicit `mark_category_covered()` calls from the manager
+- The 6 mandatory NFR categories that gate SRS generation
+
+### LLM Provider Abstraction (`conversation_manager.py`)
+
+The `LLMProvider` abstract interface allows swapping backends without any other code changes:
+
+- **`OllamaProvider`**: Connects to the University of Hildesheim Ollama server (`genai-01.uni-hildesheim.de/ollama`). Requires `OLLAMA_API_KEY` and optionally `OLLAMA_BASE_URL`.
+- **`OpenAIProvider`**: GPT-4o via the OpenAI Python SDK. Requires `OPENAI_API_KEY`.
+- **`StubProvider`**: Scripted deterministic responses for UI testing without a live LLM.
+
+All providers are configured from the Streamlit sidebar at session start, requiring no code changes between providers.
+
+The `ConversationManager` orchestrates the session loop. On every turn it: builds the dynamic system message, assembles the full message history, calls the LLM, updates conversation state, syncs the SRS template, and logs the turn to JSON. Temperature is fixed at `0.0` for reproducible evaluation runs.
+
+### SRS Generation Pipeline
+
+SRS generation is a two-stage process triggered either by explicit user command or automatic detection of full mandatory coverage:
+
+1. **LLM Extraction**: The full conversation transcript is sent to the LLM in a single structured prompt. The model extracts all requirements as JSON, converting natural language into IEEE "shall" form, distinguishing user statements from assistant questions, and assigning each requirement to its correct IEEE-830 category.
+2. **Template + Formatter render**: The extracted requirements populate `SRSTemplate`, which mirrors the IEEE 830-1998 section hierarchy exactly (§1–§4). `SRSFormatter` renders the populated template to a Markdown document including SMART quality badges per requirement, an open-issues block for unresolved ambiguities, and three appendices: Traceability Matrix, Coverage & Quality Report, and Conversation Transcript Summary.
+
+### Streamlit UI (`app.py`)
+
+The UI provides exactly three features:
+
+1. **Chat interface**: Multi-turn elicitation conversation with the RE Assistant
+2. **Coverage panel**: Live IEEE-830 coverage tracker in the sidebar, updated after every turn, showing covered/missing categories with mandatory NFR highlighting
+3. **Generate SRS**: One-click download of the generated `.md` SRS document
+
+The interface is designed as a clean academic tool. It uses IBM Plex Sans and IBM Plex Mono fonts and a dark panel aesthetic. All Streamlit chrome (menu, header, footer) is hidden.
+
+---
 
 ## Directory Structure
 
 ```
-llm-re-assistant/
-├── artifacts/
-│   ├── conversations/      # Stored conversation history (JSON)
-│   └── specifications/     # Generated SRS documents
-├── docs/                   # Documentation
+re-assistant/
+├── app.py                          # Streamlit application entry point
+├── requirements.txt                # Python dependencies
+├── .env                            # API keys (not committed to version control)
 ├── src/
-│   ├── elicitation/
-│   │   └── elicitation_engine.py   # Core elicitation logic
-│   ├── modeling/                    # (Future: Iteration 1 Phase 2)
-│   ├── specification/               # (Future: Iteration 1 Phase 2)
-│   ├── verification/                # (Future: Iteration 1 Phase 2)
-│   └── utils/
-│       ├── ollama_client.py         # Ollama API integration
-│       └── conversation_manager.py  # Session & history management
-├── templates/
-│   └── index.html          # Web interface
-├── tests/                  # Unit tests (Future)
-├── venv/                   # Python virtual environment
-├── app.py                  # Flask application entry point
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+│   └── components/
+│       ├── prompt_architect.py     # 3-block prompt builder, IEEE-830 registry
+│       ├── conversation_state.py   # Session state, requirement store
+│       ├── conversation_manager.py # Conversation loop, providers, logger
+│       ├── srs_template.py         # IEEE-830 data model
+│       └── srs_formatter.py        # Markdown/JSON/plain-text renderer
+├── output/                         # Generated SRS documents (auto-created)
+└── logs/                           # JSON session logs (auto-created)
 ```
+
+---
 
 ## Prerequisites
 
-1. **Python 3.8+** installed
-2. **Ollama** installed and running
-3. **Llama 3.1:8b model** pulled in Ollama
+- Python 3.10 or higher
+- An LLM backend: Ollama (local/university server), OpenAI API access, or the built-in Stub provider for testing
 
-### Installing Ollama & Model
-
-```bash
-# Install Ollama (Linux/Mac)
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Windows: Download from https://ollama.com/download
-
-# Pull Llama 3.1:8b model
-ollama pull llama3.1:8b
-
-# Verify Ollama is running
-ollama list
-```
+---
 
 ## Installation
 
-### 1. Clone/Setup Project
+### 1. Clone and enter the project directory
 
 ```bash
-cd llm-re-assistant
+cd re-assistant
 ```
 
-### 2. Create Virtual Environment
+### 2. Create and activate a virtual environment
 
 ```bash
-# Create virtual environment
 python3 -m venv venv
 
-# Activate virtual environment
-# On Linux/Mac:
+# Linux / macOS
 source venv/bin/activate
 
-# On Windows:
+# Windows
 venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Verify Directory Structure
+### 4. Configure environment variables
 
-Ensure the following directories exist:
-```bash
-mkdir -p artifacts/conversations
-mkdir -p artifacts/specifications
-mkdir -p templates
-mkdir -p src/elicitation
-mkdir -p src/utils
-```
-
-## Running the Application
-
-### 1. Start Ollama (if not already running)
+Create a `.env` file in the project root:
 
 ```bash
-# Ollama typically runs as a background service
-# If not, start it manually:
-ollama serve
+# Required for Ollama (university server)
+OLLAMA_API_KEY=your_ollama_api_key
+OLLAMA_BASE_URL=https://genai-01.uni-hildesheim.de/ollama   # default if omitted
+
+# Required for OpenAI
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-### 2. Run Flask Application
-
-```bash
-# Make sure virtual environment is activated
-python app.py
-```
-
-The application will start on `http://localhost:5000`
-
-### 3. Access Web Interface
-
-Open your browser and navigate to:
-```
-http://localhost:5000
-```
-
-## Using the Application
-
-### Starting a Conversation
-
-1. The interface will greet you with a welcome message
-2. Type your project idea or requirements (e.g., "I want to build a library management system")
-3. The assistant will ask adaptive follow-up questions to elicit requirements
-4. Answer questions naturally - the system uses 4W analysis to ensure completeness
-
-### Generating SRS Document
-
-1. After discussing requirements, click **"Generate SRS"** button
-2. The system will create an IEEE-830 compliant specification
-3. The specification appears in the chat and is saved to `artifacts/specifications/`
-
-### Starting New Session
-
-1. Click **"New Session"** button
-2. Current conversation is saved automatically
-3. A fresh session begins for a new project
-
-## API Endpoints
-
-### POST `/api/chat`
-Send a message to the assistant
-```json
-Request: {"message": "I want to build a CRM system"}
-Response: {"status": "success", "response": "Great! Let me help you..."}
-```
-
-### POST `/api/generate-spec`
-Generate SRS specification from conversation
-```json
-Response: {
-  "status": "success", 
-  "specification": "# SOFTWARE REQUIREMENTS SPECIFICATION...",
-  "filename": "artifacts/specifications/srs_xxx.txt"
-}
-```
-
-### POST `/api/new-session`
-Start a new conversation session
-```json
-Response: {"status": "success", "session_id": "uuid", "message": "..."}
-```
-
-### GET `/api/health`
-Health check endpoint
-```json
-Response: {"status": "healthy", "timestamp": "2025-01-15T10:30:00"}
-```
-
-## Configuration
-
-### Changing LLM Model
-
-Edit `app.py` line 16:
-```python
-ollama_client = OllamaClient(model="llama3.1:8b")  # Change model here
-```
-
-Available models (after pulling with `ollama pull`):
-- `llama3.1:8b` (default)
-- `llama3.1:70b` (better quality, slower)
-- `mistral:7b`
-- `codellama:13b`
-
-### Adjusting Temperature
-
-Edit `src/elicitation/elicitation_engine.py`:
-- Line 114: `temperature=0.7` (conversational responses)
-- Line 137: `temperature=0.3` (specification generation - more consistent)
-
-## Troubleshooting
-
-### Ollama Connection Error
-```
-Error: I'm having trouble connecting to the language model
-```
-**Solution:** Ensure Ollama is running (`ollama serve`) and Llama 3.1 is pulled
-
-### Port Already in Use
-```
-Error: Address already in use
-```
-**Solution:** Change port in `app.py` line 146:
-```python
-app.run(host='0.0.0.0', port=5001, debug=True)  # Changed from 5000
-```
-
-### Empty Responses
-```
-Assistant returns empty or generic responses
-```
-**Solution:** Check Ollama model is loaded correctly:
-```bash
-ollama list
-ollama ps  # Shows running models
-```
-
-## Research Foundation
-
-This implementation is based on systematic literature review findings:
-
-- **Conversational Elicitation**: Papers [2][4][28]
-- **4W Analysis**: Paper [31]
-- **Ambiguity Detection**: Paper [29]
-- **Chain-of-Thought Prompting**: Paper [26]
-- **IEEE-830 Standard**: Paper [31]
-
-## Future Work (Next Phases)
-
-**Iteration 1 - Phase 2:**
-- Enhanced completeness checking with automated gap detection
-- UML diagram generation (sequence/deployment diagrams)
-- Multi-stakeholder support
-- Traceability links
-
-**Iteration 2:**
-- Advanced verification (consistency checking, conflict detection)
-- Integration with requirements management tools
-- RAG with domain-specific knowledge bases
-
-**Iteration 3:**
-- Multi-agent collaboration
-- Real-time validation during elicitation
-- Extended IEEE-830 compliance checking
-
-## License
-
-Academic Research Project - Team Members:
-- Hunain Murtaza (1750471)
-- David Tashjian (1750243)
-- Saad Younas (1750124)
-- Amine Rafai (1749821)
-- Khaled Shaban (1750283)
-- Mohammad Alsaiad (1750755)
+Neither key is required if using the Stub provider for UI testing.
 
 ---
 
-**Note:** This is an MVP (Minimum Viable Product) for initial testing and evaluation. Future iterations will add more sophisticated features based on the DSR methodology.
+## Running the Application
+
+```bash
+streamlit run app.py
+```
+
+The application opens at `http://localhost:8501`.
+
+You can also pass provider and model as command-line arguments:
+
+```bash
+streamlit run app.py -- --provider ollama --model gemma3:latest
+streamlit run app.py -- --provider openai --model gpt-4o
+streamlit run app.py -- --provider stub
+```
+
+---
+
+## Using the Application
+
+### Starting a session
+
+1. On the landing screen, select your LLM provider and model.
+2. Click **▶ Start Session**.
+3. Describe the software system you want to specify. The assistant will ask structured follow-up questions.
+
+### During elicitation
+
+- The **Coverage Panel** in the left sidebar shows live IEEE-830 category coverage. Mandatory NFR categories are highlighted in bold. The progress bar reflects overall coverage percentage.
+- The assistant will not accept vague qualifiers. If you say "it should be fast", it will ask for a measurable target before proceeding.
+- Session metrics (turns, functional requirements, NFRs) update in real time.
+
+### Generating the SRS
+
+The SRS can be triggered in three ways:
+
+- Type a phrase such as `generate srs`, `I'm done`, or `end session`
+- Click the **📄 Generate SRS** button at any time
+- The session closes automatically once all 6 mandatory NFR categories are covered and at least one functional requirement has been recorded (minimum 3 turns)
+
+If mandatory NFR categories were not fully elicited, the SRS is still generated with `NOT ELICITED` placeholders in the relevant sections, and a warning is displayed.
+
+After generation, the SRS can be downloaded as a `.md` file or previewed in the chat. The file is also saved to `output/`.
+
+### Starting a new session
+
+Click **🔄 Start new session** to reset the conversation and begin a new project. All session logs are preserved in `logs/`.
+
+---
+
+## Output Files
+
+### SRS Document (`output/srs_<session_id>.md`)
+
+A full IEEE 830-1998 compliant specification including:
+
+- §1 Introduction (purpose, scope, definitions, overview)
+- §2 Overall Description (product perspective, functions, user characteristics, constraints, assumptions)
+- §3 Specific Requirements (functional requirements, interface requirements, performance, reliability, security, maintainability, compatibility, usability)
+- Appendix A: Traceability Matrix (req_id → section → source turn → SMART score)
+- Appendix B: Coverage & Quality Report
+- Appendix C: Conversation Transcript Summary
+
+Each requirement is annotated with a SMART quality badge (★☆☆ 1/5 to ★★★ 5/5) and a priority indicator (🔴 Must-have / 🟡 Should-have / 🟢 Nice-to-have).
+
+### Session Log (`logs/session_<session_id>.json`)
+
+A structured JSON log of every turn, including timestamps, categories updated per turn, requirements added per turn, and a final coverage report. Used for evaluation and traceability.
+
+---
+
+## IEEE-830 Category Coverage
+
+The system tracks 12 categories. The 6 marked **mandatory** must be addressed before the SRS can be generated.
+
+| Category                                 | Mandatory |
+| ---------------------------------------- | --------- |
+| System Purpose & Goals                   |           |
+| System Scope & Boundaries                |           |
+| Stakeholders & User Classes              |           |
+| Functional Requirements                  |           |
+| Performance Requirements                 | ✓         |
+| Usability Requirements                   | ✓         |
+| Security & Privacy Requirements          | ✓         |
+| Reliability & Availability Requirements  | ✓         |
+| Compatibility & Portability Requirements | ✓         |
+| Maintainability Requirements             | ✓         |
+| Design & Implementation Constraints      |           |
+| External Interfaces                      |           |
+
+---
+
+## Configuration Reference
+
+| Environment Variable | Provider | Description                                                     |
+| -------------------- | -------- | --------------------------------------------------------------- |
+| `OLLAMA_API_KEY`     | Ollama   | Bearer token for the Ollama server                              |
+| `OLLAMA_BASE_URL`    | Ollama   | Base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
+| `OPENAI_API_KEY`     | OpenAI   | OpenAI API key                                                  |
+
+LLM temperature is fixed at `0.0` across all providers for reproducible evaluation runs.
+
+---
+
+## Troubleshooting
+
+**Ollama connection error**
+Verify that `OLLAMA_API_KEY` is set correctly in `.env` and that the university VPN is active if required.
+
+**OpenAI authentication error**
+Verify that `OPENAI_API_KEY` is set and has sufficient quota. The default model is `gpt-4o`.
+
+**SRS contains only `NOT ELICITED` placeholders**
+The LLM extraction step found no extractable requirements. This can happen if the conversation was very short or the transcript did not contain clear requirement statements. Conduct a longer elicitation session before generating the SRS.
+
+**Port already in use**
+Streamlit defaults to port 8501. Run on a different port with:
+
+```bash
+streamlit run app.py --server.port 8502
+```
+
+---
+
+## Research Foundation
+
+This iteration addresses findings from the Iteration 1 evaluation:
+
+- **Modular prompt architecture**: supports ablation testing of individual prompt blocks
+- **Dynamic state injection**: prevents premature closure (see Failure Mode 3)
+- **Mandatory NFR checklist**: prevents security/privacy blind spots (see Failure Mode 2)
+- **Ambiguity challenge rule**: enforces SMART requirement quality (see Failure Mode 1)
+- **LLM-based requirement extraction**: improves fidelity of elicited content over heuristic scanning
+
+---
+
+## License
+
+Academic Research Project — University of Hildesheim
+
+Team members: Hunain Murtaza (1750471) · David Tashjian (1750243) · Saad Younas (1750124) · Amine Rafai (1749821) · Khaled Shaban (1750283) · Mohammad Alsaiad (1750755)
