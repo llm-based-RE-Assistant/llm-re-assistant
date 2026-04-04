@@ -1,17 +1,12 @@
 """
-src/components/domain_discovery.py — Iteration 6
+src/components/domain_discovery.py — Iteration 4
 University of Hildesheim
 
-Fixes: FIX-1 seed prompt implicit subsystems, FIX-2 plain-language probes,
-FIX-3 decomp dedup, FIX-4 LLM domain matching, FIX-5 confirmation threshold,
-FIX-6 fallback probe with example
 """
 from __future__ import annotations
 import json, re, time
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING:
-    from conversation_state import ConversationState
+from typing import Optional
 
 NFR_CATEGORIES: dict[str, str] = {
     "performance":     "Performance Requirements",

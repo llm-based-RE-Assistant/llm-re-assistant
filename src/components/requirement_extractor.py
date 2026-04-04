@@ -1,18 +1,11 @@
 """
-src/components/requirement_extractor.py — Iteration 6
+src/components/requirement_extractor.py — Iteration 4
 University of Hildesheim
 
-IT6: Added <SECTION id="X.Y"> tag parsing for Phase 4 narrative section content.
-     extract_sections() parses these tags and routes content into state.srs_section_content.
-FIX: match_domains() now delegates to DomainDiscovery.match_requirement_to_domain()
-for LLM-based matching. Falls back to category-based matching if LLM is not available.
 """
 from __future__ import annotations
 import re
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
-if TYPE_CHECKING:
-    from conversation_state import ConversationState
+from dataclasses import dataclass
 
 _PATTERN_REQ_TAG = re.compile(
     r'<REQ\s+type=["\']([^"\']+)["\']\s+category=["\']([^"\']+)["\']\s*>'

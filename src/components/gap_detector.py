@@ -1,24 +1,9 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 6 | University of Hildesheim
+RE Assistant — Iteration 4 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-IT6 changes
---------------------------------------
-IT6-VOLERE  All Volere references removed from COVERAGE_CHECKLIST, CategoryGap,
-            and _inject_domain_gate_gaps. IEEE-830 only.
-IT6-NFR     _classify_coverage() for NFR categories now uses MIN_NFR_PER_CATEGORY
-            threshold (2) consistently — partial = count > 0 but < threshold,
-            covered = count >= threshold. Removes old ">= 1 = covered" bypass.
-
-Iteration 6 changes
---------------------------------------
-IT6-G1  _inject_domain_gate_gaps() now includes domains that have requirements
-        but need deeper probing (needs_deeper_probing property).
-
-IT6-G2  Added gap entries for user_roles and documentation if not yet covered
-        in the final phase of elicitation.
 """
 
 from __future__ import annotations
@@ -27,7 +12,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from conversation_state import ConversationState

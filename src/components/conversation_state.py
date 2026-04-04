@@ -1,19 +1,12 @@
 """
-src/components/conversation_state.py — Iteration 6
+src/components/conversation_state.py — Iteration 4
 University of Hildesheim
 
-Changes:
-  IT6-NFR-DEPTH   mandatory_nfrs_covered now requires MIN_NFR_PER_CATEGORY (2)
-                  per NFR sub-category, not just >= 1.
-  IT6-PHASE4      Added srs_section_content dict and phase4_sections_covered set.
-                  is_ready_for_srs() now also requires Phase 4 complete.
-  IT6-VOLERE      All Volere references removed. IEEE-830 only.
 """
 from __future__ import annotations
 import json, re, time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 class RequirementType(str, Enum):
     FUNCTIONAL = "functional"
