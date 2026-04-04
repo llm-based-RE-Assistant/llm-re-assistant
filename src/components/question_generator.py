@@ -4,16 +4,16 @@ src/components/question_generator.py
 RE Assistant — Iteration 5 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
-Iteration 55 changes
+Iteration 5 changes
 ═══════════════════════════════════════
-IT6-A  Domain gate questions now target SPECIFIC missing sub-dimensions
+IT5-A  Domain gate questions now target SPECIFIC missing sub-dimensions
        rather than generic "tell me more about X" probes.
 
-IT6-B  Probe depth awareness: if a domain has been probed ≥1 time,
+IT5-B  Probe depth awareness: if a domain has been probed ≥1 time,
        the question specifically targets the missing sub-dimension
        (constraints, automation, edge_cases, etc.)
 
-IT6-C  Added "final coverage" questions for user roles and documentation
+IT5-C  Added "final coverage" questions for user roles and documentation
        that are asked after all domains are confirmed.
 """
 

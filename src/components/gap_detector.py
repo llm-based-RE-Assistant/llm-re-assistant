@@ -4,12 +4,12 @@ src/components/gap_detector.py
 RE Assistant — Iteration 5 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Iteration 6 changes
+Iteration 5 changes
 --------------------------------------
-IT6-G1  _inject_domain_gate_gaps() now includes domains that have requirements
+IT5-G1  _inject_domain_gate_gaps() now includes domains that have requirements
         but need deeper probing (needs_deeper_probing property).
 
-IT6-G2  Added gap entries for user_roles and documentation if not yet covered
+IT5-G2  Added gap entries for user_roles and documentation if not yet covered
         in the final phase of elicitation.
 """
 
