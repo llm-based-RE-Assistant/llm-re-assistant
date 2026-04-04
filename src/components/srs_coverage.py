@@ -1,76 +1,39 @@
 """
-src/components/srs_coverage.py — Iteration 7
+src/components/srs_coverage.py — Iteration 8
 University of Hildesheim
 
-SRS Section Completion Module
-==============================
-Fills the IEEE-830 SRS sections that the elicitation interview does not
-naturally produce.  Triggered once ALL gates are satisfied (domain gate +
-all mandatory NFR categories) and the session is ready for SRS generation.
+IT8 Changes
+===========
+CONSUMER-FIRST: enrich() now reads state.srs_section_content (populated by
+Phase 4 interactive elicitation) BEFORE falling back to LLM synthesis.
+Sections collected from the live customer conversation take priority over
+any inferred/hallucinated content.
 
-WHY THIS MODULE EXISTS
-----------------------
-The elicitation conversation reliably produces Functional Requirements (§3.1)
-and the six mandatory NFR categories (§3.3, §3.6.x).  However the following
-IEEE-830 sections are structurally required but cannot be elicited in plain
-dialogue without breaking conversation flow:
+VOLERE REMOVED: All Volere references removed. IEEE-830 only.
 
-  §1.2   Scope
-  §2.1   Product Perspective
-  §2.2   Product Functions         ← synthesis, not invention
-  §2.3   User Classes              ← synthesis from conversation
-  §2.4   Operating Environment     ← never asked
-  §2.6   User Documentation        ← never asked
-  §2.7   Assumptions & Dependencies ← partially implicit in NFRs
-  §3.2   External Interface Reqs   ← UI / HW / SW / Comms
-  §3.4   Logical Database Reqs     ← never asked
-  §3.5   Design Constraints        ← never asked
+RISK TIER REASSIGNMENT
+-----------------------
+Sections now covered by Phase 4 interactive elicitation (consumer-first):
+  §1.2   Scope                  → populated from <SECTION id="1.2">
+  §2.1   Product Perspective    → populated from <SECTION id="2.1">
+  §2.3   User Classes           → populated from <SECTION id="2.3">
+  §2.4   Operating Environment  → populated from <SECTION id="2.4">
+  §2.5   Assumptions            → populated from <SECTION id="2.5">
+  §3.1.1 User Interfaces        → populated from <SECTION id="3.1.1">
+  §3.1.3 Software Interfaces    → populated from <SECTION id="3.1.3">
+  §3.1.4 Communication Interfaces → populated from <SECTION id="3.1.4">
 
-HALLUCINATION RISK CLASSIFICATION
-----------------------------------
-Each section falls into one of three risk tiers:
+Sections NOT in Phase 4 (LLM synthesis / stub only):
+  §2.2   Product Functions      ← synthesis from domain gate FRs (low risk)
+  §3.1.2 Hardware Interfaces    ← stub (high risk, no customer data)
+  §3.4   Logical Database Reqs  ← stub (high risk, no customer data)
+  §3.5   Design Constraints     ← stub if no CON reqs elicited (high risk)
 
-  LOW RISK — Synthesis from elicited data only
-    §1.2, §2.1, §2.2, §2.3, §2.5
-    → LLM is given ONLY the actual requirements + conversation excerpts.
-    → Prompt explicitly bans adding facts not present in the source.
-    → Output is grounded and verifiable.
-
-  MEDIUM RISK — Reasonable inference from domain + NFRs
-    §2.4, §2.6, §3.2.1, §3.2.3, §3.2.4
-    → LLM is given requirements + domain type as context.
-    → Prompt instructs LLM to state what is TYPICAL for this domain class
-      and mark every sentence as "[inferred]" when not directly stated.
-    → Reviewer can easily spot and correct inferences.
-
-  HIGH RISK — No elicited data, structural stub required
-    §3.2.2 Hardware Interfaces, §3.4 Logical Database Reqs, §3.5 Design Constraints
-    → LLM is NOT asked to fill these freely.
-    → Instead: a formal stub is generated with a checklist of items the
-      architect MUST confirm before development begins.
-    → The stub is clearly marked [REQUIRES ARCHITECT REVIEW].
-
-INTEGRATION POINTS
-------------------
-  Called from ConversationManager.finalize_session() BEFORE SRSFormatter runs:
-
-      from srs_coverage import SRSCoverageEnricher
-      enricher = SRSCoverageEnricher(provider=self.provider)
-      enricher.enrich(template, state)          # mutates template in-place
-      srs_path = generate_srs_document(template, state, output_dir)
-
-  The SRSFormatter already checks `if s2.product_perspective:` etc., so any
-  non-empty string written here will appear in the final document.
-
-OUTPUT CONTRACT
----------------
-Every generated string:
-  - Is written into the correct SRSTemplate field (Section1, Section2, etc.)
-  - Uses formal IEEE-830 language: "The system shall…" / "It is assumed that…"
-  - Is prefixed with [INFERRED] or [ARCHITECT REVIEW REQUIRED] where the
-    content is not directly derived from elicited requirements.
-  - Never invents stakeholder names, technology choices, or business rules
-    that were not mentioned in the conversation.
+INTEGRATION
+-----------
+Called from ConversationManager.finalize_session() BEFORE SRSFormatter runs.
+The enricher reads state.srs_section_content for Phase 4 content first,
+then falls back to LLM synthesis for remaining empty sections.
 """
 
 from __future__ import annotations
@@ -423,70 +386,89 @@ class SRSCoverageEnricher:
         state: "ConversationState",
     ) -> dict[str, str]:
         """
-        Fill all empty SRS sections.  Returns a dict of {section_key: risk_tier}.
+        Fill all empty SRS sections.
 
-        Parameters
-        ----------
-        template  : SRSTemplate to mutate in-place
-        state     : ConversationState with all elicited data
+        IT8 CONSUMER-FIRST STRATEGY:
+        1. For every section in PHASE4_SECTIONS, check state.srs_section_content first.
+           If content exists (customer answered during Phase 4), use it directly.
+        2. For sections still empty after Phase 4 content applied, fall back to
+           LLM synthesis (low-risk sections only).
+        3. High-risk sections (hardware interfaces, DB reqs, design constraints)
+           always get stubs — never LLM fabrication.
 
-        Returns
-        -------
-        dict mapping section key → "low" | "medium" | "high" (risk tier)
+        Returns dict mapping section label → source ("phase4" | "llm_synthesis" | "stub")
         """
         filled: dict[str, str] = {}
+        sec = state.srs_section_content  # shorthand
 
-        # ── LOW RISK: synthesis from elicited data ────────────────────────
+        # ── PHASE 4 CONTENT: apply customer-provided section content first ───
 
+        # §1.2 Scope
         if not template.section1.scope:
-            template.section1.scope = self._fill_scope(state)
-            filled["§1.2 Scope"] = "low"
+            if sec.get("1.2"):
+                template.section1.scope = sec["1.2"]
+                filled["§1.2 Scope"] = "phase4"
+            else:
+                template.section1.scope = self._fill_scope(state)
+                filled["§1.2 Scope"] = "llm_synthesis"
 
+        # §2.1 Product Perspective
         if not template.section2.product_perspective:
-            template.section2.product_perspective = self._fill_perspective(state)
-            filled["§2.1 Product Perspective"] = "low"
+            if sec.get("2.1"):
+                template.section2.product_perspective = sec["2.1"]
+                filled["§2.1 Product Perspective"] = "phase4"
+            else:
+                template.section2.product_perspective = self._fill_perspective(state)
+                filled["§2.1 Product Perspective"] = "llm_synthesis"
 
+        # §2.2 Product Functions — always LLM synthesis (not a Phase 4 section)
         if not template.section2.product_functions:
-            # One LLM call per confirmed domain — each domain becomes a
-            # formal prose description of that product feature.
             template.section2.product_functions = self._fill_product_functions(state)
-            filled["§2.2 Product Functions"] = "low"
+            filled["§2.2 Product Functions"] = "llm_synthesis"
 
+        # §2.3 User Classes
         if not template.section2.user_classes:
-            uc_text = self._fill_user_classes(state)
-            # Store as a prose + table block in product_perspective addendum
-            # (Section2 has user_classes as list[UserClass], but we can't
-            # parse an LLM table into typed objects reliably — so we store
-            # the full text as a single UserClass with name="Summary")
             from srs_template import UserClass
+            if sec.get("2.3"):
+                uc_text = sec["2.3"]
+                filled["§2.3 User Classes"] = "phase4"
+            else:
+                uc_text = self._fill_user_classes(state)
+                filled["§2.3 User Classes"] = "llm_synthesis"
             template.section2.user_classes = [
-                UserClass(
-                    name="User Classes Summary",
-                    description=uc_text,
-                    proficiency="See description"
-                )
+                UserClass(name="User Classes Summary", description=uc_text,
+                          proficiency="See description")
             ]
-            filled["§2.3 User Classes"] = "low"
 
+        # §2.5 Assumptions & Dependencies
         if not template.section2.assumptions:
-            template.section2.assumptions = self._fill_assumptions(state)
-            filled["§2.5 Assumptions & Dependencies"] = "low"
+            if sec.get("2.5"):
+                # Phase 4 content is already prose; split into list items if possible
+                raw = sec["2.5"]
+                items = re.split(r"\n\s*\d+\.\s+", "\n" + raw.strip())
+                items = [i.strip() for i in items if i.strip()]
+                template.section2.assumptions = items if items else [raw]
+                filled["§2.5 Assumptions & Dependencies"] = "phase4"
+            else:
+                template.section2.assumptions = self._fill_assumptions(state)
+                filled["§2.5 Assumptions & Dependencies"] = "llm_synthesis"
 
-        # ── MEDIUM RISK: reasonable inference ─────────────────────────────
-
-        # §2.4 Operating Environment — stored as a general_constraints item
-        # Section2.general_constraints is list[str] — safe for string sentinels.
+        # §2.4 Operating Environment (stored via sentinel in general_constraints)
         _ENV_SENTINEL = "__operating_environment__"
         env_already_set = any(
             isinstance(c, str) and _ENV_SENTINEL in c
             for c in template.section2.general_constraints
         )
         if not env_already_set:
-            env_text = self._fill_operating_environment(state)
+            if sec.get("2.4"):
+                env_text = sec["2.4"]
+                filled["§2.4 Operating Environment"] = "phase4"
+            else:
+                env_text = self._fill_operating_environment(state)
+                filled["§2.4 Operating Environment"] = "llm_synthesis"
             template.section2.general_constraints.insert(0, f"{_ENV_SENTINEL}\n{env_text}")
-            filled["§2.4 Operating Environment"] = "medium"
 
-        # §2.6 User Documentation — stored as a general_constraints addendum
+        # §2.6 User Documentation — LLM synthesis fallback (not a Phase 4 section)
         _DOCS_SENTINEL = "__user_documentation__"
         docs_already_set = any(
             isinstance(c, str) and _DOCS_SENTINEL in c
@@ -495,35 +477,20 @@ class SRSCoverageEnricher:
         if not docs_already_set:
             docs_text = self._fill_user_documentation(state)
             template.section2.general_constraints.append(f"{_DOCS_SENTINEL}\n{docs_text}")
-            filled["§2.6 User Documentation"] = "medium"
+            filled["§2.6 User Documentation"] = "llm_synthesis"
 
-        # §3.2.1 User Interfaces
+        # §3.1.1 User Interfaces
         if not template.section3.interfaces.user_interfaces:
-            ui_text = self._fill_interface(state, "User Interfaces",
-                "screen layouts, navigation patterns, accessibility, input methods")
-            template.section3.interfaces.user_interfaces = [ui_text]
-            filled["§3.2.1 User Interfaces"] = "medium"
+            if sec.get("3.1.1"):
+                template.section3.interfaces.user_interfaces = [sec["3.1.1"]]
+                filled["§3.1.1 User Interfaces"] = "phase4"
+            else:
+                ui_text = self._fill_interface(state, "User Interfaces",
+                    "screen layouts, navigation patterns, accessibility, input methods")
+                template.section3.interfaces.user_interfaces = [ui_text]
+                filled["§3.1.1 User Interfaces"] = "llm_synthesis"
 
-        # §3.2.3 Software Interfaces
-        if not template.section3.interfaces.software_interfaces:
-            sw_text = self._fill_interface(state, "Software Interfaces",
-                "operating system APIs, notification services, authentication providers, "
-                "third-party data services")
-            template.section3.interfaces.software_interfaces = [sw_text]
-            filled["§3.2.3 Software Interfaces"] = "medium"
-
-        # §3.2.4 Communication Interfaces
-        if not template.section3.interfaces.communication_interfaces:
-            comm_text = self._fill_interface(state, "Communication Interfaces",
-                "network protocols (HTTP/HTTPS, WebSocket, MQTT), data formats (JSON, XML), "
-                "push notification channels, email delivery")
-            template.section3.interfaces.communication_interfaces = [comm_text]
-            filled["§3.2.4 Communication Interfaces"] = "medium"
-
-        # ── HIGH RISK: stubs only — no LLM fabrication ────────────────────
-
-        # §3.2.2 Hardware Interfaces
-        # InterfaceRequirements.hardware_interfaces is list[str] — safe to append strings.
+        # §3.1.2 Hardware Interfaces — always stub (high risk)
         if not template.section3.interfaces.hardware_interfaces:
             template.section3.interfaces.hardware_interfaces = [
                 "[ARCHITECT REVIEW REQUIRED] Hardware interface requirements were not "
@@ -533,30 +500,46 @@ class SRSCoverageEnricher:
                 "3. Power requirements and constraints\n"
                 "4. Hardware certifications required (CE, FCC, etc.)"
             ]
-            filled["§3.2.2 Hardware Interfaces"] = "high"
+            filled["§3.1.2 Hardware Interfaces"] = "stub"
 
-        # §3.4 Logical Database Requirements
-        # Section3.database is list[str] — the correct field for free-text database notes.
-        # Never write strings into design_constraints (that field is list[AnnotatedRequirement]).
+        # §3.1.3 Software Interfaces
+        if not template.section3.interfaces.software_interfaces:
+            if sec.get("3.1.3"):
+                template.section3.interfaces.software_interfaces = [sec["3.1.3"]]
+                filled["§3.1.3 Software Interfaces"] = "phase4"
+            else:
+                sw_text = self._fill_interface(state, "Software Interfaces",
+                    "operating system APIs, notification services, authentication providers, "
+                    "third-party data services")
+                template.section3.interfaces.software_interfaces = [sw_text]
+                filled["§3.1.3 Software Interfaces"] = "llm_synthesis"
+
+        # §3.1.4 Communication Interfaces
+        if not template.section3.interfaces.communication_interfaces:
+            if sec.get("3.1.4"):
+                template.section3.interfaces.communication_interfaces = [sec["3.1.4"]]
+                filled["§3.1.4 Communication Interfaces"] = "phase4"
+            else:
+                comm_text = self._fill_interface(state, "Communication Interfaces",
+                    "network protocols (HTTP/HTTPS, WebSocket, MQTT), data formats (JSON, XML), "
+                    "push notification channels, email delivery")
+                template.section3.interfaces.communication_interfaces = [comm_text]
+                filled["§3.1.4 Communication Interfaces"] = "llm_synthesis"
+
+        # §3.4 Logical Database Requirements — always stub (high risk)
         if not template.section3.database:
             template.section3.database = [_implied_data_reqs_stub(state)]
-            filled["§3.4 Logical Database Requirements"] = "high"
+            filled["§3.4 Logical Database Requirements"] = "stub"
 
-        # §3.5 Design Constraints
-        # design_constraints is list[AnnotatedRequirement] populated by _place_requirement().
-        # We MUST NOT write strings into it.  Instead we store the stub text in
-        # section1.references — a list[str] field that is always rendered and whose
-        # content readers expect to be supplementary notes.  We use a clearly
-        # labelled sentinel entry so the formatter can emit it under §3.5.
+        # §3.5 Design Constraints — stub if no CON requirements elicited
         _CON_SENTINEL = "DESIGN_CONSTRAINTS_STUB::"
         con_already_set = any(
             isinstance(r, str) and r.startswith(_CON_SENTINEL)
             for r in template.section1.references
         )
         if not con_already_set and not template.section3.design_constraints:
-            # No elicited CON requirements AND no stub yet — add stub marker
             template.section1.references.append(_CON_SENTINEL + _CONSTRAINTS_STUB)
-            filled["§3.5 Design Constraints"] = "high"
+            filled["§3.5 Design Constraints"] = "stub"
 
         return filled
 

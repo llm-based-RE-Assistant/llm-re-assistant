@@ -1,7 +1,9 @@
 """
-src/components/requirement_extractor.py — Iteration 5
+src/components/requirement_extractor.py — Iteration 8
 University of Hildesheim
 
+IT8: Added <SECTION id="X.Y"> tag parsing for Phase 4 narrative section content.
+     extract_sections() parses these tags and routes content into state.srs_section_content.
 FIX: match_domains() now delegates to DomainDiscovery.match_requirement_to_domain()
 for LLM-based matching. Falls back to category-based matching if LLM is not available.
 """
@@ -20,6 +22,12 @@ _PATTERN_EXPLICIT = re.compile(
 _PATTERN_SHALL = re.compile(
     r'(?:The\s+(?:system|app|application|user|platform)\s+shall|Users?\s+shall)\s+'
     r'([^\n.]{10,200}[.!?]?)', re.IGNORECASE)
+
+# IT8: Pattern for Phase 4 narrative section tags
+# Format: <SECTION id="2.3">content</SECTION>
+_PATTERN_SECTION_TAG = re.compile(
+    r'<SECTION\s+id=["\']([^"\']+)["\']\s*>'
+    r'\s*(.*?)\s*</SECTION>', re.DOTALL | re.IGNORECASE)
 
 @dataclass
 class ExtractedReq:
@@ -118,6 +126,42 @@ class RequirementExtractor:
                                         source="elicited")
             added.append(req.req_id); existing.add(key)
         return added
+
+    # IT8: Phase 4 section extraction
+    def extract_sections(self, assistant_response: str) -> list[tuple[str, str]]:
+        """
+        Parse <SECTION id="X.Y">content</SECTION> tags from Phase 4 responses.
+        Returns a list of (section_id, content) tuples.
+        Section IDs match IEEE-830 numbering: "1.2", "2.1", "2.3", "3.1.1" etc.
+        """
+        found = []
+        for m in _PATTERN_SECTION_TAG.finditer(assistant_response):
+            section_id = m.group(1).strip()
+            content = m.group(2).strip()
+            if section_id and len(content) >= 20:
+                found.append((section_id, content))
+        return found
+
+    def commit_sections(self, sections: list[tuple[str, str]], state) -> list[str]:
+        """
+        Store extracted section content into state.srs_section_content and
+        mark the section as covered in state.phase4_sections_covered.
+        Returns list of section IDs that were newly stored.
+        """
+        stored = []
+        for section_id, content in sections:
+            # Append to existing content if already partially filled
+            if section_id in state.srs_section_content:
+                existing = state.srs_section_content[section_id]
+                # Only append if meaningfully different (avoids duplicate answers)
+                if content.lower()[:80] not in existing.lower():
+                    state.srs_section_content[section_id] = existing + "\n\n" + content
+            else:
+                state.srs_section_content[section_id] = content
+            state.phase4_sections_covered.add(section_id)
+            stored.append(section_id)
+        return stored
+
 
 def create_extractor():
     return RequirementExtractor()
