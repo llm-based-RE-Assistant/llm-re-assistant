@@ -1,33 +1,10 @@
 """
 src/components/question_generator.py
 =====================
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
-Fix log (applied before Iteration 4)
---------------------------------------
-FIX-A  Hard-coded question templates are REMOVED as the primary question source.
-       Your concern was correct: template questions are context-blind.  They tell
-       the LLM what to ask regardless of what the user just said, which breaks the
-       conversational flow and causes users to give shorter answers.
-
-FIX-B  New primary mode: LLM-GENERATED questions.
-       ProactiveQuestionGenerator now calls the LLM with a meta-prompt that has
-       full access to (a) the conversation history summary, (b) the gap category
-       to probe, and (c) the project context.  The result is a single, targeted,
-       context-aware question that feels like a natural continuation of the
-       conversation rather than a scripted interrogation.
-
-FIX-C  Templates are KEPT as a fast fallback for cases where:
-         - no LLM provider is available (unit tests, offline mode)
-         - the LLM meta-call fails
-       This preserves backward-compatibility and ablation study support.
-
-FIX-D  FR-aware priority: when functional_count < MIN_FUNCTIONAL_REQS, the
-       generator always targets the "functional" gap first, overriding the
-       normal critical→important→optional ordering.
-
-Architecture (updated)
+Architecture
 ----------------------
   GapReport + ConversationState  →  ProactiveQuestionGenerator.generate()
     → LLM meta-prompt call (primary)  OR  template lookup (fallback)

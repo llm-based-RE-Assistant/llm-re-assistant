@@ -1,31 +1,9 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
-Fix log (applied before Iteration 4)
---------------------------------------
-FIX-G1  Keyword threshold raised for the "functional" category.
-        The old threshold (≥3 keywords → "covered") was too easy to satisfy
-        because common words like "allow", "must", "should" appear in NFR
-        discussions all the time.  Functional coverage now requires ≥5 distinct
-        keyword hits AND at least 1 explicit "shall" / "must" statement that is
-        tagged as an FR in the requirement store.  This prevents the GapDetector
-        from falsely reporting functional coverage before any real FRs exist.
-
-FIX-G2  Added a _classify_functional_coverage helper that checks the requirement
-        store directly — if state.functional_count >= 1, functional is at least
-        "partial"; if >= 3, it is "covered".  This makes coverage state consistent
-        with the actual extraction results rather than keyword counting alone.
-
-FIX-G3  Raised general keyword threshold from 3 to 4 for CRITICAL categories
-        to reduce false positives.
-
-FIX-G4  Added "scalability", "data_requirements", "testability", "deployment",
-        "use_cases", "business_rules", "assumptions" to the checklist (they were
-        in question_generator templates but missing from the checklist, causing
-        GapDetector to never detect those gaps).
 """
 
 from __future__ import annotations

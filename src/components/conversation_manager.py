@@ -1,29 +1,9 @@
 """
 src/components/conversation_manager.py
 ========================
-RE Assistant — Iteration 3 (fixed) | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Core Conversation Loop: User → LLM → Response with History
 
-Fix log (applied before Iteration 4)
---------------------------------------
-FIX-W1  GapDetector and ProactiveQuestionGenerator are now WIRED into send_turn().
-        In the original iteration-3 code, both components were implemented but
-        never called.  The gap_detector.analyse() + question_generator.generate()
-        pipeline is now executed after every turn, and the result is injected
-        into PromptArchitect.extra_context BEFORE the next turn's system message
-        is built.
-
-FIX-W2  QuestionTracker is created in start_session() and carried throughout
-        the session so repeated questions are avoided.
-
-FIX-W3  The question_generator is created with the same LLM provider as the
-        main conversation loop, enabling LLM-generated context-aware questions
-        (see question_generator.py FIX-B).
-
-FIX-W4  extra_context injection timing: the directive is set on self._architect
-        AFTER the current turn's state update so the NEXT turn's system message
-        contains the fresh directive — not the stale one from the previous turn.
-        This matches the one-shot injection design in PromptArchitect.
 """
 
 from __future__ import annotations

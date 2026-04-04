@@ -1,59 +1,9 @@
 """
 src/components/prompt_architect.py
 ====================
-RE Assistant — Iteration 3 (rev-2) | University of Hildesheim
+RE Assistant — Iteration 3 | University of Hildesheim
 Modular System Prompt Architecture
 
-Change log
-----------
-Rev-1  (Iteration 3 fix)
-  FIX-1  FR-first elicitation: NFR probing blocked until ≥3 FRs recorded.
-  FIX-2  Closure rule raised from 1 FR to 3 FRs minimum.
-  FIX-3  FR-deficit warning added to context block, mirroring NFR alert.
-  FIX-4  extra_context injection path preserved for GapDetector wiring.
-
-Rev-2  (Pre-Iteration 4 — addresses low elicitation completeness)
-  NEW-1  ROLE_BLOCK extended: active vs. passive elicitation philosophy
-         added so the LLM understands its job is to DRIVE the conversation,
-         not wait for the user to volunteer information.
-
-  NEW-2  TASK_BLOCK completely restructured:
-         — Old design: 8 flat rules, no ordering, no phase structure.
-           The LLM treated them as equal hints and cherry-picked.
-         — New design: four explicit PHASES (Domain → Functional →
-           Non-Functional → Closure) with a per-phase checklist the LLM
-           must complete before advancing. This mirrors how a real RE
-           interview is conducted and prevents premature closure.
-
-  NEW-3  ONE-QUESTION-PER-TURN rule added (was missing entirely).
-         The old prompt allowed batched questions which caused the customer
-         to give shallow answers to many things instead of deep answers to one.
-
-  NEW-4  REDIRECT rule added: when the customer goes off-topic (feasibility,
-         costs, change management) the LLM must acknowledge in ≤1 sentence
-         then return to the last uncovered item. Turns 7–11 of the test
-         transcript were entirely wasted on off-topic discussion.
-
-  NEW-5  NEVER-ACCEPT-EARLY-CLOSURE rule added. The LLM must reject
-         "I think you have a good picture" and name the specific item
-         still missing. This directly fixes the Turn 7 failure in the
-         test transcript.
-
-  NEW-6  MANDATORY CLOSURE CHECKLIST added as a named, itemised gate.
-         Old closure rule was vague ("functional requirements identified
-         for all major features"). New checklist names 12 specific items
-         that must each be explicitly discussed before SRS generation.
-
-  NEW-7  Probing depth rule added: the LLM must ask one level deeper on
-         every answer before changing topic.
-
-Design: Four-block prompt (Iteration 3 rev-2+)
-  [ROLE]            — who the assistant is + active elicitation philosophy
-  [CONTEXT]         — live coverage state (dynamic per turn)
-  [GAP DIRECTIVE]   — targeted follow-up from GapDetector (injected one-shot)
-  [TASK]            — phase-gated behavioural rules + closure checklist
-
-All blocks are independently replaceable for ablation studies.
 """
 
 from __future__ import annotations

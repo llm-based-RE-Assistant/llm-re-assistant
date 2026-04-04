@@ -1,361 +1,386 @@
-# LLM-Based Requirements Engineering Assistant — Iteration 3
+# RE Assistant — Iteration 3
 
-**University of Hildesheim · DSR Project**
+### Requirements Engineering Assistant · University of Hildesheim
 
 ---
 
 ## Overview
 
-Iteration 3 builds on Iteration 2's modular architecture and addresses three new systemic gaps identified during Iteration 2 evaluation:
-
-| Issue                         | Iteration 2 Problem                                                                                                       | Iteration 3 Fix                                                                                                                                       |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gap Detection Not Wired**   | `GapDetector` and `ProactiveQuestionGenerator` were implemented but never called in the conversation loop                 | Both components are now fully wired into `send_turn()`. Gap analysis runs after every turn; results are injected into the next system prompt (FIX-W1) |
-| **Template-Blind Questions**  | Follow-up questions were generated from static templates, ignoring what the user just said                                | Primary question mode is now LLM-generated via a meta-prompt with full conversation context (FIX-B); templates are retained as a graceful fallback    |
-| **False Functional Coverage** | Gap detector reported functional coverage based on keyword counts alone, triggering too early before any real FRs existed | Functional coverage is now validated directly against the requirement store (`functional_count`), not keywords (FIX-G1/G2)                            |
-
-The system continues to run as a **Flask web application** with a single-page HTML/JS UI.
+RE Assistant is an AI-powered requirements elicitation tool that conducts structured interviews with stakeholders and produces IEEE-830-compliant Software Requirements Specifications (SRS). Iteration 3 introduces **proactive gap detection** and a **question generation pipeline** that actively identifies missing requirements and injects targeted follow-up prompts into the LLM's context window — preventing premature session closure and improving SRS completeness.
 
 ---
 
 ## What's New in Iteration 3
 
-### Gap Detection Pipeline (`gap_detector.py`)
+Iteration 3 addresses three failure modes identified in the Iteration 2 evaluation:
 
-The `GapDetector` component analyses `ConversationState` after every turn and produces a structured `GapReport`. Key changes:
+| Failure Mode                 | Description                                                                | Iteration 3 Fix                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **FM-1: Silent Gaps**        | LLM would finish elicitation without covering mandatory NFR categories     | `GapDetector` runs after every turn and reports uncovered categories                                |
+| **FM-2: Static Questioning** | Follow-up questions were generic templates recycled across sessions        | `ProactiveQuestionGenerator` calls the LLM with a meta-prompt to produce context-aware questions    |
+| **FM-3: Premature Closure**  | Baseline offered to generate SRS after just 3 turns regardless of coverage | Phase-gated `PromptArchitect` blocks SRS generation until a checklist of 18 categories is addressed |
 
-- **FIX-G1/G2 — Functional coverage uses the requirement store.** Coverage is now based on `state.functional_count` (≥3 FRs → covered; ≥1 → partial; 0 → uncovered). Keyword counting alone is no longer sufficient to mark functional requirements as covered.
-- **FIX-G3 — Raised keyword thresholds.** CRITICAL categories require ≥4 distinct keyword hits (was 3). This reduces false positives in early turns where generic words like "allow" or "must" appear in unrelated discussion.
-- **FIX-G4 — Expanded checklist.** Added `scalability`, `data_requirements`, `testability`, `deployment`, `use_cases`, `business_rules`, and `assumptions` to the checklist. These categories had question templates in Iteration 2 but were invisible to the detector, meaning gaps were never surfaced.
-- **Ablation support.** `GapDetector(enabled=False)` returns a fully-covered dummy report, allowing controlled ablation study runs where gap detection is disabled.
-
-The unified coverage checklist maps each category to its IEEE 830-1998 and Volere reference, a severity level (`CRITICAL`, `IMPORTANT`, `OPTIONAL`), and detection keywords.
-
-### Proactive Question Generator (`question_generator.py`)
-
-- **FIX-A — Templates removed as primary source.** Hard-coded template questions were context-blind: they told the LLM what to ask regardless of what the user had just said, producing robotic follow-ups and shorter user responses.
-- **FIX-B — LLM-generated questions (primary).** `ProactiveQuestionGenerator` now calls the LLM with a meta-prompt containing the last 4 turns of conversation, project name, FR/NFR counts, and the gap category to probe. The result is a single, targeted, context-aware question that feels like a natural continuation of the conversation.
-- **FIX-C — Templates kept as fallback.** If no LLM provider is available (unit tests, offline mode) or the meta-call fails, the generator falls back to parameterised templates. This preserves backward-compatibility and ablation study support.
-- **FIX-D — FR-aware priority.** When `functional_count < 3`, the generator always targets the functional gap first, overriding the normal `CRITICAL → IMPORTANT → OPTIONAL` ordering.
-- **`QuestionTracker`** prevents the same category from being probed more than 3 times per session.
-
-### Conversation Manager Wiring (`conversation_manager.py`)
-
-- **FIX-W1 — Full pipeline wired.** `send_turn()` now runs the complete gap → question → inject pipeline on every turn. Previously, both components were instantiated but `analyse()` and `generate()` were never called.
-- **FIX-W2 — Per-session `QuestionTracker`.** A fresh `QuestionTracker` is created in `start_session()` and carried throughout the session.
-- **FIX-W3 — Shared LLM provider.** `ProactiveQuestionGenerator` is initialised with the same `LLMProvider` instance as the main loop, enabling mode `"llm"` for context-aware question generation.
-- **FIX-W4 — Correct injection timing.** The gap directive is written to `self._architect.extra_context` _after_ the current turn's state update, so the _next_ turn's system message receives the fresh directive — not a stale one from the previous turn. This matches the one-shot injection design in `PromptArchitect`.
-
-### Requirement Extractor (`requirement_extractor.py`)
-
-The extractor uses a three-strategy cascade to capture requirements from LLM responses:
-
-1. **Primary — `<REQ>` tags (multi-line).** The LLM is instructed to wrap every formalised requirement in `<REQ type="..." category="...">...</REQ>` delimiters. This reliably captures multi-line requirements with bullet sub-items intact. It was introduced to fix a bug where single-line regex patterns captured only the first line of a multi-line requirement (e.g. a reminder schedule with sub-items).
-2. **Fallback 1 — Numbered pattern.** `Requirement N (Type): ...` format for backward-compatibility.
-3. **Fallback 2 — "Shall" sentences.** `The system shall ...` as last resort.
-
-All extracted requirements are committed to `ConversationState` with deduplication and the SRS template is synced on every turn.
+Two new components were added (`gap_detector.py`, `question_generator.py`) and the `PromptArchitect` and `ConversationManager` were extended to use them.
 
 ---
 
 ## Architecture
 
 ```
-app.py                              ← Flask REST API + HTML/JS UI
-src/components/
-├── conversation_manager.py         ← Session orchestration, LLM providers, turn loop
-├── conversation_state.py           ← Session state, requirement store, coverage tracking
-├── prompt_architect.py             ← 3-block dynamic system prompt builder
-├── gap_detector.py                 ← IEEE-830/Volere coverage checklist + gap analysis
-├── question_generator.py           ← LLM-generated proactive follow-up questions
-├── requirement_extractor.py        ← Multi-strategy requirement extraction from responses
-├── srs_template.py                 ← IEEE-830 data model, progressively populated
-└── srs_formatter.py                ← Renders SRSTemplate to Markdown / plain text / JSON
-output/                             ← Generated SRS documents (.md)
-logs/                               ← JSON session logs (per-session, per-turn gap reports)
+Browser  ←→  Flask REST API  ←→  ConversationManager
+                                       │
+                              ┌────────┴────────┐
+                              │                 │
+                        PromptArchitect    RequirementExtractor
+                              │
+                        ┌─────┴──────┐
+                        │            │
+                   GapDetector  ProactiveQuestionGenerator
+                        │            │
+                   GapReport    QuestionSet  ←→  QuestionTracker
+                        └─────┬──────┘
+                               │
+                    [injected into extra_context]
+                               │
+                           LLM Turn
+                               │
+                    ConversationState (updated)
+                               │
+                    SRSTemplate (updated)
+                               │
+                    SRSFormatter → SRS .md file
 ```
 
-### Request Lifecycle (per turn)
+### Component Summary
+
+| Component                    | File                       | Responsibility                                                                              |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
+| `ConversationManager`        | `conversation_manager.py`  | Orchestrates the full elicitation loop; coordinates all sub-components                      |
+| `ConversationState`          | `conversation_state.py`    | Single source of truth: turns, requirements, coverage tracking                              |
+| `PromptArchitect`            | `prompt_architect.py`      | Builds the system message from modular blocks; injects gap directives                       |
+| `GapDetector`                | `gap_detector.py`          | Analyses state against an 18-category IEEE-830/Volere checklist; returns `GapReport`        |
+| `ProactiveQuestionGenerator` | `question_generator.py`    | Generates one targeted follow-up question per turn via LLM meta-prompt or template fallback |
+| `RequirementExtractor`       | `requirement_extractor.py` | Parses `<REQ>` tags and "shall" patterns from LLM responses into structured requirements    |
+| `SRSTemplate`                | `srs_template.py`          | IEEE-830 data container; populated progressively; applies SMART heuristic scoring           |
+| `SRSFormatter`               | `srs_formatter.py`         | Renders `SRSTemplate` + `ConversationState` to Markdown, plain text, or JSON                |
+| `app.py`                     | `app.py`                   | Flask REST API backend; serves the web UI                                                   |
+| `index.html`                 | `index.html`               | Single-page chat UI with live coverage ring, gap panel, and follow-up question panel        |
+
+---
+
+## Gap Detection
+
+The `GapDetector` maintains an 18-category checklist combining IEEE-830 and Volere standards. After every conversation turn it scans the full corpus (user messages, assistant messages, and extracted requirements) and classifies each category as `covered`, `partial`, or `uncovered`.
+
+### Coverage Checklist
+
+| Category                          | Severity  |
+| --------------------------------- | --------- |
+| System Purpose & Goals            | Critical  |
+| System Scope & Boundaries         | Critical  |
+| Stakeholders & User Classes       | Critical  |
+| Functional Requirements           | Critical  |
+| Performance Requirements          | Critical  |
+| Usability & Accessibility         | Critical  |
+| Security & Privacy Requirements   | Critical  |
+| Reliability & Availability        | Critical  |
+| Use Cases & User Stories          | Important |
+| Business Rules & Constraints      | Important |
+| Compatibility & Portability       | Important |
+| Maintainability                   | Important |
+| Scalability                       | Important |
+| External Interfaces               | Important |
+| Data Requirements                 | Important |
+| Design Constraints                | Important |
+| Assumptions & Dependencies        | Optional  |
+| Testability & Acceptance Criteria | Optional  |
+| Deployment & Operations           | Optional  |
+
+Coverage percentage is computed as: `(covered + 0.5 × partial) / total × 100`.
+
+### Ablation Study Support
+
+The gap detector can be disabled for controlled experiments:
+
+```python
+# Gap detection ON (default)
+manager = ConversationManager(provider=provider, gap_enabled=True)
+
+# Gap detection OFF (ablation baseline)
+manager = ConversationManager(provider=provider, gap_enabled=False)
+```
+
+When disabled, `GapDetector.analyse()` returns a "100% covered" report and no directives are injected into the prompt.
+
+---
+
+## Question Generation
+
+`ProactiveQuestionGenerator` selects the highest-priority uncovered category from the `GapReport` and generates one targeted follow-up question per turn.
+
+### Mode Hierarchy
+
+1. **LLM mode (default)** — calls the LLM with a meta-prompt that includes the last 4 turns of conversation history and the target gap category. Produces context-aware, project-specific questions.
+2. **Template fallback** — used when the LLM provider is unavailable or the meta-call fails. Parameterised templates exist for all 19 categories.
+
+### Injection Pattern
+
+The generated question is injected into `PromptArchitect.extra_context` as a one-shot directive before the next LLM call. The prompt architect automatically clears the directive after each build, ensuring it is used exactly once.
 
 ```
-Browser POST /api/session/turn
-    ↓
-ConversationManager.send_turn()
-    1. Build system message  (includes gap directive from previous turn)
-    2. Call LLM with full history
-    3. Update ConversationState (heuristic coverage scan)
-    4. Extract requirements via RequirementExtractor → commit → sync SRS template
-    5. GapDetector.analyse(state)  → GapReport
-    6. ProactiveQuestionGenerator.generate(gap_report, state, tracker) → QuestionSet
-    7. PromptArchitect.extra_context ← injection text for NEXT turn
-    8. Log turn + gap report to JSON
-    ↓
-JSON response: { assistant_reply, gap_report, follow_up_questions, coverage_pct }
+── PROACTIVE QUESTIONING DIRECTIVE ──
+Gap to probe next: Performance Requirements (severity: CRITICAL)
+Why: How fast must the system respond? What load must it handle?
+
+A context-aware question has been pre-generated for this gap:
+  "Given that your users will be submitting reports during peak hours,
+   what response time would be acceptable for the dashboard to reload?"
+
+You MAY use this question verbatim or adapt it to flow naturally.
+── END DIRECTIVE ──
 ```
+
+---
+
+## Prompt Architecture
+
+The system message is composed of four modular blocks assembled fresh on every turn:
+
+```
+=== ROLE ===
+Active elicitation philosophy + 15-year RE expert persona
+
+=== CURRENT SESSION CONTEXT ===
+Live state: turn count, FR/NFR counts, phase indicator,
+covered/missing IEEE-830 categories, FR deficit warning,
+mandatory NFR alert
+
+=== GAP DETECTION DIRECTIVE ===          ← injected only when a gap is found
+One-shot: target category + pre-generated question
+
+=== TASK INSTRUCTIONS ===
+Phase-gated structure (4 phases), 6 non-negotiable rules,
+mandatory closure checklist
+```
+
+### Phase Structure
+
+| Phase                                   | Turns        | Goal                                           |
+| --------------------------------------- | ------------ | ---------------------------------------------- |
+| Phase 1: Domain & Context Discovery     | 1–3          | Establish "Why" and "Who" before "What"        |
+| Phase 2: Functional Requirements (IPOS) | Ongoing      | Decompose behaviours into atomic, testable FRs |
+| Phase 3: Non-Functional Requirements    | After ≥5 FRs | ISO 25010 quality attributes with metrics      |
+| Phase 4: Constraints & Final Validation | Closure      | Hard limits, saturation check                  |
+
+The assistant is blocked from advancing to Phase 3 until at least 5 distinct functional requirements have been recorded. SRS generation is blocked until the mandatory closure checklist is complete.
+
+---
+
+## Requirement Extraction
+
+The `RequirementExtractor` parses assistant responses for formalised requirements using three strategies in priority order:
+
+**Strategy 1 — REQ tags (primary)**
+
+```xml
+<REQ type="functional" category="functional">
+The system shall allow users to log in with email and password.
+</REQ>
+
+<REQ type="non_functional" category="performance">
+The system shall respond to all dashboard requests within 2 seconds
+under a load of 500 concurrent users.
+</REQ>
+```
+
+**Strategy 2 — Numbered explicit pattern (fallback)**
+
+```
+Requirement 1 (Functional): The system shall...
+```
+
+**Strategy 3 — "shall" pattern (last resort)**
+
+```
+The system shall authenticate users...
+```
+
+Extracted requirements are committed to `ConversationState` and scored against SMART criteria (Specific, Measurable, Achievable, Relevant, Testable) using a heuristic checker.
+
+---
+
+## SRS Output
+
+The generated SRS follows IEEE 830-1998 structure:
+
+```
+§1  Introduction
+    1.1 Purpose · 1.2 Scope · 1.3 Definitions · 1.4 References · 1.5 Overview
+§2  Overall Description
+    2.1 Product Perspective · 2.2 Product Functions · 2.3 User Characteristics
+    2.4 General Constraints · 2.5 Assumptions and Dependencies
+§3  Specific Requirements
+    3.1 Functional Requirements
+    3.2 External Interface Requirements (User/Hardware/Software/Communication)
+    3.3 Performance Requirements
+    3.4 Logical Database Requirements
+    3.5 Design Constraints
+    3.6 Software System Attributes (Reliability/Availability/Security/
+        Maintainability/Portability/Usability)
+§4  Open Issues and Conflicts
+Appendix A  Traceability Matrix
+Appendix B  Elicitation Coverage & Quality Report
+Appendix C  Conversation Transcript Summary
+```
+
+Each requirement is annotated with its SMART score (0–5), priority (Must-have / Should-have / Nice-to-have), IEEE-830 section reference, and source turn.
+
+---
+
+## Web UI
+
+The single-page UI (`index.html`) provides three panels:
+
+- **Left panel** — live IEEE-830 coverage ring with per-category status (covered / partial / uncovered), colour-coded by severity
+- **Centre** — chat interface with typing indicator and session start overlay
+- **Right panel** — two tabs: _Gaps_ (current `GapReport`) and _Follow-ups_ (clickable question cards that pre-fill the input)
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+
+```bash
+pip install flask flask-cors requests
+# Plus one of:
+pip install openai          # for OpenAI provider
+# or ensure Ollama is running locally / on the university server
+```
+
+### Environment Variables
+
+| Variable          | Required for    | Description                                                     |
+| ----------------- | --------------- | --------------------------------------------------------------- |
+| `OPENAI_API_KEY`  | OpenAI provider | Your OpenAI API key                                             |
+| `OLLAMA_API_KEY`  | Ollama provider | Bearer token for the Ollama server                              |
+| `OLLAMA_BASE_URL` | Ollama provider | Base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
+
+### Running
+
+```bash
+# With OpenAI GPT-4o (default for production)
+OPENAI_API_KEY=sk-... python app.py --provider openai --model gpt-4o
+
+# With Ollama (university server)
+OLLAMA_API_KEY=... python app.py --provider ollama --model llama3.1:8b
+
+# With stub provider (no API key needed, for UI testing)
+python app.py --provider stub
+
+# Custom host/port
+python app.py --provider openai --host 0.0.0.0 --port 8080
+
+# Debug mode
+python app.py --provider stub --debug
+```
+
+Open `http://127.0.0.1:5000` in your browser.
 
 ---
 
 ## REST API
 
-| Method | Endpoint                    | Description                                                 |
-| ------ | --------------------------- | ----------------------------------------------------------- |
-| POST   | `/api/session/start`        | Start a new session. Body: `{ "gap_detection": true }`      |
-| POST   | `/api/session/turn`         | Send a user message. Body: `{ "session_id", "message" }`    |
-| GET    | `/api/session/status`       | Coverage report + gap report. Query: `?session_id=...`      |
-| POST   | `/api/session/generate_srs` | Finalise session and generate SRS. Body: `{ "session_id" }` |
-| GET    | `/api/session/download_srs` | Download the generated SRS file. Query: `?session_id=...`   |
-| GET    | `/api/health`               | Health check.                                               |
+| Method | Endpoint                    | Description                                                                   |
+| ------ | --------------------------- | ----------------------------------------------------------------------------- |
+| `GET`  | `/api/health`               | Health check; returns provider name                                           |
+| `POST` | `/api/session/start`        | Start a new session; returns `session_id` and opening message                 |
+| `POST` | `/api/session/turn`         | Send user message; returns assistant reply + gap report + follow-up questions |
+| `GET`  | `/api/session/status`       | Current coverage and gap report for a session                                 |
+| `POST` | `/api/session/generate_srs` | Finalise session and generate SRS document                                    |
+| `GET`  | `/api/session/download_srs` | Download the generated SRS `.md` file                                         |
 
-Each `/api/session/turn` response includes:
+### Example: Start Session
 
-- `assistant_reply` — the LLM's response
-- `gap_report` — full post-turn gap analysis
-- `follow_up_questions` — list of proactively generated questions (for UI display)
-- `coverage_pct` — current coverage percentage
+```json
+POST /api/session/start
+{ "gap_detection": true }
 
----
-
-## Directory Structure
-
-```
-re-assistant/
-├── app.py                          # Flask application entry point
-├── index.html                      # Single-page UI (served by Flask)
-├── requirements.txt                # Python dependencies
-├── .env                            # API keys (not committed to version control)
-├── src/
-│   └── components/
-│       ├── conversation_manager.py
-│       ├── conversation_state.py
-│       ├── prompt_architect.py
-│       ├── gap_detector.py
-│       ├── question_generator.py
-│       ├── requirement_extractor.py
-│       ├── srs_template.py
-│       └── srs_formatter.py
-├── output/                         # Generated SRS documents (auto-created)
-└── logs/                           # JSON session logs (auto-created)
+Response:
+{
+  "session_id": "a3f9c12b",
+  "opening_message": "Hello! I'm your Requirements Engineering assistant...",
+  "gap_detection": true,
+  "provider": "openai"
+}
 ```
 
+### Example: Send Turn
+
+```json
+POST /api/session/turn
+{ "session_id": "a3f9c12b", "message": "I want to build a task management app for remote teams." }
+
+Response:
+{
+  "session_id": "a3f9c12b",
+  "assistant_reply": "Great. To understand the purpose more deeply — ...",
+  "turn_id": 1,
+  "gap_report": { "coverage_pct": 12.5, "critical_gaps": [...], ... },
+  "follow_up_questions": [{ "category_label": "Stakeholders", "question_text": "...", ... }],
+  "coverage_pct": 12.5
+}
+```
+
 ---
 
-## Prerequisites
+## Project Structure
 
-- Python 3.10 or higher
-- An LLM backend: Ollama (local/university server), OpenAI API, or the built-in Stub provider for testing
+```
+iteration-3/
+├── app.py                      # Flask web server & REST API
+├── index.html                  # Single-page web UI
+├── conversation_manager.py     # Core orchestration loop
+├── conversation_state.py       # Session state: turns, requirements, coverage
+├── prompt_architect.py         # Modular system message builder
+├── gap_detector.py             # IEEE-830/Volere 18-category gap analyser  ← NEW
+├── question_generator.py       # LLM meta-prompt question generator        ← NEW
+├── requirement_extractor.py    # <REQ> tag + pattern-based extraction
+├── srs_template.py             # IEEE-830 data container with SMART scoring
+├── srs_formatter.py            # Markdown/plain-text/JSON SRS renderer
+├── logs/                       # Per-session JSON logs (auto-created)
+└── output/                     # Generated SRS .md files (auto-created)
+```
 
 ---
 
-## Installation
+## Known Limitations
 
-### 1. Clone and enter the project directory
+- **Heuristic SMART scoring** — the current SMART checker uses keyword and pattern matching. LLM-based quality assessment is planned for Iteration 4.
+- **In-memory session store** — sessions are lost on server restart. Production deployment would require Redis or a database.
+- **Single-file SRS output** — only Markdown output is currently supported. DOCX/PDF export is planned.
+- **LLM keyword extraction** — the `RequirementExtractor` relies on the LLM correctly using `<REQ>` tags. If the LLM deviates from the format, extraction quality degrades to the regex fallbacks.
+
+---
+
+## Evaluation Notes (Ablation Study)
+
+To run the ablation study comparing gap detection ON vs. OFF:
 
 ```bash
-cd re-assistant
+# Condition A: Gap detection ON
+python app.py --provider openai
+
+# Condition B: Gap detection OFF
+# In app.py, set gap_detection_enabled = False in the start_session body,
+# or pass gap_detection: false in the POST /api/session/start body.
 ```
 
-### 2. Create and activate a virtual environment
-
-```bash
-python3 -m venv venv
-
-# Linux / macOS
-source venv/bin/activate
-
-# Windows
-venv\Scripts\activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```bash
-# Required for Ollama (university server)
-OLLAMA_API_KEY=your_ollama_api_key
-OLLAMA_BASE_URL=https://genai-01.uni-hildesheim.de/ollama   # default if omitted
-
-# Required for OpenAI
-OPENAI_API_KEY=your_openai_api_key
-```
-
-Neither key is required when using the Stub provider for UI testing.
+Session logs in `logs/session_<id>.json` record per-turn gap reports, category updates, and extracted requirements for offline analysis.
 
 ---
 
-## Running the Application
+## Authors
 
-```bash
-python app.py
-```
-
-The application starts at `http://127.0.0.1:5000`.
-
-You can pass provider, model, host, and port as arguments:
-
-```bash
-python app.py --provider ollama --model llama3.1:8b
-python app.py --provider openai --model gpt-4o
-python app.py --provider stub
-python app.py --host 0.0.0.0 --port 8080 --debug
-```
-
----
-
-## Using the Application
-
-### Starting a session
-
-Open `http://127.0.0.1:5000` in a browser. The UI presents an opening message and begins the elicitation conversation.
-
-### During elicitation
-
-The assistant proactively guides the conversation using the gap detection pipeline:
-
-- After every turn, the assistant identifies the highest-priority uncovered IEEE-830 category
-- A context-aware follow-up question is generated by the LLM using the last 4 turns of conversation
-- The question is injected into the next system prompt as a directive, ensuring natural integration rather than a scripted list
-
-The assistant continues to enforce the Iteration 2 rules: ambiguity challenge (vague terms like "fast" require measurable targets), mandatory NFR coverage before SRS generation is permitted, and conflict detection.
-
-### Generating the SRS
-
-Trigger SRS generation with any of:
-
-- Phrases such as `generate srs`, `I'm done`, `end session`, `export srs`
-- The **Generate SRS** button in the UI
-- Automatic closure once all mandatory NFR categories are covered and sufficient functional requirements have been elicited
-
-The SRS is saved to `output/` and available for download via the UI or the `/api/session/download_srs` endpoint.
-
----
-
-## Gap Detection: IEEE-830 Coverage Checklist
-
-The `GapDetector` tracks 16 categories across three severity levels. The 6 CRITICAL NFR categories from Iteration 2 remain mandatory gates for SRS generation; the expanded checklist adds IMPORTANT and OPTIONAL categories for richer gap reporting.
-
-| Category                            | Severity  |
-| ----------------------------------- | --------- |
-| System Purpose & Goals              | CRITICAL  |
-| System Scope & Boundaries           | CRITICAL  |
-| Stakeholders & User Classes         | CRITICAL  |
-| Functional Requirements             | CRITICAL  |
-| Performance Requirements            | CRITICAL  |
-| Usability & Accessibility           | CRITICAL  |
-| Security & Privacy Requirements     | CRITICAL  |
-| Reliability & Availability          | CRITICAL  |
-| Compatibility & Portability         | CRITICAL  |
-| Maintainability Requirements        | CRITICAL  |
-| Use Cases & User Stories            | IMPORTANT |
-| Business Rules & Constraints        | IMPORTANT |
-| Scalability                         | IMPORTANT |
-| External Interfaces                 | IMPORTANT |
-| Data Requirements                   | OPTIONAL  |
-| Design & Implementation Constraints | OPTIONAL  |
-| Assumptions & Dependencies          | OPTIONAL  |
-| Testability                         | OPTIONAL  |
-| Deployment                          | OPTIONAL  |
-
----
-
-## Ablation Study Support
-
-Iteration 3 is designed for controlled ablation experiments comparing gap-detection ON vs. OFF:
-
-```bash
-# Gap detection ON (default)
-python app.py --provider ollama
-
-# Gap detection OFF — pass gap_detection=false in the /api/session/start body
-curl -X POST http://localhost:5000/api/session/start \
-     -H "Content-Type: application/json" \
-     -d '{"gap_detection": false}'
-```
-
-When `gap_detection=false`, `GapDetector` returns a fully-covered dummy report. The question generator is also bypassed, and no directive is injected into the prompt architect. All other behaviour is identical, isolating the effect of the gap detection component.
-
-Session logs record `gap_detection_enabled` at session start and include the full `GapReport` per turn, providing a complete audit trail for evaluation.
-
----
-
-## Output Files
-
-### SRS Document (`output/srs_<session_id>.md`)
-
-A full IEEE 830-1998 compliant specification including:
-
-- §1 Introduction (purpose, scope, definitions, overview)
-- §2 Overall Description (product perspective, functions, user characteristics, constraints, assumptions)
-- §3 Specific Requirements (functional, interface, performance, reliability, security, maintainability, compatibility, usability)
-- Appendix A: Traceability Matrix (req_id → section → source turn → SMART score)
-- Appendix B: Coverage & Quality Report
-- Appendix C: Conversation Transcript Summary
-
-Each requirement is annotated with a SMART quality badge and a priority indicator (🔴 Must-have / 🟡 Should-have / 🟢 Nice-to-have).
-
-### Session Log (`logs/session_<session_id>.json`)
-
-A structured JSON log including per-turn gap reports. Each turn entry contains:
-
-- `turn_id`, `user_message`, `assistant_message`
-- `categories_updated` — IEEE-830 categories touched this turn
-- `gap_report` — full `GapReport` snapshot after the turn (gaps by severity, coverage percentage, per-category status)
-
----
-
-## LLM Providers
-
-| Provider | Class            | Env Var          | Notes                                           |
-| -------- | ---------------- | ---------------- | ----------------------------------------------- |
-| `openai` | `OpenAIProvider` | `OPENAI_API_KEY` | GPT-4o by default                               |
-| `ollama` | `OllamaProvider` | `OLLAMA_API_KEY` | Hildesheim server; `OLLAMA_BASE_URL` optional   |
-| `stub`   | `StubProvider`   | —                | Deterministic scripted responses for UI testing |
-
-Temperature is fixed at `0.0` for the main conversation loop for reproducible evaluation runs. The question generator meta-prompt uses `temperature=0.4` to produce varied follow-up questions across turns.
-
----
-
-## Troubleshooting
-
-**Ollama connection error**
-Verify that `OLLAMA_API_KEY` is set and the university VPN is active if required.
-
-**OpenAI authentication error**
-Verify that `OPENAI_API_KEY` is set and has sufficient quota.
-
-**SRS contains only `NOT ELICITED` placeholders**
-The conversation was too short or did not contain clear requirement statements. Conduct a longer elicitation session — the coverage panel will indicate which categories still need to be addressed.
-
-**Gap report shows 0% coverage after several turns**
-Check that `gap_detection` was not set to `false` when the session was started (`/api/session/start` body). Confirm via `GET /api/session/status`.
-
-**Port already in use**
-
-```bash
-python app.py --port 5001
-```
-
----
-
-## Research Foundation
-
-Iteration 3 addresses findings from the Iteration 2 evaluation:
-
-- **Wired gap-detection pipeline** prevents the assistant from ignoring coverage gaps it has already identified (fixes the "implemented but not called" issue)
-- **LLM-generated follow-up questions** improve conversational naturalness and user response quality compared to template-driven questioning
-- **Requirement-store-based functional coverage** eliminates false positive coverage signals from incidental keyword matches
-- **Expanded coverage checklist** (16 categories vs. 12) surfaces gaps in use cases, business rules, scalability, and testability that were previously invisible to the detector
-
----
-
-## License
-
-Academic Research Project — University of Hildesheim
-
-Team members: Hunain Murtaza (1750471) · David Tashjian (1750243) · Saad Younas (1750124) · Amine Rafai (1749821) · Khaled Shaban (1750283) · Mohammad Alsaiad (1750755)
+Integrated Research Project — Requirements Engineering Assistant  
+Department of Computer Science · University of Hildesheim
