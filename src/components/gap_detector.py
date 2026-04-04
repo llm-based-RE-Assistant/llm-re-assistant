@@ -1,7 +1,7 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 8 | University of Hildesheim
+RE Assistant — Iteration 6 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
 
 IT8 changes

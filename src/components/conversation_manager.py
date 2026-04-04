@@ -1,5 +1,5 @@
 """
-src/components/conversation_manager.py — Iteration 8
+src/components/conversation_manager.py — Iteration 6
 University of Hildesheim
 
 IT8: extract_sections() called on every turn to capture <SECTION> tags from

@@ -1,7 +1,7 @@
 """
 src/components/srs_formatter.py
 =================
-RE Assistant — Iteration 5 | University of Hildesheim
+RE Assistant — Iteration 6 | University of Hildesheim
 SRS Output Formatter: renders an SRSTemplate to a readable IEEE-830 document.
 
 Iteration 5 changes

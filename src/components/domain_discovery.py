@@ -1,5 +1,5 @@
 """
-src/components/domain_discovery.py — Iteration 5
+src/components/domain_discovery.py — Iteration 6
 University of Hildesheim
 
 Fixes: FIX-1 seed prompt implicit subsystems, FIX-2 plain-language probes,

@@ -1,5 +1,5 @@
 """
-src/components/requirement_extractor.py — Iteration 8
+src/components/requirement_extractor.py — Iteration 6
 University of Hildesheim
 
 IT8: Added <SECTION id="X.Y"> tag parsing for Phase 4 narrative section content.
