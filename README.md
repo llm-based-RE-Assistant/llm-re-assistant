@@ -200,58 +200,50 @@ Edit `src/elicitation/elicitation_engine.py`:
 
 ## Troubleshooting
 
-### Ollama Connection Error
-```
-Error: I'm having trouble connecting to the language model
-```
-**Solution:** Ensure Ollama is running (`ollama serve`) and Llama 3.1 is pulled
+**NFR gate does not clear after giving one answer per category**
+This is expected behaviour in Iteration 6. `MIN_NFR_PER_CATEGORY` is now 2. The `🔶` icon in the coverage panel indicates a category has some coverage but is below threshold. The depth probe will ask for a specific measurable follow-up.
 
-### Port Already in Use
-```
-Error: Address already in use
-```
-**Solution:** Change port in `app.py` line 146:
-```python
-app.run(host='0.0.0.0', port=5001, debug=True)  # Changed from 5000
-```
+**Phase 4 questions appear after I said "I think that covers it"**
+This is correct. The `ROLE_BLOCK` instructs the assistant not to agree with session-closing phrases while a `⛔ HARD STOP` is active. Phase 4 must complete all 8 sections before the SRS offer is made.
 
-### Empty Responses
-```
-Assistant returns empty or generic responses
-```
-**Solution:** Check Ollama model is loaded correctly:
+**`srs_ready` stays `false` after all NFRs appear green**
+Check the Phase 4 section progress panel. `is_ready_for_srs()` now also requires `len(phase4_sections_covered) >= len(PHASE4_SECTIONS)`. The panel shows which sections are still `⬜`.
+
+**`<SECTION>` tags missing from assistant responses**
+The LLM did not emit the tag after the Phase 4 answer. This can happen if the answer was very short and the follow-up path was taken. Verify that `prompt_architect.py` is Iteration 6 (check for the `<SECTION id="...">` format rule in `TASK_BLOCK`) and that the provider is reachable.
+
+**Conversation keeps asking the same question**
+See Iteration 5 `FIX-LOOP`. If it recurs, confirm `conversation_manager.py` is Iteration 5+ and restart the server.
+
+**Probe questions contain technical jargon**
+See Iteration 5 `FIX-JARGON`. Ensure `domain_discovery.py` is current and the provider is reachable (probe generation falls back to a template string on API failure).
+
+**SRS §2.x sections are empty despite Phase 4 completing**
+`srs_coverage.py` acts as a fallback for sections not covered by Phase 4 tags. If both Phase 4 content and `srs_coverage.py` are missing, verify the provider is reachable at finalisation and that `srs_coverage.py` exists in `src/components/`.
+
+**Ollama connection error**
+Verify `OLLAMA_API_KEY` is set and the university VPN is active if required.
+
+**OpenAI authentication error**
+Verify `OPENAI_API_KEY` is set and has sufficient quota.
+
+**Port already in use**
+
 ```bash
-ollama list
-ollama ps  # Shows running models
+python app.py --port 5001
 ```
+
+---
 
 ## Research Foundation
 
-This implementation is based on systematic literature review findings:
+Iteration 6 addresses three failure modes identified in the Iteration-5 post-mortem:
 
-- **Conversational Elicitation**: Papers [2][4][28]
-- **4W Analysis**: Paper [31]
-- **Ambiguity Detection**: Paper [29]
-- **Chain-of-Thought Prompting**: Paper [26]
-- **IEEE-830 Standard**: Paper [31]
+- **`IT6-NFR-DEPTH`** closes a gating loophole where one vague requirement was sufficient to satisfy a mandatory NFR category. Raising `MIN_NFR_PER_CATEGORY` to 2 and adding a depth probe forces the assistant to elicit at least one measurable follow-up per category.
+- **`IT6-PHASE4`** addresses the persistent gap between high domain/NFR coverage scores and low SRS structural completeness. By making Phase 4 a hard gate before the SRS offer, all eight narrative IEEE-830 sections are explicitly elicited from the stakeholder rather than inferred or left empty.
+- **`IT6-VOLERE`** removes conceptual ambiguity introduced by mixing two incompatible standards. All artefacts now use IEEE 830-1998 exclusively, ensuring consistent section numbering and terminology across prompts, state, and output documents.
 
-## Future Work (Next Phases)
-
-**Iteration 1 - Phase 2:**
-- Enhanced completeness checking with automated gap detection
-- UML diagram generation (sequence/deployment diagrams)
-- Multi-stakeholder support
-- Traceability links
-
-**Iteration 2:**
-- Advanced verification (consistency checking, conflict detection)
-- Integration with requirements management tools
-- RAG with domain-specific knowledge bases
-
-**Iteration 3:**
-- Multi-agent collaboration
-- Real-time validation during elicitation
-- Extended IEEE-830 compliance checking
+---
 
 ## License
 

@@ -2,7 +2,7 @@
 src/components/conversation_manager.py — Iteration 6
 University of Hildesheim
 
-IT8: extract_sections() called on every turn to capture <SECTION> tags from
+IT6: extract_sections() called on every turn to capture <SECTION> tags from
      Phase 4 responses. Sections stored in state.srs_section_content.
      srs_coverage.enrich() now reads state.srs_section_content consumer-first.
 FIX-LOOP  Duplicate turn detection — if user message is >80% similar to

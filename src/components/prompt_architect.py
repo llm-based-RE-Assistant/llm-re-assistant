@@ -2,13 +2,13 @@
 src/components/prompt_architect.py — Iteration 6
 University of Hildesheim
 
-IT8-VOLERE      Volere removed. IEEE-830 only throughout.
-IT8-NFR-DEPTH   MIN_NFR_PER_CATEGORY = 2. Phase 3 hard stop now shows per-category
+IT6-VOLERE      Volere removed. IEEE-830 only throughout.
+IT6-NFR-DEPTH   MIN_NFR_PER_CATEGORY = 2. Phase 3 hard stop now shows per-category
                 count vs threshold and demands measurable follow-up until 2 reached.
-IT8-PHASE4      PHASE4_SECTIONS defined. _build_context_block() emits Phase 4
+IT6-PHASE4      PHASE4_SECTIONS defined. _build_context_block() emits Phase 4
                 hard stop after NFRs complete, covering narrative sections one by one.
                 TASK_BLOCK updated with <SECTION> tag format rule.
-IT8-SRS-GATE    SRS offer only after Phase 4 complete (all sections covered).
+IT6-SRS-GATE    SRS offer only after Phase 4 complete (all sections covered).
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
