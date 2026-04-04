@@ -1,14 +1,16 @@
 """
-src/components/conversation_manager.py — Iteration 5
+src/components/conversation_manager.py — Iteration 8
 University of Hildesheim
 
-Fixes:
-  FIX-LOOP  Duplicate turn detection — if user message is >80% similar to
-            a previous turn, skip reprocessing and force move to next domain.
-  FIX-MATCH Use LLM-based domain matching instead of substring.
-  FIX-NFR   is_ready_for_srs() now requires ALL 6 mandatory NFRs.
-  FIX-DEDUP Decomposed reqs checked for semantic overlap before adding.
-  FIX-CAP   Limit decomposition to max 3 domains per turn to avoid latency.
+IT8: extract_sections() called on every turn to capture <SECTION> tags from
+     Phase 4 responses. Sections stored in state.srs_section_content.
+     srs_coverage.enrich() now reads state.srs_section_content consumer-first.
+FIX-LOOP  Duplicate turn detection — if user message is >80% similar to
+          a previous turn, skip reprocessing and force move to next domain.
+FIX-MATCH Use LLM-based domain matching instead of substring.
+FIX-NFR   is_ready_for_srs() now requires ALL 6 mandatory NFRs at depth >= 2.
+FIX-DEDUP Decomposed reqs checked for semantic overlap before adding.
+FIX-CAP   Limit decomposition to max 3 domains per turn to avoid latency.
 """
 from __future__ import annotations
 import json,os,sys,time,uuid
@@ -21,7 +23,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).parent))
 
 from conversation_state import ConversationState, RequirementType, create_session
-from prompt_architect import PromptArchitect, IEEE830_CATEGORIES
+from prompt_architect import PromptArchitect, IEEE830_CATEGORIES, PHASE4_SECTIONS
 from srs_template import SRSTemplate, create_template
 from srs_formatter import SRSFormatter, generate_srs_document
 from requirement_extractor import RequirementExtractor, create_extractor
@@ -144,8 +146,9 @@ def _message_similarity(a: str, b: str) -> float:
 @dataclass
 class ConversationManager:
     provider: LLMProvider
-    log_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent/"logs")
-    output_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent/"output")
+    log_dir: Path = field(default_factory=lambda: Path(__file__).parent / "logs")
+    output_dir: Path = field(default_factory=lambda: Path(__file__).parent / "output")
+    
     temperature: float = 0.0
     gap_enabled: bool = True
 
@@ -214,6 +217,16 @@ class ConversationManager:
 
         # 4a. Extract requirements
         extracted = self._extractor.extract(assistant_response)
+
+        # IT8-PHASE4: extract <SECTION> tags from Phase 4 responses
+        sections_found = self._extractor.extract_sections(assistant_response)
+        if sections_found:
+            stored_ids = self._extractor.commit_sections(sections_found, state)
+            if stored_ids:
+                logger.log_event("phase4_sections_stored", {
+                    "sections": stored_ids,
+                    "phase4_progress": f"{len(state.phase4_sections_covered)}/{len(PHASE4_SECTIONS)}"
+                })
 
         if extracted and self._domain_discovery and state.domain_gate:
             # 4b. FIX-MATCH: LLM-based domain matching
@@ -365,14 +378,21 @@ class ConversationManager:
         enricher = create_enricher(provider=self.provider)
         filled_sections = enricher.enrich(self._srs_template, state)
  
-        # Log which sections were filled and at what risk tier
+        # Log which sections were filled and from what source (phase4 / llm_synthesis / stub)
         if filled_sections:
+            phase4_count = sum(1 for s in filled_sections.values() if s == "phase4")
+            llm_count = sum(1 for s in filled_sections.values() if s == "llm_synthesis")
+            stub_count = sum(1 for s in filled_sections.values() if s == "stub")
             logger.log_event("srs_coverage_fill", {
                 "sections_filled": list(filled_sections.keys()),
-                "risk_tiers": filled_sections,
+                "sources": filled_sections,
+                "phase4_sections": phase4_count,
+                "llm_synthesis_sections": llm_count,
+                "stub_sections": stub_count,
             })
             print(f"[SRS Coverage] Filled {len(filled_sections)} sections: "
-                  f"{', '.join(filled_sections.keys())}")
+                  f"{phase4_count} from Phase 4 customer answers, "
+                  f"{llm_count} LLM synthesis, {stub_count} stubs.")
  
         # Step 3: write the document (unchanged)
         srs_path = generate_srs_document(

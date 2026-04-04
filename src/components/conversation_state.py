@@ -1,8 +1,13 @@
 """
-src/components/conversation_state.py — Iteration 5
+src/components/conversation_state.py — Iteration 8
 University of Hildesheim
 
-FIX-NFR: is_ready_for_srs() now ALWAYS requires mandatory_nfrs_covered.
+Changes:
+  IT8-NFR-DEPTH   mandatory_nfrs_covered now requires MIN_NFR_PER_CATEGORY (2)
+                  per NFR sub-category, not just >= 1.
+  IT8-PHASE4      Added srs_section_content dict and phase4_sections_covered set.
+                  is_ready_for_srs() now also requires Phase 4 complete.
+  IT8-VOLERE      All Volere references removed. IEEE-830 only.
 """
 from __future__ import annotations
 import json, re, time
@@ -67,9 +72,22 @@ class ConversationState:
     nfr_coverage: dict[str, int] = field(default_factory=dict)
     session_complete: bool = False
     project_name_needs_llm: bool = field(default=False, repr=False)
+    # IT8-PHASE4: narrative SRS sections populated during Phase 4 conversation
+    # Keys are IEEE-830 section IDs e.g. "1.2", "2.1", "2.3", "3.1.1" etc.
+    srs_section_content: dict[str, str] = field(default_factory=dict)
+    # IT8-PHASE4: tracks which Phase 4 sections have been asked about
+    phase4_sections_covered: set = field(default_factory=set)
     _fr_counter: int = field(default=0, repr=False)
     _nfr_counter: int = field(default=0, repr=False)
     _con_counter: int = field(default=0, repr=False)
+
+    def __post_init__(self):
+        # IT8: Ensure new fields exist even on instances deserialized/created
+        # before this version (e.g. sessions already in memory when server reloads).
+        if not hasattr(self, 'srs_section_content') or self.srs_section_content is None:
+            self.srs_section_content = {}
+        if not hasattr(self, 'phase4_sections_covered') or self.phase4_sections_covered is None:
+            self.phase4_sections_covered = set()
 
     @property
     def turn_count(self): return len(self.turns)
@@ -87,13 +105,14 @@ class ConversationState:
 
     @property
     def covered_categories(self):
+        from prompt_architect import MIN_NFR_PER_CATEGORY
         covered = set()
         try:
             from domain_discovery import compute_structural_coverage
             covered |= compute_structural_coverage(self)
         except ImportError: pass
         for ck, cnt in self.nfr_coverage.items():
-            if cnt >= 1: covered.add(ck)
+            if cnt >= MIN_NFR_PER_CATEGORY: covered.add(ck)
         return covered
 
     @property
@@ -105,7 +124,8 @@ class ConversationState:
     @property
     def mandatory_nfrs_covered(self):
         from domain_discovery import NFR_CATEGORIES
-        return all(self.nfr_coverage.get(c,0)>=1 for c in NFR_CATEGORIES)
+        from prompt_architect import MIN_NFR_PER_CATEGORY
+        return all(self.nfr_coverage.get(c, 0) >= MIN_NFR_PER_CATEGORY for c in NFR_CATEGORIES)
 
     @property
     def uncovered_categories(self):
@@ -150,17 +170,21 @@ class ConversationState:
         self.nfr_coverage[category_key] = self.nfr_coverage.get(category_key,0)+1
 
     def get_coverage_report(self):
-        from prompt_architect import IEEE830_CATEGORIES
+        from prompt_architect import IEEE830_CATEGORIES, MIN_NFR_PER_CATEGORY, PHASE4_SECTIONS
         from domain_discovery import NFR_CATEGORIES
         covered = self.covered_categories
+        # NFR depth: show per-category count vs threshold
         missing_nfrs = [IEEE830_CATEGORIES.get(c,c) for c in NFR_CATEGORIES
-                        if self.nfr_coverage.get(c,0)<1]
+                        if self.nfr_coverage.get(c,0) < MIN_NFR_PER_CATEGORY]
+        nfr_depth = {c: self.nfr_coverage.get(c,0) for c in NFR_CATEGORIES}
         dg = {}; dcs = "0/0"; dcp = 0; dgs = False
         if self.domain_gate:
             dg = self.domain_gate.to_dict()
             dcs = f"{self.domain_gate.done_count}/{self.domain_gate.total}"
             dcp = self.domain_gate.completeness_pct
             dgs = self.domain_gate.is_satisfied
+        phase4_total = len(PHASE4_SECTIONS)
+        phase4_done = len(self.phase4_sections_covered)
         return {
             "session_id":self.session_id,"project_name":self.project_name,
             "turn_count":self.turn_count,"total_requirements":self.total_requirements,
@@ -173,23 +197,30 @@ class ConversationState:
             "mandatory_nfrs_covered":self.mandatory_nfrs_covered,
             "missing_mandatory_nfrs":missing_nfrs,
             "nfr_coverage":dict(self.nfr_coverage),
+            "nfr_depth":nfr_depth,
+            "nfr_min_threshold": MIN_NFR_PER_CATEGORY,
+            "phase4_sections_covered": sorted(self.phase4_sections_covered),
+            "phase4_progress": f"{phase4_done}/{phase4_total}",
+            "phase4_complete": phase4_done >= phase4_total,
             "domain_gate":dg,"domain_completeness_score":dcs,
             "domain_completeness_pct":dcp,"domain_gate_satisfied":dgs,
         }
 
     def get_next_priority_category(self):
         from domain_discovery import NFR_CATEGORIES
+        from prompt_architect import MIN_NFR_PER_CATEGORY
         for c in NFR_CATEGORIES:
-            if self.nfr_coverage.get(c,0)<1: return c
+            if self.nfr_coverage.get(c, 0) < MIN_NFR_PER_CATEGORY: return c
         return None
 
-    # FIX-NFR: ALWAYS require mandatory NFRs before SRS
+    # IT8: SRS requires FRs + mandatory NFRs (depth >=2) + domain gate + Phase 4 complete
     def is_ready_for_srs(self):
-        from prompt_architect import MIN_FUNCTIONAL_REQS
+        from prompt_architect import MIN_FUNCTIONAL_REQS, PHASE4_SECTIONS
         if self.functional_count < MIN_FUNCTIONAL_REQS: return False
         if not self.mandatory_nfrs_covered: return False
         if self.domain_gate and self.domain_gate.seeded:
-            return self.domain_gate.is_satisfied
+            if not self.domain_gate.is_satisfied: return False
+        if len(self.phase4_sections_covered) < len(PHASE4_SECTIONS): return False
         return True
 
     def to_dict(self):
@@ -198,6 +229,8 @@ class ConversationState:
                 "turns":[t.to_dict() for t in self.turns],
                 "requirements":{k:v.to_dict() for k,v in self.requirements.items()},
                 "nfr_coverage":dict(self.nfr_coverage),
+                "srs_section_content":dict(self.srs_section_content),
+                "phase4_sections_covered":sorted(self.phase4_sections_covered),
                 "coverage_report":self.get_coverage_report()}
 
     def to_json(self):

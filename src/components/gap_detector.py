@@ -1,8 +1,16 @@
 """
 src/components/gap_detector.py
 ===============
-RE Assistant — Iteration 5 | University of Hildesheim
+RE Assistant — Iteration 8 | University of Hildesheim
 Requirements Coverage Checklist & Gap Detection Component
+
+IT8 changes
+--------------------------------------
+IT8-VOLERE  All Volere references removed from COVERAGE_CHECKLIST, CategoryGap,
+            and _inject_domain_gate_gaps. IEEE-830 only.
+IT8-NFR     _classify_coverage() for NFR categories now uses MIN_NFR_PER_CATEGORY
+            threshold (2) consistently — partial = count > 0 but < threshold,
+            covered = count >= threshold. Removes old ">= 1 = covered" bypass.
 
 Iteration 6 changes
 --------------------------------------
@@ -36,7 +44,7 @@ class GapSeverity(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# IEEE-830 / Volere unified coverage checklist
+# IEEE-830 coverage checklist (Volere removed — IT8)
 # ---------------------------------------------------------------------------
 
 COVERAGE_CHECKLIST: dict[str, dict] = {
@@ -48,7 +56,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "problem", "solve", "we want", "we need", "the system should",
         ],
         "description": "What problem does the system solve and why does it exist?",
-        "volere_ref":  "Section 1 — The Purpose of the Project",
         "ieee830_ref": "1.1 Purpose",
     },
     "scope": {
@@ -59,7 +66,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "include", "exclude", "not include", "beyond", "within",
         ],
         "description": "What is inside and outside the system boundary?",
-        "volere_ref":  "Section 1 — The Scope of the Work",
         "ieee830_ref": "1.2 Scope",
     },
     "stakeholders": {
@@ -71,8 +77,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "end user", "who will use", "technician", "master user",
         ],
         "description": "Who are the users and stakeholders of the system?",
-        "volere_ref":  "Section 3 — The Client, the Customer, and Other Stakeholders",
-        "ieee830_ref": "2.2 User Classes and Characteristics",
+        "ieee830_ref": "2.3 User Classes and Characteristics",
     },
     "functional": {
         "label":       "Functional Requirements",
@@ -85,8 +90,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "filter", "export", "import", "record", "track", "submit",
         ],
         "description": "What must the system do? Core features and behaviours.",
-        "volere_ref":  "Section 9 — Functional Requirements",
-        "ieee830_ref": "3.1 Functional Requirements",
+        "ieee830_ref": "3.2 Functional Requirements",
         "_use_req_store": True,
     },
     "use_cases": {
@@ -97,8 +101,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "scenario", "workflow", "flow", "step", "sequence", "journey",
         ],
         "description": "How do users interact with the system step-by-step?",
-        "volere_ref":  "Section 9 — Functional Requirements (scenarios)",
-        "ieee830_ref": "3.1 Functional Requirements (scenarios)",
+        "ieee830_ref": "3.2 Functional Requirements (scenarios)",
     },
     "business_rules": {
         "label":       "Business Rules & Constraints",
@@ -109,7 +112,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "must not", "forbidden", "prohibited",
         ],
         "description": "What business rules and legal constraints must the system respect?",
-        "volere_ref":  "Section 15 — Business Rules",
         "ieee830_ref": "2.5 Assumptions and Dependencies",
     },
     "performance": {
@@ -121,8 +123,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "slow", "millisecond", "second", "minute", "benchmark",
         ],
         "description": "How fast must the system respond? What load must it handle?",
-        "volere_ref":  "Section 12 — Performance Requirements",
-        "ieee830_ref": "3.2 Performance Requirements",
+        "ieee830_ref": "3.3 Performance Requirements",
     },
     "usability": {
         "label":       "Usability & Accessibility",
@@ -133,8 +134,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "ux", "user interface", "user experience", "learnability",
         ],
         "description": "How easy must the system be to use? Any accessibility requirements?",
-        "volere_ref":  "Section 11 — Look and Feel Requirements",
-        "ieee830_ref": "3.3 Usability Requirements",
+        "ieee830_ref": "3.5 Usability Requirements",
     },
     "security_privacy": {
         "label":       "Security & Privacy Requirements",
@@ -146,8 +146,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "personal data", "sensitive", "audit", "log", "intrusion",
         ],
         "description": "How must the system protect data and prevent unauthorised access?",
-        "volere_ref":  "Section 13 — Security Requirements",
-        "ieee830_ref": "3.6 Security Requirements",
+        "ieee830_ref": "3.5.3 Security Requirements",
     },
     "reliability": {
         "label":       "Reliability & Availability",
@@ -158,8 +157,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "sla", "service level", "99", "mtbf", "mttr", "resilient",
         ],
         "description": "How reliable must the system be? What happens when it fails?",
-        "volere_ref":  "Section 14 — Reliability Requirements",
-        "ieee830_ref": "3.5 Reliability Requirements",
+        "ieee830_ref": "3.5.1 Reliability Requirements",
     },
     "compatibility": {
         "label":       "Compatibility & Portability",
@@ -170,8 +168,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "integration", "interoperability", "portability", "migrate",
         ],
         "description": "What platforms must the system run on? What must it integrate with?",
-        "volere_ref":  "Section 16 — Portability Requirements",
-        "ieee830_ref": "3.7 Portability Requirements",
+        "ieee830_ref": "3.5.5 Portability Requirements",
     },
     "maintainability": {
         "label":       "Maintainability & Extensibility",
@@ -182,8 +179,7 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "documentation", "code quality", "test", "testable",
         ],
         "description": "How will the system be maintained, updated, and extended over time?",
-        "volere_ref":  "Section 17 — Maintenance Requirements",
-        "ieee830_ref": "3.8 Maintainability Requirements",
+        "ieee830_ref": "3.5.4 Maintainability Requirements",
     },
     "interfaces": {
         "label":       "External Interfaces",
@@ -194,7 +190,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "gateway", "sensor", "device", "hardware", "wireless", "protocol",
         ],
         "description": "What external systems, devices, or APIs must the system interact with?",
-        "volere_ref":  "Section 8 — Interfaces",
         "ieee830_ref": "3.1 External Interface Requirements",
     },
     "constraints": {
@@ -206,7 +201,6 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
             "standard", "regulation", "compliance",
         ],
         "description": "What constraints exist on the design or implementation?",
-        "volere_ref":  "Section 5 — Design Constraints",
         "ieee830_ref": "3.4 Design Constraints",
     },
 }
@@ -222,7 +216,6 @@ class CategoryGap:
     label:        str
     severity:     GapSeverity
     description:  str
-    volere_ref:   str = ""
     ieee830_ref:  str = ""
     is_partial:   bool = False
 
@@ -232,6 +225,7 @@ class CategoryGap:
             "label":        self.label,
             "severity":     self.severity.value,
             "description":  self.description,
+            "ieee830_ref":  self.ieee830_ref,
             "is_partial":   self.is_partial,
         }
 
@@ -339,8 +333,7 @@ class GapDetector:
                     label        = domain.label,
                     severity     = GapSeverity.CRITICAL,
                     description  = probe,
-                    volere_ref   = "Dynamic Domain Gate",
-                    ieee830_ref  = "§3.1 / §3.2 Functional Requirements",
+                    ieee830_ref  = "§3.2 Functional Requirements",
                     is_partial   = (domain.status != "unprobed"),
                 )
                 report.critical_gaps.append(gap)
@@ -369,15 +362,18 @@ class GapDetector:
         state: "ConversationState",
     ) -> str:
         from domain_discovery import NFR_CATEGORIES
+        from prompt_architect import MIN_NFR_PER_CATEGORY
 
-        # Mandatory NFR categories — use requirement-driven signal
+        # IT8: NFR categories — use requirement count vs MIN_NFR_PER_CATEGORY threshold.
+        # partial = at least 1 but below threshold; covered = >= threshold.
+        # This is consistent with how prompt_architect and conversation_state gate them.
         if key in NFR_CATEGORIES:
-            covered = getattr(state, "covered_categories", set())
-            if key in covered:
+            count = state.nfr_coverage.get(key, 0)
+            if count >= MIN_NFR_PER_CATEGORY:
                 return "covered"
-            nfr_cov = getattr(state, "nfr_coverage", {})
-            if nfr_cov.get(key, 0) >= 1:
-                return "covered"
+            elif count >= 1:
+                return "partial"
+            # Fall through to keyword check as last resort
             keywords = spec.get("keywords", [])
             if any(kw in corpus for kw in keywords):
                 return "partial"
@@ -387,7 +383,7 @@ class GapDetector:
         if key == "functional" and spec.get("_use_req_store"):
             return self._classify_functional_coverage(state)
 
-        # structural categories
+        # structural categories — keyword-based + covered_categories set
         covered_cats = getattr(state, "covered_categories", set())
         if key in covered_cats:
             return "covered"
@@ -432,7 +428,6 @@ class GapDetector:
             label        = spec["label"],
             severity     = spec["severity"],
             description  = spec["description"],
-            volere_ref   = spec.get("volere_ref", ""),
             ieee830_ref  = spec.get("ieee830_ref", ""),
             is_partial   = is_partial,
         )

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RE Assistant — Iteration 5</title>
+    <title>RE Assistant — Iteration 8</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
@@ -883,9 +883,9 @@
           <div class="start-card">
             <h1>Requirements Engineering Assistant</h1>
             <p>
-              An AI-powered elicitation tool that detects missing requirements
-              and proactively asks follow-up questions based on IEEE-830 &amp;
-              Volere standards.
+              An AI-powered elicitation tool that conducts structured
+              stakeholder interviews and generates complete IEEE-830 Software
+              Requirements Specifications.
             </p>
             <div class="toggle-row">
               <label class="toggle">
@@ -895,7 +895,7 @@
               <span
                 >Gap Detection + Dynamic Domain Gate
                 <span style="color: var(--text-muted); font-size: 11px"
-                  >(Iteration 5)</span
+                  >(Iteration 8)</span
                 ></span
               >
             </div>
@@ -1055,14 +1055,6 @@
 
       /* ── Generate SRS ───────────────────────────────────────────────────── */
       async function generateSRS() {
-        //disable button and show loading state and also show toast notification that generation has started
-        if (!sessionId) return;
-        const btn = document.querySelector(".srs-banner .btn-dl");
-        showtoast("SRS generation started. This may take a moment…");
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = "Generating…";
-        }
         const r = await fetch(`${API}/api/session/generate_srs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
