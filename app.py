@@ -32,11 +32,8 @@ Run
 """
 
 from __future__ import annotations
-
 import sys
-import time
 from pathlib import Path
-
 import streamlit as st
 
 # ---------------------------------------------------------------------------
@@ -48,15 +45,11 @@ if str(_SRC) not in sys.path:
 
 from src.components.conversation_manager import (
     ConversationManager,
-    OllamaProvider,
-    OpenAIProvider,
     SessionLogger,
-    StubProvider,
     create_provider,
 )
 from src.components.conversation_state import ConversationState
 from src.components.prompt_architect import IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES
-from src.components.srs_formatter import generate_srs_document
 from src.components.srs_template import SRSTemplate
 
 # ---------------------------------------------------------------------------
@@ -72,8 +65,8 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-_OUTPUT_DIR = _SRC.parent / "output"
-_LOG_DIR    = _SRC.parent / "logs"
+_OUTPUT_DIR = _SRC / "output"
+_LOG_DIR    = _SRC / "logs"
 
 _OPENING_MESSAGE = (
     "Hello! I'm your Requirements Engineering assistant. "
