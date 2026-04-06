@@ -46,168 +46,13 @@ MANDATORY_NFR_CATEGORIES: frozenset[str] = frozenset({
 # Minimum distinct FRs before NFR deep-dive is allowed
 MIN_FUNCTIONAL_REQS = 5
 
-
-# ---------------------------------------------------------------------------
-# PRIORITY 1 & 3 — Domain Coverage Gate
-# ---------------------------------------------------------------------------
-# Eight canonical functional domains that any home-automation (or general
-# system) will have in some form. The elicitation session must explicitly
-# CONFIRM or EXCLUDE each domain before SRS generation is permitted.
-#
-# Each entry fields:
-#   label           — human-readable domain name (shown in context block)
-#   detection_kw    — keywords that signal this domain has been discussed
-#   exclusion_kw    — phrases indicating user explicitly excluded this domain
-#   fallback_probe  — plain-language question for when domain is unprobed
-#                     (deliberately non-technical; works for any stakeholder)
-
-DOMAIN_COVERAGE_GATE: dict[str, dict] = {
-
-    "climate_control": {
-        "label": "Climate Control (temperature & humidity)",
-        "detection_kw": [
-            "temperature", "thermostat", "humidity", "humidistat", "hvac",
-            "heating", "cooling", "furnace", "ac", "air condition",
-            "warm", "cold", "damp", "mold", "dehumidif", "humid",
-        ],
-        "exclusion_kw": ["no temperature", "not temperature", "ignore temperature"],
-        "fallback_probe": (
-            "You mentioned temperature and humidity concerns — "
-            "can you walk me through exactly what you'd want to do with them? "
-            "For example, would you want to just see the readings, set a target level, "
-            "or have the system automatically maintain a level?"
-        ),
-    },
-
-    "security_alarm": {
-        "label": "Security & Alarm System (doors, windows, intrusion)",
-        "detection_kw": [
-            "security", "alarm", "door", "window", "lock", "sensor",
-            "intrusion", "breach", "motion", "contact", "break-in",
-            "safe", "alert", "siren", "panic", "basement door",
-            "unlocked", "left open",
-        ],
-        "exclusion_kw": [
-            "no security system", "no alarm", "don't need alarm",
-            "not doing security", "skip security",
-        ],
-        "fallback_probe": (
-            "You mentioned worrying about the house when you're travelling — "
-            "do you want the system to monitor whether doors or windows are left open, "
-            "or trigger some kind of alert if something looks wrong?"
-        ),
-    },
-
-    "appliance_lighting": {
-        "label": "Appliance & Lighting Control",
-        "detection_kw": [
-            "appliance", "light", "lighting", "lamp", "switch", "plug",
-            "outlet", "power", "turn on", "turn off", "small device",
-            "fan", "left on", "forgot", "lights on",
-        ],
-        "exclusion_kw": [
-            "no appliance", "don't care about lights",
-            "not worried about appliances", "skip lights",
-        ],
-        "fallback_probe": (
-            "You mentioned worrying about lights being left on — "
-            "would you want the system to show you which lights or appliances "
-            "are on, and let you turn them off remotely if needed?"
-        ),
-    },
-
-    "scheduling_planning": {
-        "label": "Scheduling & Automation Plans",
-        "detection_kw": [
-            "schedule", "scheduling", "timer", "plan", "preset", "program",
-            "time period", "daily", "weekly", "routine", "automatic",
-            "vacation mode", "away mode", "holiday", "when i'm gone",
-            "set it and forget", "profile", "going away",
-        ],
-        "exclusion_kw": [
-            "no schedule", "no automation", "no timer", "manual only",
-            "don't want automatic",
-        ],
-        "fallback_probe": (
-            "Do you ever want the system to follow a routine automatically — "
-            "like setting the heat lower at night, or switching to a lower-energy "
-            "mode when the family goes on vacation?"
-        ),
-    },
-
-    "remote_access": {
-        "label": "Remote Access & Mobile Interface",
-        "detection_kw": [
-            "remote", "app", "mobile", "phone", "cell", "tablet", "web",
-            "browser", "from anywhere", "from the airport", "travelling",
-            "away from home", "check on", "monitor from", "access from",
-            "notification", "push alert", "sms", "email alert",
-        ],
-        "exclusion_kw": ["no app", "no remote", "local only", "no mobile"],
-        "fallback_probe": (
-            "You mentioned checking on the house from the airport — "
-            "how exactly would you want to do that? "
-            "Through a phone app, a website, or something else?"
-        ),
-    },
-
-    "user_management": {
-        "label": "User Accounts & Access Roles",
-        "detection_kw": [
-            "user", "account", "login", "log in", "password", "role",
-            "admin", "administrator", "permission", "access", "who can",
-            "family member", "husband", "mother-in-law", "technician",
-            "guest", "temporary access", "authorize", "just me",
-        ],
-        "exclusion_kw": ["no accounts", "single user", "no roles"],
-        "fallback_probe": (
-            "Who should be able to use this system, and should different people "
-            "have different levels of access? For example, should your kids, "
-            "your mother-in-law, or a visiting HVAC technician see the same things you do?"
-        ),
-    },
-
-    "reporting_history": {
-        "label": "Historical Data, Reports & Logs",
-        "detection_kw": [
-            "report", "history", "historical", "log", "record", "past",
-            "trend", "graph", "chart", "data over time", "monthly",
-            "store data", "archive", "audit", "review",
-            "what happened", "show me the data", "previous",
-        ],
-        "exclusion_kw": [
-            "no history", "no reports", "no logs", "don't need data",
-            "real-time only",
-        ],
-        "fallback_probe": (
-            "Would it be useful to look back at past temperature or humidity readings — "
-            "for example, to see what happened last month, or to show your HVAC technician "
-            "the humidity history so he can check if the dehumidifier is working?"
-        ),
-    },
-
-    "hardware_connectivity": {
-        "label": "Hardware Devices & System Connectivity",
-        "detection_kw": [
-            "sensor", "device", "gateway", "hub", "wireless", "wi-fi",
-            "wifi", "broadband", "internet", "router", "cable",
-            "detector", "controller", "hardware", "install",
-            "physical", "plug in", "connect", "range", "signal",
-        ],
-        "exclusion_kw": ["software only", "no hardware", "not physical"],
-        "fallback_probe": (
-            "How does the system actually connect to things like your thermostats "
-            "and humidity sensors — is there a central hub device that talks to "
-            "everything, or would each sensor connect to your home Wi-Fi separately?"
-        ),
-    },
-}
-
 # Domain status constants
 DOMAIN_STATUS_CONFIRMED = "confirmed"
 DOMAIN_STATUS_PARTIAL   = "partial"
 DOMAIN_STATUS_UNPROBED  = "unprobed"
 DOMAIN_STATUS_EXCLUDED  = "excluded"
+
+DOMAIN_COVERAGE_GATE: dict[str, dict] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -306,7 +151,7 @@ RULE 3 — PROBE BEFORE PROGRESSING:
 Ask one deep-dive follow-up on a topic before moving to the next domain.
 
 RULE 4 — CHALLENGE VAGUE ADJECTIVES:
-"Fast", "secure", "simple" must be given measurable definitions.
+"Fast", "secure", "simple" or such words must be given measurable definitions.
 
 RULE 5 — THE SATURATION PRINCIPLE:
 Do not leave Phase 2 until ALL domains are CONFIRMED or EXCLUDED.
@@ -341,27 +186,164 @@ to control things automatically" or "that feels like a lot"), you MUST:
 CRITICAL: Never silently drop a feature area. Every downscoped feature must
 be either explicitly excluded (constraint tag) or deferred (note).
 This rule overrides any tendency to accept vague hesitation as exclusion.
-
-═══════════════════════════════════════════════════════════
-DOMAIN COVERAGE GATE — MANDATORY CLOSURE CHECKLIST
-═══════════════════════════════════════════════════════════
-(Live status is shown in the Context block above.)
-
-SRS generation is BLOCKED until ALL 8 domains are ✅ CONFIRMED or ❌ EXCLUDED:
-
-  1. Climate Control         — temperature & humidity management
-  2. Security & Alarm        — doors, windows, intrusion detection
-  3. Appliance & Lighting    — remote on/off, state monitoring
-  4. Scheduling & Plans      — routines, presets, away modes
-  5. Remote Access           — how users interact remotely (app/web)
-  6. User Accounts & Roles   — who can access what
-  7. Historical Data & Logs  — data storage, reporting, history
-  8. Hardware Connectivity   — sensors, hubs, network infrastructure
-
-If any domain shows ⬜ UNPROBED or 🔶 PARTIAL:
-  → "Before I generate the SRS, I still need to ask about [domain].
-     [Use the Fallback Probe shown in the Context block.]"
 """
+
+
+# ---------------------------------------------------------------------------
+# Domain gate generation and update (Dynamic LLM-based)
+# ---------------------------------------------------------------------------
+
+def generate_domain_gate_from_llm(
+    first_user_message: str,
+    project_context: str,
+    llm_provider,
+) -> dict[str, dict]:
+    """
+    After first user message, call LLM to generate initial domain gate.
+    
+    Args:
+        first_user_message: The user's first message describing the project
+        project_context: Brief project context extracted from the message
+        llm_provider: LLM provider to call
+    
+    Returns:
+        Dictionary of domain → {label, detection_kw, exclusion_kw, fallback_probe}
+    """
+    system_prompt = """\
+You are an expert Requirements Engineer generating domain categories for elicitation.
+Based on the project description, generate 5-8 domain/feature areas that need to be explored.
+
+For EACH domain, return VALID JSON with this exact structure:
+{
+  "domain_key": {
+    "label": "Human-readable domain name",
+    "detection_kw": ["keyword1", "keyword2", ...],
+    "exclusion_kw": ["exclusion1", ...],
+    "fallback_probe": "A question to ask if this domain hasn't been discussed"
+  }
+}
+
+Detection keywords should be terms likely to appear if the domain is mentioned.
+Exclusion keywords are phrases that clearly exclude the domain from scope.
+Keep keywords lowercase and concise.
+Keep the fallback_probe as a single, clear question.
+"""
+    
+    user_prompt = f"""\
+Project Name: {project_context}
+Project description: {first_user_message}
+
+Generate 5-8 domain/feature areas relevant to this project.
+Return ONLY valid JSON, no markdown, no explanations.
+"""
+    
+    try:
+        response = llm_provider.chat(
+            system_message=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+            temperature=0.3,
+        )
+        
+        # Parse JSON response
+        import json
+        import re
+        
+        # Extract JSON from response (handle markdown code blocks)
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            parsed = json.loads(json_str)
+            # Merge with defaults and return
+            merge_gate = dict(DOMAIN_COVERAGE_GATE)
+            for key, spec in parsed.items():
+                if all(k in spec for k in ["label", "detection_kw", "exclusion_kw", "fallback_probe"]):
+                    merge_gate[key] = spec
+            return merge_gate
+    except Exception as e:
+        print(f"Warning: Failed to generate domain gate from LLM: {e}")
+    
+    # Fallback to default
+    return dict(DOMAIN_COVERAGE_GATE)
+
+
+def expand_domain_gate_from_llm(
+    current_gate: dict[str, dict],
+    conversation_corpus: str,
+    requirements_texts: list[str],
+    llm_provider,
+) -> dict[str, dict]:
+    """
+    After turn 5, call LLM to evaluate if additional domains should be added.
+    
+    Args:
+        current_gate: Current domain gate dictionary
+        conversation_corpus: Full conversation text so far
+        requirements_texts: List of extracted requirement texts
+        llm_provider: LLM provider to call
+    
+    Returns:
+        Updated domain gate with potentially new domains
+    """
+    current_labels = ", ".join(f"• {spec['label']}" for spec in current_gate.values())
+    
+    system_prompt = """\
+You are an expert Requirements Engineer analyzing an elicitation conversation.
+Review the current domains and conversation, then suggest if additional domain areas should be added.
+
+Response format - return ONLY valid JSON:
+{
+  "should_expand": true/false,
+  "new_domains": {
+    "domain_key": {
+      "label": "Domain name",
+      "detection_kw": ["kw1", "kw2"],
+      "exclusion_kw": ["excl1"],
+      "fallback_probe": "Question to ask"
+    }
+  }
+}
+"""
+    
+    user_prompt = f"""\
+Current domains:
+{current_labels}
+
+Conversation excerpt (first 5 turns):
+{conversation_corpus[:2000]}
+
+Extracted requirements so far:
+{'; '.join(requirements_texts[:10]) if requirements_texts else '(none yet)'}
+
+Based on this, should we add any new domain areas not yet covered? 
+Return only JSON response, no explanations.
+"""
+    
+    try:
+        response = llm_provider.chat(
+            system_message=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+            temperature=0.3,
+        )
+        
+        import json
+        import re
+        
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            parsed = json.loads(json_str)
+            
+            if parsed.get("should_expand") and parsed.get("new_domains"):
+                updated_gate = dict(current_gate)
+                for key, spec in parsed["new_domains"].items():
+                    if all(k in spec for k in ["label", "detection_kw", "exclusion_kw", "fallback_probe"]):
+                        updated_gate[key] = spec
+                return updated_gate
+    except Exception as e:
+        print(f"Warning: Failed to expand domain gate from LLM: {e}")
+    
+    # Return unchanged if expansion fails
+    return current_gate
 
 
 # ---------------------------------------------------------------------------
@@ -409,9 +391,9 @@ def _assess_domain_status(
         return DOMAIN_STATUS_UNPROBED
 
 
-def compute_domain_gate(state: "ConversationState") -> dict[str, str]:
+def compute_domain_gate(state: "ConversationState", domain_gate: dict[str, dict]) -> dict[str, str]:
     """
-    Compute the current status of all 8 domain gate entries.
+    Compute the current status of all domain gate entries.
     Returns dict: domain_key → status string.
     Called by _build_context_block() every turn and by SRSFormatter (Priority 4).
     """
@@ -422,11 +404,11 @@ def compute_domain_gate(state: "ConversationState") -> dict[str, str]:
     corpus = " ".join(parts)
 
     req_texts = [r.text for r in state.requirements.values()]
-
-    return {
-        key: _assess_domain_status(key, spec, corpus, req_texts)
-        for key, spec in DOMAIN_COVERAGE_GATE.items()
-    }
+    status_dict = {}
+    for key, spec in domain_gate.items():
+        status = _assess_domain_status(key, spec, corpus, req_texts)
+        status_dict[key] = status
+    return status_dict
 
 
 def domain_gate_completeness(gate_status: dict[str, str]) -> tuple[int, int]:
@@ -435,7 +417,7 @@ def domain_gate_completeness(gate_status: dict[str, str]) -> tuple[int, int]:
         1 for s in gate_status.values()
         if s in (DOMAIN_STATUS_CONFIRMED, DOMAIN_STATUS_EXCLUDED)
     )
-    return done, len(DOMAIN_COVERAGE_GATE)
+    return done, len(gate_status)
 
 
 def gate_is_satisfied(gate_status: dict[str, str]) -> bool:
@@ -458,149 +440,6 @@ _DOMAIN_STATUS_ICONS = {
 }
 
 
-def _build_context_block(state: "ConversationState") -> str:
-    """
-    Compose the dynamic context block injected into every system message.
-
-    Sections:
-      1. Turn / requirement counters
-      2. Phase indicator
-      3. Domain Coverage Gate status table (Priority 1, 3, 5)
-      4. IEEE-830 category coverage
-      5. FR deficit / mandatory NFR alerts
-    """
-
-    # ── 1. Counters ────────────────────────────────────────────────────────
-    turn_info = (
-        f"Turn: {state.turn_count}  |  "
-        f"Requirements: {state.total_requirements}  "
-        f"(FR: {state.functional_count}, NFR: {state.nonfunctional_count})"
-    )
-
-    # ── 2. Phase indicator ─────────────────────────────────────────────────
-    if state.functional_count < MIN_FUNCTIONAL_REQS:
-        phase_indicator = (
-            f"CURRENT PHASE: Phase 2 — Functional (Domain Coverage)\n"
-            f"  FRs: {state.functional_count}/{MIN_FUNCTIONAL_REQS} minimum\n"
-            f"  ➜ Use the next UNPROBED domain probe question below."
-        )
-    else:
-        nfr_missing = [
-            cat for cat in MANDATORY_NFR_CATEGORIES
-            if cat not in state.covered_categories
-        ]
-        if nfr_missing:
-            phase_indicator = (
-                f"CURRENT PHASE: Phase 3 — Non-Functional Requirements\n"
-                f"  FRs: {state.functional_count} ✓\n"
-                f"  ➜ Missing NFRs: "
-                + ", ".join(IEEE830_CATEGORIES[c] for c in nfr_missing)
-            )
-        else:
-            phase_indicator = (
-                "CURRENT PHASE: Phase 4 — Constraints & Closure\n"
-                "  All mandatory NFRs addressed.\n"
-                "  ➜ Verify Domain Gate below, then offer SRS if gate is satisfied."
-            )
-
-    # ── 3. Domain Coverage Gate (Priority 1, 3, 5) ─────────────────────────
-    gate_status = compute_domain_gate(state)
-    done_count, total_count = domain_gate_completeness(gate_status)
-    domain_pct = round(done_count / total_count * 100)
-
-    gate_lines = [
-        f"━━━ DOMAIN COVERAGE GATE  [{done_count}/{total_count} — {domain_pct}%] ━━━",
-        "  ✅ Confirmed  🔶 Partial  ⬜ Unprobed  ❌ Excluded",
-        "",
-    ]
-
-    next_probe_domain: tuple[str, str] | None = None
-
-    for key, spec in DOMAIN_COVERAGE_GATE.items():
-        status = gate_status[key]
-        icon   = _DOMAIN_STATUS_ICONS[status]
-        label  = spec["label"]
-        gate_lines.append(f"  {icon}  {label}")
-
-        if status in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL):
-            gate_lines.append(
-                f"      ↳ Probe: \"{spec['fallback_probe']}\""
-            )
-            if status == DOMAIN_STATUS_UNPROBED and next_probe_domain is None:
-                next_probe_domain = (label, spec["fallback_probe"])
-
-    gate_lines.append("")
-
-    if not gate_is_satisfied(gate_status):
-        gate_lines.append(
-            "⚠️  GATE NOT SATISFIED — Do NOT offer SRS generation yet."
-        )
-        if next_probe_domain:
-            gate_lines.append(
-                f"NEXT ACTION: Ask about → {next_probe_domain[0]}"
-            )
-            gate_lines.append(
-                f"USE THIS PROBE: \"{next_probe_domain[1]}\""
-            )
-    else:
-        gate_lines.append(
-            "✅  ALL DOMAINS CONFIRMED OR EXCLUDED — "
-            "SRS generation is now permitted."
-        )
-
-    gate_block = "\n".join(gate_lines)
-
-    # ── 4. IEEE-830 coverage (existing metric — Priority 5 dual display) ───
-    covered = [
-        f"  ✓ {IEEE830_CATEGORIES[cat]}"
-        for cat in state.covered_categories
-        if cat in IEEE830_CATEGORIES
-    ]
-    missing = [
-        f"  ✗ {IEEE830_CATEGORIES[cat]}"
-        for cat in IEEE830_CATEGORIES
-        if cat not in state.covered_categories
-    ]
-    covered_str = "\n".join(covered) if covered else "  (none yet)"
-    missing_str = "\n".join(missing) if missing else "  (all covered)"
-    ieee_pct = round(len(state.covered_categories) / len(IEEE830_CATEGORIES) * 100)
-    ieee_block = (
-        f"IEEE-830 Elicitation Coverage: "
-        f"{len(state.covered_categories)}/{len(IEEE830_CATEGORIES)} ({ieee_pct}%)\n"
-        f"Covered:\n{covered_str}\n\nMissing:\n{missing_str}"
-    )
-
-    # ── 5. Alerts ───────────────────────────────────────────────────────────
-    fr_alert = ""
-    if state.functional_count < MIN_FUNCTIONAL_REQS:
-        fr_alert = (
-            f"\n⚠️  FR DEFICIT: {state.functional_count} FR(s), "
-            f"need ≥{MIN_FUNCTIONAL_REQS}. "
-            "Use domain probe questions above.\n"
-        )
-
-    nfr_alert = ""
-    if state.functional_count >= MIN_FUNCTIONAL_REQS:
-        nfr_missing = [
-            IEEE830_CATEGORIES[c]
-            for c in MANDATORY_NFR_CATEGORIES
-            if c not in state.covered_categories
-        ]
-        if nfr_missing:
-            nfr_alert = (
-                f"\n⚠️  MANDATORY NFRs UNCOVERED: {', '.join(nfr_missing)}\n"
-                "Address before offering SRS generation.\n"
-            )
-
-    return (
-        f"SESSION STATE:\n{turn_info}\n\n"
-        f"{phase_indicator}\n\n"
-        f"{gate_block}\n\n"
-        f"{ieee_block}"
-        f"{fr_alert}{nfr_alert}"
-    )
-
-
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -615,14 +454,161 @@ class PromptArchitect:
       [CONTEXT]       — dynamic live state + domain gate + dual metrics
       [GAP DIRECTIVE] — one-shot injection from GapDetector (optional)
       [TASK]          — phase-gated rules + domain gate closure checklist
+    
+    The domain_gate is dynamically populated:
+      - After first user message: LLM generates initial domains
+      - After turn 5: LLM evaluates if new domains should be added
     """
 
     role_block:    str = field(default=ROLE_BLOCK)
     task_block:    str = field(default=TASK_BLOCK)
     extra_context: str = field(default="")
+    domain_gate:   dict[str, dict] = field(default_factory=lambda: dict(DOMAIN_COVERAGE_GATE))
+
+    def _build_context_block(self, state: "ConversationState") -> str:
+        """
+        Compose the dynamic context block injected into every system message.
+
+        Sections:
+          1. Turn / requirement counters
+          2. Phase indicator
+          3. Domain Coverage Gate status table (Priority 1, 3, 5)
+          4. IEEE-830 category coverage
+          5. FR deficit / mandatory NFR alerts
+        """
+
+        # ── 1. Counters ────────────────────────────────────────────────────────
+        turn_info = (
+            f"Turn: {state.turn_count}  |  "
+            f"Requirements: {state.total_requirements}  "
+            f"(FR: {state.functional_count}, NFR: {state.nonfunctional_count})"
+        )
+
+        # ── 2. Phase indicator ─────────────────────────────────────────────────
+        if state.functional_count < MIN_FUNCTIONAL_REQS:
+            phase_indicator = (
+                f"CURRENT PHASE: Phase 2 — Functional (Domain Coverage)\n"
+                f"  FRs: {state.functional_count}/{MIN_FUNCTIONAL_REQS} minimum\n"
+                f"  ➜ Use the next UNPROBED domain probe question below."
+            )
+        else:
+            nfr_missing = [
+                cat for cat in MANDATORY_NFR_CATEGORIES
+                if cat not in state.covered_categories
+            ]
+            if nfr_missing:
+                phase_indicator = (
+                    f"CURRENT PHASE: Phase 3 — Non-Functional Requirements\n"
+                    f"  FRs: {state.functional_count} ✓\n"
+                    f"  ➜ Missing NFRs: "
+                    + ", ".join(IEEE830_CATEGORIES[c] for c in nfr_missing)
+                )
+            else:
+                phase_indicator = (
+                    "CURRENT PHASE: Phase 4 — Constraints & Closure\n"
+                    "  All mandatory NFRs addressed.\n"
+                    "  ➜ Verify Domain Gate below, then offer SRS if gate is satisfied."
+                )
+
+        # ── 3. Domain Coverage Gate (Priority 1, 3, 5) ─────────────────────────
+        gate_status = compute_domain_gate(state, self.domain_gate)
+        done_count, total_count = domain_gate_completeness(gate_status)
+        domain_pct = round(done_count / total_count * 100) if total_count > 0 else 0
+
+        gate_lines = [
+            f"━━━ DOMAIN COVERAGE GATE  [{done_count}/{total_count} — {domain_pct}%] ━━━",
+            "  ✅ Confirmed  🔶 Partial  ⬜ Unprobed  ❌ Excluded",
+            "",
+        ]
+
+        next_probe_domain: tuple[str, str] | None = None
+
+        for key, spec in self.domain_gate.items():
+            status = gate_status.get(key, DOMAIN_STATUS_UNPROBED)
+            icon   = _DOMAIN_STATUS_ICONS[status]
+            label  = spec["label"]
+            gate_lines.append(f"  {icon}  {label}")
+
+            if status in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL):
+                gate_lines.append(
+                    f"      ↳ Probe: \"{spec['fallback_probe']}\""
+                )
+                if status == DOMAIN_STATUS_UNPROBED and next_probe_domain is None:
+                    next_probe_domain = (label, spec["fallback_probe"])
+
+        gate_lines.append("")
+
+        if not gate_is_satisfied(gate_status):
+            gate_lines.append(
+                "⚠️  GATE NOT SATISFIED — Do NOT offer SRS generation yet."
+            )
+            if next_probe_domain:
+                gate_lines.append(
+                    f"NEXT ACTION: Ask about → {next_probe_domain[0]}"
+                )
+                gate_lines.append(
+                    f"USE THIS PROBE: \"{next_probe_domain[1]}\""
+                )
+        else:
+            gate_lines.append(
+                "✅  ALL DOMAINS CONFIRMED OR EXCLUDED — "
+                "SRS generation is now permitted."
+            )
+
+        gate_block = "\n".join(gate_lines)
+
+        # ── 4. IEEE-830 coverage (existing metric — Priority 5 dual display) ───
+        covered = [
+            f"  ✓ {IEEE830_CATEGORIES[cat]}"
+            for cat in state.covered_categories
+            if cat in IEEE830_CATEGORIES
+        ]
+        missing = [
+            f"  ✗ {IEEE830_CATEGORIES[cat]}"
+            for cat in IEEE830_CATEGORIES
+            if cat not in state.covered_categories
+        ]
+        covered_str = "\n".join(covered) if covered else "  (none yet)"
+        missing_str = "\n".join(missing) if missing else "  (all covered)"
+        ieee_pct = round(len(state.covered_categories) / len(IEEE830_CATEGORIES) * 100)
+        ieee_block = (
+            f"IEEE-830 Elicitation Coverage: "
+            f"{len(state.covered_categories)}/{len(IEEE830_CATEGORIES)} ({ieee_pct}%)\n"
+            f"Covered:\n{covered_str}\n\nMissing:\n{missing_str}"
+        )
+
+        # ── 5. Alerts ───────────────────────────────────────────────────────────
+        fr_alert = ""
+        if state.functional_count < MIN_FUNCTIONAL_REQS:
+            fr_alert = (
+                f"\n⚠️  FR DEFICIT: {state.functional_count} FR(s), "
+                f"need ≥{MIN_FUNCTIONAL_REQS}. "
+                "Use domain probe questions above.\n"
+            )
+
+        nfr_alert = ""
+        if state.functional_count >= MIN_FUNCTIONAL_REQS:
+            nfr_missing = [
+                IEEE830_CATEGORIES[c]
+                for c in MANDATORY_NFR_CATEGORIES
+                if c not in state.covered_categories
+            ]
+            if nfr_missing:
+                nfr_alert = (
+                    f"\n⚠️  MANDATORY NFRs UNCOVERED: {', '.join(nfr_missing)}\n"
+                    "Address before offering SRS generation.\n"
+                )
+
+        return (
+            f"SESSION STATE:\n{turn_info}\n\n"
+            f"{phase_indicator}\n\n"
+            f"{gate_block}\n\n"
+            f"{ieee_block}"
+            f"{fr_alert}{nfr_alert}"
+        )
 
     def build_system_message(self, state: "ConversationState") -> str:
-        context_block = _build_context_block(state)
+        context_block = self._build_context_block(state)
 
         parts = [
             "=== ROLE ===\n" + self.role_block,
@@ -649,14 +635,14 @@ class PromptArchitect:
         return MIN_FUNCTIONAL_REQS
 
     def get_domain_gate(self) -> dict[str, dict]:
-        """Return the full domain gate spec (used by SRSFormatter — Priority 4)."""
-        return dict(DOMAIN_COVERAGE_GATE)
+        """Return the current domain gate spec (used by SRSFormatter — Priority 4)."""
+        return dict(self.domain_gate)
 
     def compute_domain_gate_status(
         self, state: "ConversationState"
     ) -> dict[str, str]:
         """Public accessor used by SRSFormatter for design-derived stubs."""
-        return compute_domain_gate(state)
+        return compute_domain_gate(state, self.domain_gate)
 
     def is_srs_generation_permitted(self, state: "ConversationState") -> bool:
         """
@@ -665,7 +651,7 @@ class PromptArchitect:
           • All mandatory NFR categories are covered
           • Minimum FR count is met
         """
-        gate_ok = gate_is_satisfied(compute_domain_gate(state))
+        gate_ok = gate_is_satisfied(compute_domain_gate(state, self.domain_gate))
         nfrs_ok = MANDATORY_NFR_CATEGORIES.issubset(state.covered_categories)
         frs_ok  = state.functional_count >= MIN_FUNCTIONAL_REQS
         return gate_ok and nfrs_ok and frs_ok

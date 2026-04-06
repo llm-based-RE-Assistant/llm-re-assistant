@@ -14,6 +14,12 @@ if TYPE_CHECKING:
     from gap_detector import GapReport, CategoryGap
     from conversation_state import ConversationState
 
+from prompt_architect import (
+    compute_domain_gate,
+    DOMAIN_STATUS_UNPROBED,
+    DOMAIN_STATUS_PARTIAL,
+)
+
 
 # ---------------------------------------------------------------------------
 # Fallback question templates
@@ -94,79 +100,7 @@ FALLBACK_TEMPLATES: dict[str, list[str]] = {
     ],
     "deployment": [
         "Where will {project_name} be deployed — on local hardware, a cloud service, or both?",
-    ],
-
-    # ── Domain gate probes (IT4-B) ─────────────────────────────────────────
-    # Keys are prefixed "domain_" + DOMAIN_COVERAGE_GATE key.
-    # Wording is kept in sync with DOMAIN_COVERAGE_GATE.fallback_probe.
-
-    "domain_climate_control": [
-        "You mentioned temperature and humidity concerns — can you walk me through "
-        "exactly what you'd want to do with them? For example, would you want to just "
-        "see the readings, set a target level, or have the system automatically maintain a level?",
-        "For the rooms you want to monitor — which ones are most critical, and would "
-        "you need to control each one independently or as a group?",
-    ],
-
-    "domain_security_alarm": [
-        "You mentioned worrying about the house when travelling — do you want the system "
-        "to monitor whether doors or windows are left open, or trigger some kind of alert "
-        "if something looks wrong?",
-        "If the system detects an open door or window, what should it do — send a notification, "
-        "sound an alarm, or both?",
-    ],
-
-    "domain_appliance_lighting": [
-        "You mentioned worrying about lights being left on — would you want the system to show "
-        "you which lights or appliances are on, and let you turn them off remotely if needed?",
-        "Are there specific appliances — like a dehumidifier, space heater, or lamp — "
-        "you'd want to switch on or off from your phone?",
-    ],
-
-    "domain_scheduling_planning": [
-        "Do you ever want the system to follow a routine automatically — like setting the "
-        "heat lower at night, or switching to a lower-energy mode when the family goes on vacation?",
-        "Would you want to pre-program different 'profiles' for different situations — "
-        "for example, a weekday routine versus a weekend one?",
-    ],
-
-    "domain_remote_access": [
-        "You mentioned checking on the house from the airport — how exactly would you want "
-        "to do that? Through a phone app, a website, or something else?",
-        "When you're away, what's the most important thing you'd want to be able to check "
-        "or do from your phone?",
-    ],
-
-    "domain_user_management": [
-        "Who should be able to use this system, and should different people have different "
-        "levels of access? For example, should your kids, your mother-in-law, or a visiting "
-        "HVAC technician see the same things you do?",
-        "Should there be an 'administrator' account — someone who can add or remove users "
-        "and change system settings — separate from regular users?",
-    ],
-
-    "domain_reporting_history": [
-        "Would it be useful to look back at past temperature or humidity readings — for "
-        "example, to see what happened last month, or to show your HVAC technician the "
-        "humidity history so he can check if the dehumidifier is working?",
-        "How long should the system keep historical data — a few weeks, months, or years?",
-    ],
-
-    "domain_hardware_connectivity": [
-        "How does the system actually connect to things like your thermostats and humidity "
-        "sensors — is there a central hub device that talks to everything, or would each "
-        "sensor connect to your home Wi-Fi separately?",
-        "Do you have a preference for how the sensors communicate — for example, via "
-        "Wi-Fi, or a separate wireless protocol like Zigbee or Z-Wave?",
-    ],
-
-    # ── Scope reduction confirmation (IT4-C) ──────────────────────────────
-    "scope_reduction": [
-        "Just to confirm — should we document that as permanently out of scope for this "
-        "version, or would you like to revisit it in a future release?",
-        "To make sure I capture this correctly — are you saying the system should never "
-        "do [feature], or just not in this first version?",
-    ],
+    ]
 }
 
 
@@ -217,14 +151,15 @@ def _build_history_summary(state: "ConversationState", max_turns: int = 4) -> tu
     return "\n".join(lines) if lines else "  (no turns yet)", len(turns)
 
 
-def _build_unprobed_domains_text(state: "ConversationState") -> str:
+def _build_unprobed_domains_text(state: "ConversationState", domain_gate: dict[str, dict] | None = None) -> str:
     """Build a plain-text list of unprobed domains for the meta-prompt."""
-    from prompt_architect import compute_domain_gate, DOMAIN_COVERAGE_GATE
-    from prompt_architect import DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL
 
-    gate_status = compute_domain_gate(state)
+    if domain_gate is None:
+        return "  (no domain gate available)"
+
+    gate_status = compute_domain_gate(state, domain_gate)
     unprobed = [
-        f"  - {DOMAIN_COVERAGE_GATE[k]['label']}"
+        f"  - {domain_gate[k]['label']}"
         for k, s in gate_status.items()
         if s in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL)
     ]
@@ -333,6 +268,7 @@ class ProactiveQuestionGenerator:
         gap_report: "GapReport",
         state: "ConversationState",
         project_name: str = "the system",
+        domain_gate: dict[str, dict] | None = None,
     ) -> QuestionSet:
         """
         Generate up to max_questions_per_turn follow-up questions.
@@ -343,7 +279,7 @@ class ProactiveQuestionGenerator:
 
         # ── IT4-A: Domain gate priority pass ──────────────────────────────
         domain_questions = self._generate_domain_gate_questions(
-            state, project_name, tracker
+            state, project_name, tracker, domain_gate
         )
         for q in domain_questions:
             if len(question_set.questions) >= self.max_questions_per_turn:
@@ -376,7 +312,7 @@ class ProactiveQuestionGenerator:
                 break
             if tracker.times_asked(gap.category_key) >= 3:
                 continue
-            q = self._generate_for_gap(gap, project_name, state, tracker)
+            q = self._generate_for_gap(gap, project_name, state, tracker, domain_gate)
             if q and not tracker.is_asked(q.question_id):
                 question_set.questions.append(q)
                 tracker.mark_asked(q)
@@ -441,17 +377,17 @@ class ProactiveQuestionGenerator:
         state: "ConversationState",
         project_name: str,
         tracker: QuestionTracker,
+        domain_gate: dict[str, dict] | None = None,
     ) -> list[FollowUpQuestion]:
         """
         Generate questions for UNPROBED domain gate entries.
         Returns at most max_questions_per_turn questions, unprobed first.
         """
-        from prompt_architect import (
-            compute_domain_gate, DOMAIN_COVERAGE_GATE,
-            DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL,
-        )
 
-        gate_status = compute_domain_gate(state)
+        if domain_gate is None:
+            return []
+
+        gate_status = compute_domain_gate(state, domain_gate)
         questions: list[FollowUpQuestion] = []
 
         # Process UNPROBED first, then PARTIAL
@@ -482,12 +418,12 @@ class ProactiveQuestionGenerator:
             questions.append(FollowUpQuestion(
                 question_id    = question_id,
                 category_key   = template_key,
-                category_label = DOMAIN_COVERAGE_GATE[domain_key]["label"],
+                category_label = domain_gate[domain_key]["label"],
                 question_text  = question_text,
                 severity       = "critical",
                 is_partial     = gate_status[domain_key] == DOMAIN_STATUS_PARTIAL,
                 rationale      = (
-                    f"Domain gate: '{DOMAIN_COVERAGE_GATE[domain_key]['label']}' "
+                    f"Domain gate: '{domain_gate[domain_key]['label']}' "
                     f"is {gate_status[domain_key]} — must be probed before SRS generation."
                 ),
                 source         = "domain_gate",
@@ -505,9 +441,10 @@ class ProactiveQuestionGenerator:
         project_name: str,
         state: "ConversationState",
         tracker: QuestionTracker,
+        domain_gate: dict[str, dict] | None = None,
     ) -> Optional[FollowUpQuestion]:
         if self.mode == "llm" and self._llm_provider is not None:
-            return self._generate_llm(gap, project_name, state, tracker)
+            return self._generate_llm(gap, project_name, state, tracker, domain_gate)
         return self._generate_template(gap, project_name, state, tracker)
 
     def _generate_llm(
@@ -516,9 +453,10 @@ class ProactiveQuestionGenerator:
         project_name: str,
         state: "ConversationState",
         tracker: QuestionTracker,
+        domain_gate: dict[str, dict] | None = None,
     ) -> Optional[FollowUpQuestion]:
         history_summary, n_turns = _build_history_summary(state, max_turns=4)
-        unprobed_text = _build_unprobed_domains_text(state)
+        unprobed_text = _build_unprobed_domains_text(state, domain_gate)
 
         meta_prompt = _META_PROMPT_TEMPLATE.format(
             project_name     = project_name,

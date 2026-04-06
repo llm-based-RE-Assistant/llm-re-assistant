@@ -1,0 +1,1195 @@
+[
+  {
+    "timestamp": 1775433978.0635262,
+    "event_type": "session_start",
+    "data": {
+      "session_id": "8faa5b9b",
+      "model": "gpt-4o",
+      "temperature": 0.0,
+      "gap_detection_enabled": true
+    }
+  },
+  {
+    "timestamp": 1775433990.1747596,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 1,
+      "user_message": "I'll take on the role described. Let's begin.\n\n---\n\nHello, thanks for making the time. I'm the Director of Employment Services at the Palestinian Ministry of Labor — basically, my job is to make sure young Palestinians, especially those between fifteen and twenty-nine, can actually find work. We have regional offices across the West Bank and Gaza, and on paper we're supposed to be the main bridge between job seekers and employers. But honestly, the thing that keeps me up at night is that we have absolutely no idea what happens to these young people after they walk through our doors. They register with us, we try to help them, and then... silence. We don't know if they found a job, if they're still looking, nothing. And when my government partners ask me for results, I have nothing real to show them.",
+      "assistant_message": "Thank you for sharing that context. It sounds like tracking the outcomes of your employment services is a significant challenge. To better understand the current state and identify potential areas for improvement, could you describe the current process for how young job seekers interact with your services? Specifically, what steps do they go through from registration to the point where they leave your system?",
+      "categories_updated": [
+        "stakeholders",
+        "compatibility"
+      ],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 1,
+        "timestamp": 1775433988.7592394,
+        "total_categories": 19,
+        "covered_count": 2,
+        "partial_count": 1,
+        "uncovered_count": 16,
+        "coverage_pct": 13.2,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external services and APIs must the system integrate with?",
+            "is_partial": false
+          },
+          {
+            "category_key": "data_requirements",
+            "label": "Data Requirements",
+            "severity": "important",
+            "description": "What data must the system create, store, and manage?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": false
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": false
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "uncovered",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "uncovered",
+          "scalability": "uncovered",
+          "interfaces": "uncovered",
+          "data_requirements": "uncovered",
+          "constraints": "uncovered",
+          "assumptions": "uncovered",
+          "testability": "uncovered",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775434022.6215525,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 2,
+      "user_message": "Sure, so the way it works right now is — a young person, let's say a twenty-two year old from Ramallah, walks into our office. One of my staff sits down with them, they look at whatever certificates or documents the person brought, and they help them put together a basic CV, usually just typed up in Word or sometimes even handwritten. Then the staff member — based purely on what they personally know — suggests maybe two or three employers who might be hiring. That's it. There's no system, no database, nothing. It's completely dependent on which staff member happens to be there that day and who they happen to know. And when that young person walks out the door, we have no way to follow up, no way to know if they got an interview, if they got hired, nothing. I mean, we might have a paper record somewhere in a filing cabinet, but nobody is ever going back to check that.",
+      "assistant_message": "Thank you for detailing the current process. It seems like the lack of a structured system for tracking and follow-up is a major gap. Let's focus on how we can address this. \n\nTo start, could you describe the main tasks or processes your team currently uses to track employment outcomes, if any? If there are none, what would be the ideal way to track these outcomes in your view?",
+      "categories_updated": [
+        "interfaces"
+      ],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 2,
+        "timestamp": 1775434022.033756,
+        "total_categories": 19,
+        "covered_count": 3,
+        "partial_count": 3,
+        "uncovered_count": 13,
+        "coverage_pct": 23.7,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "data_requirements",
+            "label": "Data Requirements",
+            "severity": "important",
+            "description": "What data must the system create, store, and manage?",
+            "is_partial": true
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": true
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": false
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "uncovered",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "uncovered",
+          "scalability": "uncovered",
+          "interfaces": "covered",
+          "data_requirements": "partial",
+          "constraints": "uncovered",
+          "assumptions": "partial",
+          "testability": "uncovered",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775434046.4929395,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 3,
+      "user_message": "Honestly, right now there's barely anything — if I'm being transparent with you. Maybe a staff member writes something in a notebook, or keeps a simple Excel sheet on their own computer, but it's completely informal and nobody shares it. There's no central record anywhere. What I would love — and I mean this is the dream — is that when a young person finally gets a job, that information comes back to us automatically somehow. I don't want my staff to have to chase people with phone calls, because they simply don't have the time. But I also want to know more than just \"did they find work\" — I want to know what kind of job, in which sector, at what salary level, because that's the information my analysts desperately need to understand what's actually happening in our labour market. Right now we're completely blind.",
+      "assistant_message": "Thank you for clarifying the current situation and your vision for improvement. It sounds like a centralized system that automatically collects and updates employment outcomes would be beneficial. Let's explore this further.\n\nTo ensure we capture all necessary data, what specific features or tools would you like the new system to have in order to better track and support the young people who visit your office? For example, how should data be collected, stored, and accessed by your team?",
+      "categories_updated": [
+        "usability"
+      ],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 3,
+        "timestamp": 1775434044.3457925,
+        "total_categories": 19,
+        "covered_count": 5,
+        "partial_count": 4,
+        "uncovered_count": 10,
+        "coverage_pct": 36.8,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": true
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": false
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "partial",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "covered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "partial",
+          "scalability": "uncovered",
+          "interfaces": "covered",
+          "data_requirements": "covered",
+          "constraints": "uncovered",
+          "assumptions": "partial",
+          "testability": "uncovered",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775434069.6868546,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 4,
+      "user_message": "I appreciate the question but honestly I'm not really the right person to tell you how data should be \"stored\" or what technical features it needs — I don't think in those terms. What I can tell you is what I need it to do for me. I need my staff in any office — whether it's Ramallah, Hebron, or anywhere else — to be able to look up a young person and see their full picture: what skills they have, what jobs they've applied for, whether they got any responses. And I need that picture to update itself as things happen, not just sit frozen from the day they first registered. The thing I really care about is that no young person just... disappears from our sight after they leave the office.",
+      "assistant_message": "Thank you for sharing your perspective. It's clear that having a dynamic and centralized view of each job seeker's journey is crucial. Let's delve into how this system could engage employers, as they play a key role in the job placement process.\n\nWhat strategies or features would you envision to actively engage employers in this system, ensuring they provide timely updates on job placements and feedback on candidates?",
+      "categories_updated": [
+        "functional",
+        "maintainability"
+      ],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 4,
+        "timestamp": 1775434068.8911095,
+        "total_categories": 19,
+        "covered_count": 7,
+        "partial_count": 2,
+        "uncovered_count": 10,
+        "coverage_pct": 42.1,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": true
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": false
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "partial",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "covered",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "covered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "covered",
+          "scalability": "uncovered",
+          "interfaces": "covered",
+          "data_requirements": "covered",
+          "constraints": "uncovered",
+          "assumptions": "partial",
+          "testability": "uncovered",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775434097.2434485,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 5,
+      "user_message": "That's actually something I worry about a lot, because right now employers don't think of us at all — they just go straight to commercial websites and post their vacancies there. So the first problem is even getting them to register with us in the first place. I think if we could offer them something genuinely useful — like, they post a vacancy and instead of being flooded with completely unsuitable applications, they actually get a shortlist of people who are a real fit — then maybe they'd see the value. But I'll be honest with you, I'm also a little worried: what stops someone from registering as an employer when they're not a real legitimate business? My staff can't verify every single company manually, so how does the system handle that?",
+      "assistant_message": "Thank you for highlighting these concerns. Engaging employers effectively and ensuring the legitimacy of their registrations are indeed critical aspects. Let's break this down further.\n\nTo address the engagement aspect, how would you like the system to facilitate the matching process between job seekers and employers? For instance, what criteria or filters should be used to ensure that employers receive a shortlist of suitable candidates?\n\nAdditionally, regarding the verification of employers, what measures or processes would you consider necessary to ensure that only legitimate businesses can register and post vacancies?",
+      "categories_updated": [
+        "purpose"
+      ],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 5,
+        "timestamp": 1775434096.3702285,
+        "total_categories": 19,
+        "covered_count": 8,
+        "partial_count": 2,
+        "uncovered_count": 9,
+        "coverage_pct": 47.4,
+        "critical_gaps": [
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_Outcome Tracking",
+            "label": "Outcome Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the outcomes of job seekers after they leave your services?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_Process Standardization",
+            "label": "Process Standardization",
+            "severity": "critical",
+            "description": "What steps are involved in standardizing the process for assisting job seekers?",
+            "is_partial": true
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": true
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": true
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "covered",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "covered",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "covered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "covered",
+          "scalability": "uncovered",
+          "interfaces": "covered",
+          "data_requirements": "covered",
+          "constraints": "uncovered",
+          "assumptions": "partial",
+          "testability": "partial",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775434124.595703,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 6,
+      "user_message": "So on the matching side — and I want to be clear I'm not asking for anything magical here — I just want the system to look at what a young person actually knows and has done, and compare that to what an employer says they need, and bring those two things together automatically without my staff having to guess. Things like their field of study, their work experience if they have any, maybe where they're located. That feels like the most basic thing. But when you say it will do this \"automatically\" — what does that actually mean in practice? How does the system know that this particular young woman with a nursing certificate is actually a better fit for a clinic vacancy than someone with a general science degree?\n\nOn the employer verification side, I think the simplest thing is that we require some kind of official business registration document when they sign up — something my regional staff can check before approving the account. It doesn't need to be instant, I just need to know there's a human somewhere in my team who gives the final approval.",
+      "assistant_message": "Thank you for providing these insights. Let's address both aspects:\n\nFor the matching process, the system could use a set of predefined criteria such as field of study, work experience, and location to automatically match job seekers with relevant job vacancies. This would involve creating a database where both job seeker profiles and employer requirements are stored, and an algorithm that compares these attributes to generate a shortlist of suitable candidates. The system would need to be designed to weigh these criteria appropriately to ensure accurate matches.\n\nRegarding employer verification, requiring an official business registration document is a practical approach. This could be implemented as part of the employer registration process, where employers upload their documents for review. Your regional staff could then verify these documents before approving the employer's account.\n\nTo ensure clarity, let's focus on the automatic matching process. What specific outcomes or metrics would you consider as indicators of success for this feature? For example, how would you measure whether the system is effectively matching job seekers to suitable job opportunities?",
+      "categories_updated": [],
+      "gap_report": {
+        "session_id": "8faa5b9b",
+        "turn_id": 6,
+        "timestamp": 1775434123.2248666,
+        "total_categories": 19,
+        "covered_count": 8,
+        "partial_count": 3,
+        "uncovered_count": 8,
+        "coverage_pct": 50.0,
+        "critical_gaps": [
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": true
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_seeker_tracking",
+            "label": "Job Seeker Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the progress of job seekers after they register?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What strategies are in place to engage employers in the job placement process?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management",
+            "severity": "critical",
+            "description": "How is data currently managed and stored for job seekers and employers?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_regional_office_operations",
+            "label": "Regional Office Operations",
+            "severity": "critical",
+            "description": "What are the operational challenges faced by regional offices in supporting job seekers?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_government_reporting",
+            "label": "Government Reporting",
+            "severity": "critical",
+            "description": "What kind of reports are required by government partners to demonstrate employment service outcomes?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_youth_employment_programs",
+            "label": "Youth Employment Programs",
+            "severity": "critical",
+            "description": "What specific programs are in place to support youth employment?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_mechanisms",
+            "label": "Feedback Mechanisms",
+            "severity": "critical",
+            "description": "How do you gather feedback from job seekers and employers about the services provided?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_Outcome Tracking",
+            "label": "Outcome Tracking",
+            "severity": "critical",
+            "description": "How do you currently track the outcomes of job seekers after they leave your services?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_Process Standardization",
+            "label": "Process Standardization",
+            "severity": "critical",
+            "description": "What steps are involved in standardizing the process for assisting job seekers?",
+            "is_partial": true
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": true
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": true
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "covered",
+          "scope": "uncovered",
+          "stakeholders": "covered",
+          "functional": "uncovered",
+          "use_cases": "covered",
+          "business_rules": "uncovered",
+          "performance": "partial",
+          "usability": "covered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "covered",
+          "scalability": "uncovered",
+          "interfaces": "covered",
+          "data_requirements": "covered",
+          "constraints": "uncovered",
+          "assumptions": "partial",
+          "testability": "partial",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  }
+]

@@ -22,7 +22,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).parent))
 
 from conversation_state import ConversationState, create_session
-from prompt_architect import PromptArchitect
+from prompt_architect import PromptArchitect, generate_domain_gate_from_llm, expand_domain_gate_from_llm
 from srs_template import SRSTemplate, create_template
 from srs_formatter import generate_srs_document
 from requirement_extractor import RequirementExtractor, create_extractor
@@ -286,6 +286,7 @@ class ConversationManager:
 
         # 3. LLM call
         try:
+            print(f"DEBUG: Sending to LLM:\nSystem: {system_msg}\nMessages: {messages_to_send}\n")
             assistant_response = self.provider.chat(
                 system_message=system_msg,
                 messages=messages_to_send,
@@ -296,6 +297,33 @@ class ConversationManager:
 
         # 4. Update conversation state
         turn = state.add_turn(user_message, assistant_response)
+        print(f"DEBUG: Turn = {turn.turn_id}\n")
+        # 4.5. DOMAIN GATE GENERATION AND UPDATE (NEW - Iteration 4)
+        # After first user message: Generate initial domain gate via LLM
+        if turn.turn_id == 1:
+            print("DOMAIN GATE: Generating initial domain gate from first user message...")
+            self._architect.domain_gate = generate_domain_gate_from_llm(
+                first_user_message=user_message,
+                project_context=state.project_name,
+                llm_provider=self.provider,
+            )
+            print(f"DOMAIN GATE: Generated {len(self._architect.domain_gate)} domains")
+
+        # After turn 5: Evaluate and potentially expand domain gate
+        elif turn.turn_id == 5:
+            print("DOMAIN GATE: Evaluating domain expansion at turn 5...")
+            corpus = " ".join(
+                turn.user_message + " " + turn.assistant_message
+                for turn in state.turns
+            )
+            req_texts = [r.text for r in state.requirements.values()]
+            self._architect.domain_gate = expand_domain_gate_from_llm(
+                current_gate=self._architect.domain_gate,
+                conversation_corpus=corpus,
+                requirements_texts=req_texts,
+                llm_provider=self.provider,
+            )
+            print(f"DOMAIN GATE: Updated to {len(self._architect.domain_gate)} domains")
 
         # 4a. Extract requirements
         extracted = self._extractor.extract(assistant_response)
@@ -312,7 +340,7 @@ class ConversationManager:
         # 5. Run gap detection
         gap_report = None
         if self._gap_detector is not None:
-            gap_report = self._gap_detector.analyse(state)
+            gap_report = self._gap_detector.analyse(state, self._architect.domain_gate)
 
             # 6. Generate a context-aware follow-up question
             # Iteration 4: tracker is now internal to the generator instance;
@@ -358,6 +386,7 @@ class ConversationManager:
             template=self._srs_template,
             state=state,
             output_dir=self.output_dir,
+            domain_gate=self._architect.domain_gate,
         )
         logger.log_session_end(state)
         return srs_path

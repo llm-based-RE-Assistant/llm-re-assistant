@@ -15,6 +15,12 @@ from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from conversation_state import ConversationState
 
+from prompt_architect import (
+    compute_domain_gate,
+    DOMAIN_STATUS_UNPROBED,
+    DOMAIN_STATUS_PARTIAL,
+)
+
 
 # ---------------------------------------------------------------------------
 # Severity levels
@@ -352,7 +358,7 @@ class GapDetector:
         self.enabled   = enabled
         self.checklist = checklist or COVERAGE_CHECKLIST
 
-    def analyse(self, state: "ConversationState") -> GapReport:
+    def analyse(self, state: "ConversationState", domain_gate: dict[str, dict] | None = None) -> GapReport:
         if not self.enabled:
             return self._empty_report(state)
 
@@ -365,7 +371,7 @@ class GapDetector:
         )
 
         for key, spec in self.checklist.items():
-            status = self._classify_coverage(key, spec, corpus, state)
+            status = self._classify_coverage(key, spec, corpus, state, domain_gate)
             report.all_categories[key] = status
 
             if status == "covered":
@@ -380,7 +386,7 @@ class GapDetector:
                 self._add_gap(gap, spec["severity"], report)
 
         # IT4-G1: Inject domain gate gaps as CRITICAL gaps when unprobed
-        self._inject_domain_gate_gaps(state, report)
+        self._inject_domain_gate_gaps(state, report, domain_gate)
 
         effective = report.covered_count + (report.partial_count * 0.5)
         report.coverage_pct = round(
@@ -390,7 +396,7 @@ class GapDetector:
         return report
 
     def _inject_domain_gate_gaps(
-        self, state: "ConversationState", report: GapReport
+        self, state: "ConversationState", report: GapReport, domain_gate: dict[str, dict] | None = None
     ) -> None:
         """
         IT4-G1: Synthesise domain gate status into the GapReport as
@@ -401,15 +407,10 @@ class GapDetector:
         already been added by the standard checklist scan (avoids duplicates
         by checking category_key prefix "domain_").
         """
-        try:
-            from prompt_architect import (
-                compute_domain_gate, DOMAIN_COVERAGE_GATE,
-                DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL,
-            )
-        except ImportError:
-            return  # graceful degradation if prompt_architect not available
+        if domain_gate is None:
+            return  # No domain gate to inject
 
-        gate_status = compute_domain_gate(state)
+        gate_status = compute_domain_gate(state, domain_gate)
         existing_keys = {g.category_key for g in report.critical_gaps + report.important_gaps}
 
         for domain_key, status in gate_status.items():
@@ -420,7 +421,7 @@ class GapDetector:
             if synthetic_key in existing_keys:
                 continue
 
-            spec = DOMAIN_COVERAGE_GATE[domain_key]
+            spec = domain_gate[domain_key]
             gap = CategoryGap(
                 category_key = synthetic_key,
                 label        = spec["label"],
@@ -454,6 +455,7 @@ class GapDetector:
         spec: dict,
         corpus: str,
         state: "ConversationState",
+        domain_gate: dict[str, dict] | None = None
     ) -> str:
         """
         Returns "covered" | "partial" | "uncovered".
@@ -466,12 +468,12 @@ class GapDetector:
         if hasattr(state, "covered_categories") and key in state.covered_categories:
             # For "functional", validate against the actual store count (FIX-G2)
             if key == "functional":
-                return self._classify_functional_coverage(state)
+                return self._classify_functional_coverage(state, domain_gate)
             return "covered"
 
         # FIX-G2: functional uses requirement store as primary signal
         if key == "functional" and spec.get("_use_req_store"):
-            return self._classify_functional_coverage(state)
+            return self._classify_functional_coverage(state, domain_gate)
 
         keywords = spec.get("keywords", [])
         matched = sum(1 for kw in keywords if kw in corpus)
@@ -490,7 +492,7 @@ class GapDetector:
             return "uncovered"
 
     @staticmethod
-    def _classify_functional_coverage(state: "ConversationState") -> str:
+    def _classify_functional_coverage(state: "ConversationState", domain_gate: dict[str, dict] | None = None) -> str:
         """
         FIX-G2 / IT4-G3: Classify functional coverage using:
           1. The actual FR count in state (existing).
@@ -503,16 +505,10 @@ class GapDetector:
         if count == 0:
             return "uncovered"
 
-        # IT4-G3: check domain gate
-        try:
-            from prompt_architect import (
-                compute_domain_gate, DOMAIN_STATUS_UNPROBED,
-            )
-            gate_status = compute_domain_gate(state)
-            any_unprobed = any(
-                s == DOMAIN_STATUS_UNPROBED for s in gate_status.values()
-            )
-        except ImportError:
+        if domain_gate:
+            gate_status = compute_domain_gate(state, domain_gate)
+            any_unprobed = any(s == DOMAIN_STATUS_UNPROBED for s in gate_status.values())
+        else:
             any_unprobed = False
 
         if count >= 3 and not any_unprobed:

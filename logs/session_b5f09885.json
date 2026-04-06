@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": 1775427286.4488804,
+    "event_type": "session_start",
+    "data": {
+      "session_id": "b5f09885",
+      "model": "gpt-4o",
+      "temperature": 0.0,
+      "gap_detection_enabled": true
+    }
+  }
+]

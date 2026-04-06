@@ -21,14 +21,13 @@ from conversation_state import ConversationState
 from prompt_architect import (
     IEEE830_CATEGORIES,
     MANDATORY_NFR_CATEGORIES,
-    DOMAIN_COVERAGE_GATE,
     DOMAIN_STATUS_CONFIRMED,
     DOMAIN_STATUS_EXCLUDED,
     DOMAIN_STATUS_PARTIAL,
     DOMAIN_STATUS_UNPROBED,
-    compute_domain_gate,
     domain_gate_completeness,
     gate_is_satisfied,
+    compute_domain_gate
 )
 
 
@@ -146,7 +145,7 @@ class SRSFormatter:
     path = formatter.write(template, state, output_dir)
     """
 
-    def __init__(self, show_smart: bool = True, show_transcript_summary: bool = True):
+    def __init__(self, show_smart: bool = True, show_transcript_summary: bool = True, domain_gate: dict[str, dict] | None = None):
         """
         Parameters
         ----------
@@ -155,6 +154,7 @@ class SRSFormatter:
         """
         self.show_smart = show_smart
         self.show_transcript_summary = show_transcript_summary
+        self.domain_gate = domain_gate
 
     # ------------------------------------------------------------------
     # Public rendering methods
@@ -241,9 +241,9 @@ class SRSFormatter:
         w(f"| Avg SMART Score | {template.avg_smart_score} / 5 |")
 
         # ── Priority 5: dual metrics ─────────────────────────────────
-        gate_status = compute_domain_gate(state)
+        gate_status = compute_domain_gate(state, self.domain_gate) if self.domain_gate else {}
         done_count, total_count = domain_gate_completeness(gate_status)
-        domain_pct = round(done_count / total_count * 100)
+        domain_pct = round(done_count / total_count * 100) if total_count > 0 else 0
         ieee_pct = state.coverage_percentage
 
         w(
@@ -272,7 +272,7 @@ class SRSFormatter:
         # Domain gate summary warning
         if not gate_is_satisfied(gate_status):
             unprobed = [
-                DOMAIN_COVERAGE_GATE[k]["label"]
+                self.domain_gate[k]["label"] if self.domain_gate else f"Domain {k}"
                 for k, s in gate_status.items()
                 if s in (DOMAIN_STATUS_UNPROBED, DOMAIN_STATUS_PARTIAL)
             ]
@@ -620,10 +620,10 @@ class SRSFormatter:
         lines.append("")
 
         # Metrics table — Priority 5: dual metrics
-        report = state.get_coverage_report()
-        gate_status = compute_domain_gate(state)
+        report = state.get_coverage_report(self.domain_gate or {})
+        gate_status = compute_domain_gate(state, self.domain_gate) if self.domain_gate else {}
         done_count, total_count = domain_gate_completeness(gate_status)
-        domain_pct = round(done_count / total_count * 100)
+        domain_pct = round(done_count / total_count * 100) if total_count > 0 else 0
 
         lines.append("### B.1 Session Metrics")
         lines.append("")
@@ -658,7 +658,7 @@ class SRSFormatter:
             DOMAIN_STATUS_PARTIAL:   "🔶 Partial (needs more elicitation)",
             DOMAIN_STATUS_UNPROBED:  "⬜ Unprobed (never asked)",
         }
-        for key, spec in DOMAIN_COVERAGE_GATE.items():
+        for key, spec in (self.domain_gate or {}).items():
             status = gate_status.get(key, DOMAIN_STATUS_UNPROBED)
             lines.append(f"| {spec['label']} | {_STATUS_LABEL.get(status, status)} |")
         lines.append("")
@@ -804,7 +804,7 @@ class SRSFormatter:
         )
         lines.append("")
 
-        gate_status = compute_domain_gate(state)
+        gate_status = compute_domain_gate(state, self.domain_gate) if self.domain_gate else {}
         stub_count = 0
 
         # ── Per-domain stubs ─────────────────────────────────────────────
@@ -880,7 +880,7 @@ class SRSFormatter:
             "hardware_connectivity":"§3.2 External Interfaces / §5.1 Performance",
         }
 
-        for domain_key, spec in DOMAIN_COVERAGE_GATE.items():
+        for domain_key, spec in (self.domain_gate or {}).items():
             status = gate_status.get(domain_key, DOMAIN_STATUS_UNPROBED)
             if status == DOMAIN_STATUS_CONFIRMED:
                 continue  # fully elicited — no stub needed
@@ -1013,6 +1013,7 @@ def generate_srs_document(
     state: ConversationState,
     output_dir: Path,
     show_smart: bool = True,
+    domain_gate: dict[str, dict] | None = None,
 ) -> Path:
     """
     Top-level function called by ConversationManager at session end.
@@ -1020,5 +1021,5 @@ def generate_srs_document(
     Wraps SRSFormatter.write() with sensible defaults.
     This is the replacement for the old generate_srs() stub.
     """
-    formatter = SRSFormatter(show_smart=show_smart)
+    formatter = SRSFormatter(show_smart=show_smart, domain_gate=domain_gate)
     return formatter.write(template, state, output_dir)

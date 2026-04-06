@@ -1,0 +1,374 @@
+[
+  {
+    "timestamp": 1775424616.727304,
+    "event_type": "session_start",
+    "data": {
+      "session_id": "7a4d7728",
+      "model": "gpt-4o",
+      "temperature": 0.0,
+      "gap_detection_enabled": true
+    }
+  },
+  {
+    "timestamp": 1775424627.3108,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 1,
+      "user_message": "Hello, thanks for making time for this. I'm the Director of Employment Services at the Palestinian Ministry of Labor — I run the division that's supposed to help young Palestinians, mostly between fifteen and twenty-nine, find work. \n\nThe honest truth is, right now we're failing them. A young person walks into one of our offices, we take down their details on paper, maybe help them put together a basic CV, and then... we just lose track of them. Six months later we have no idea if they found a job, if their skills ever matched anything real, nothing. That's the thing that bothers me most — we're supposed to be a government service helping people, and we have nothing to show for it.\n\nWhat I want is some kind of platform — a system, a website, I'm not sure exactly what to call it — that brings job seekers and employers together properly, so my staff aren't just guessing who to call, and so I can actually tell my government and our international partners what's happening in the labour market. Does that make sense as a starting point?",
+      "assistant_message": "Thank you for sharing the context and challenges you're facing. It certainly makes sense as a starting point. To ensure we develop a comprehensive understanding of your needs, let's begin by exploring the current state and the stakeholders involved. \n\nCould you describe the current manual or legacy process in more detail? Specifically, what are the top three pain points your staff and the job seekers experience in this process?",
+      "categories_updated": [
+        "compatibility"
+      ],
+      "gap_report": {
+        "session_id": "7a4d7728",
+        "turn_id": 1,
+        "timestamp": 1775424626.7354105,
+        "total_categories": 19,
+        "covered_count": 1,
+        "partial_count": 4,
+        "uncovered_count": 14,
+        "coverage_pct": 15.8,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": false
+          },
+          {
+            "category_key": "stakeholders",
+            "label": "Stakeholders & User Classes",
+            "severity": "critical",
+            "description": "Who are the users and stakeholders of the system?",
+            "is_partial": true
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": false
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_accounts",
+            "label": "User Accounts & Roles — who can access what",
+            "severity": "critical",
+            "description": "Does the system need to support multiple user accounts or roles with different permissions?",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": false
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external services and APIs must the system integrate with?",
+            "is_partial": false
+          },
+          {
+            "category_key": "data_requirements",
+            "label": "Data Requirements",
+            "severity": "important",
+            "description": "What data must the system create, store, and manage?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": false
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": true
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "partial",
+          "scope": "uncovered",
+          "stakeholders": "partial",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "uncovered",
+          "scalability": "uncovered",
+          "interfaces": "uncovered",
+          "data_requirements": "uncovered",
+          "constraints": "uncovered",
+          "assumptions": "uncovered",
+          "testability": "partial",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775424676.2667592,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 2,
+      "user_message": "Honestly, if I had to pick the thing that costs me the most sleep, it's exactly what I mentioned — we have no idea what happens to these young people after they register with us. We're supposed to be a public service, and we can't answer the most basic question: did we actually help anyone? My international partners — Enabel, the Palestinian Employment Fund — they keep asking me for numbers, for outcomes, and I have nothing credible to give them.\n\nThe second thing is that employers and job seekers just never find each other through us. Employers go straight to commercial websites, they don't think to contact the Ministry at all, so we have no visibility into who's actually hiring. And when a young person comes in, my staff are just going from memory — \"oh I think I heard this company is looking for someone\" — it's not systematic at all.\n\nAnd I guess the third thing... it's the fragmentation. Everything is scattered — paper files in one office, a Word document somewhere else, a list someone kept in their head. I mean, we can't even produce a reliable report on which sectors are hiring or what skills are in demand. We're making policy decisions basically blind.",
+      "assistant_message": "Thank you for detailing these pain points. It gives us a clear picture of the challenges you're facing. Let's move on to understanding the stakeholders involved and the high-level scope of the system you envision.\n\nCould you describe who will need to access the system and what different roles or permissions they might have?",
+      "categories_updated": [],
+      "gap_report": {
+        "session_id": "7a4d7728",
+        "turn_id": 2,
+        "timestamp": 1775424674.9447901,
+        "total_categories": 19,
+        "covered_count": 1,
+        "partial_count": 8,
+        "uncovered_count": 10,
+        "coverage_pct": 26.3,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": true
+          },
+          {
+            "category_key": "stakeholders",
+            "label": "Stakeholders & User Classes",
+            "severity": "critical",
+            "description": "Who are the users and stakeholders of the system?",
+            "is_partial": true
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": true
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": true
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_accounts",
+            "label": "User Accounts & Roles — who can access what",
+            "severity": "critical",
+            "description": "Does the system need to support multiple user accounts or roles with different permissions?",
+            "is_partial": true
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": true
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external services and APIs must the system integrate with?",
+            "is_partial": false
+          },
+          {
+            "category_key": "data_requirements",
+            "label": "Data Requirements",
+            "severity": "important",
+            "description": "What data must the system create, store, and manage?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": false
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": true
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "partial",
+          "scope": "partial",
+          "stakeholders": "partial",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "partial",
+          "performance": "partial",
+          "usability": "uncovered",
+          "security_privacy": "partial",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "uncovered",
+          "scalability": "uncovered",
+          "interfaces": "uncovered",
+          "data_requirements": "uncovered",
+          "constraints": "uncovered",
+          "assumptions": "uncovered",
+          "testability": "partial",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  }
+]

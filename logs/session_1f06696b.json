@@ -1,0 +1,229 @@
+[
+  {
+    "timestamp": 1775433059.0048096,
+    "event_type": "session_start",
+    "data": {
+      "session_id": "1f06696b",
+      "model": "gpt-4o",
+      "temperature": 0.0,
+      "gap_detection_enabled": true
+    }
+  },
+  {
+    "timestamp": 1775433069.8169034,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 1,
+      "user_message": "Honestly, if I had to pick the thing that costs me the most sleep, it's exactly what I mentioned — we have no idea what happens to these young people after they register with us. We're supposed to be a public service, and we can't answer the most basic question: did we actually help anyone? My international partners — Enabel, the Palestinian Employment Fund — they keep asking me for numbers, for outcomes, and I have nothing credible to give them.\n\nThe second thing is that employers and job seekers just never find each other through us. Employers go straight to commercial websites, they don't think to contact the Ministry at all, so we have no visibility into who's actually hiring. And when a young person comes in, my staff are just going from memory — \"oh I think I heard this company is looking for someone\" — it's not systematic at all.\n\nAnd I guess the third thing... it's the fragmentation. Everything is scattered — paper files in one office, a Word document somewhere else, a list someone kept in their head. I mean, we can't even produce a reliable report on which sectors are hiring or what skills are in demand. We're making policy decisions basically blind.",
+      "assistant_message": "Thank you for sharing these challenges. Let's start by understanding the current state and the stakeholders involved. This will help us identify the system's purpose and scope. \n\n1. **Current State**: Could you describe the current process for registering young people and tracking their outcomes? Specifically, what steps are involved, and who is responsible for each step?\n\n2. **Stakeholder Ecosystem**: Who are the primary stakeholders interacting with the system? Besides your staff, employers, and job seekers, are there any other groups or individuals involved?\n\n3. **High-Level Scope**: What do you envision as the boundaries of the new system? For example, should it only focus on registration and tracking, or also include job matching and reporting capabilities?\n\nLet's start with the first question to get a clearer picture of the current process. Could you describe the steps involved in registering young people and tracking their outcomes?",
+      "categories_updated": [
+        "compatibility"
+      ],
+      "gap_report": {
+        "session_id": "1f06696b",
+        "turn_id": 1,
+        "timestamp": 1775433068.7294002,
+        "total_categories": 19,
+        "covered_count": 1,
+        "partial_count": 6,
+        "uncovered_count": 12,
+        "coverage_pct": 21.1,
+        "critical_gaps": [
+          {
+            "category_key": "purpose",
+            "label": "System Purpose & Goals",
+            "severity": "critical",
+            "description": "What problem does the system solve and why does it exist?",
+            "is_partial": true
+          },
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "is_partial": true
+          },
+          {
+            "category_key": "stakeholders",
+            "label": "Stakeholders & User Classes",
+            "severity": "critical",
+            "description": "Who are the users and stakeholders of the system?",
+            "is_partial": true
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "is_partial": true
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? Expected uptime / recovery time?",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_tracking",
+            "label": "User Tracking and Outcomes",
+            "severity": "critical",
+            "description": "How do you currently track the outcomes for registered users?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_employer_engagement",
+            "label": "Employer Engagement",
+            "severity": "critical",
+            "description": "What challenges do you face in engaging employers with your services?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_job_matching",
+            "label": "Job Matching System",
+            "severity": "critical",
+            "description": "How do job seekers currently find job opportunities through your service?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_data_management",
+            "label": "Data Management and Reporting",
+            "severity": "critical",
+            "description": "What systems are in place for managing and reporting data?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_partnership_reporting",
+            "label": "Partnership Reporting",
+            "severity": "critical",
+            "description": "What information do your international partners require from you?",
+            "is_partial": true
+          },
+          {
+            "category_key": "domain_policy_decision_support",
+            "label": "Policy Decision Support",
+            "severity": "critical",
+            "description": "How do you currently gather information to support policy decisions?",
+            "is_partial": true
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "is_partial": true
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability",
+            "severity": "important",
+            "description": "How easy must the system be to maintain and extend?",
+            "is_partial": false
+          },
+          {
+            "category_key": "scalability",
+            "label": "Scalability",
+            "severity": "important",
+            "description": "How must the system handle growth in users or data volume?",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external services and APIs must the system integrate with?",
+            "is_partial": false
+          },
+          {
+            "category_key": "data_requirements",
+            "label": "Data Requirements",
+            "severity": "important",
+            "description": "What data must the system create, store, and manage?",
+            "is_partial": false
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What technical, legal, or resource constraints apply?",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [
+          {
+            "category_key": "assumptions",
+            "label": "Assumptions & Dependencies",
+            "severity": "optional",
+            "description": "What assumptions could invalidate requirements if wrong?",
+            "is_partial": false
+          },
+          {
+            "category_key": "testability",
+            "label": "Testability & Acceptance Criteria",
+            "severity": "optional",
+            "description": "How will requirements be verified? What are the acceptance criteria?",
+            "is_partial": false
+          },
+          {
+            "category_key": "deployment",
+            "label": "Deployment & Operations",
+            "severity": "optional",
+            "description": "Where and how will the system be deployed and operated?",
+            "is_partial": false
+          }
+        ],
+        "all_categories": {
+          "purpose": "partial",
+          "scope": "partial",
+          "stakeholders": "partial",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "partial",
+          "performance": "partial",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "covered",
+          "maintainability": "uncovered",
+          "scalability": "uncovered",
+          "interfaces": "uncovered",
+          "data_requirements": "uncovered",
+          "constraints": "uncovered",
+          "assumptions": "uncovered",
+          "testability": "uncovered",
+          "deployment": "uncovered"
+        }
+      }
+    }
+  }
+]

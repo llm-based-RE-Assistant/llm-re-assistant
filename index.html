@@ -1172,7 +1172,7 @@
         // ── Domain gate ring (primary, left panel) ────────────────────────
         if (covReport && covReport.domain_gate_status) {
           const gate = covReport.domain_gate_status;
-          const total = Object.keys(gate).length || 8;
+          const total = Object.keys(gate).length || 0;
           const done = Object.values(gate).filter(
             (s) => s === "confirmed" || s === "excluded",
           ).length;

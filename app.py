@@ -39,32 +39,26 @@ Run
 """
 
 from __future__ import annotations
-
 import argparse
-import json
-import os
 import sys
-import uuid
 from pathlib import Path
 from typing import Optional
-
-# Ensure src modules are importable when running from project root
-sys.path.insert(0, str(Path(__file__).parent))
-
 from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask_cors import CORS
-
 from src.components.conversation_manager import ConversationManager, create_provider
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
 from src.components.question_generator import ProactiveQuestionGenerator, create_question_generator
+
+# Ensure src modules are importable when running from project root
+sys.path.insert(0, str(Path(__file__).parent))
 
 
 # ---------------------------------------------------------------------------
 # Application setup
 # ---------------------------------------------------------------------------
 
-BASE_DIR   = Path(__file__).parent.parent
+BASE_DIR   = Path(__file__).parent
 LOG_DIR    = BASE_DIR / "logs"
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -193,9 +187,9 @@ def send_turn():
         return jsonify({"error": "Session already complete. Generate SRS or start a new session."}), 400
 
     # --- Run gap detection BEFORE calling LLM (to inject directive into prompt) ---
-    pre_gap_report = gap_detector.analyse(state)
+    pre_gap_report = gap_detector.analyse(state, manager._architect.domain_gate)
     # Iteration 4: tracker is internal to the generator; no tracker argument
-    q_set = q_generator.generate(pre_gap_report, state)
+    q_set = q_generator.generate(pre_gap_report, state, domain_gate=manager._architect.domain_gate)
 
     # Inject proactive question directive into manager's prompt architect
     if q_set.has_questions and hasattr(manager, "_prompt_architect"):
@@ -209,10 +203,11 @@ def send_turn():
         return jsonify({"error": str(e)}), 500
 
     # --- Run gap detection AFTER turn to report updated state ---
-    post_gap_report = gap_detector.analyse(state)
+    post_gap_report = gap_detector.analyse(state, manager._architect.domain_gate)
 
     # Iteration 4: compute domain gate + coverage report for dual metrics in UI
-    coverage_report = state.get_coverage_report()
+    coverage_report = state.get_coverage_report(manager._architect.domain_gate)
+    print(f"DEBUG: Domain Gate From Coverage Report at app.py {state.turn_count}: {coverage_report}")
     srs_ready = state.is_ready_for_srs()
 
     return jsonify({
@@ -241,10 +236,11 @@ def session_status():
         return err
 
     state: ConversationState = session["state"]
+    manager: ConversationManager = session["manager"]
     gap_detector: GapDetector = session["gap_detector"]
-    gap_report = gap_detector.analyse(state)
+    gap_report = gap_detector.analyse(state, manager._architect.domain_gate)
 
-    coverage_report = state.get_coverage_report()
+    coverage_report = state.get_coverage_report(manager._architect.domain_gate)
 
     return jsonify({
         "session_id":        session_id,

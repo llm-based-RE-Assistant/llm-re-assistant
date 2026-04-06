@@ -14,6 +14,13 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
+from prompt_architect import (
+    compute_domain_gate,
+    IEEE830_CATEGORIES,
+    MANDATORY_NFR_CATEGORIES,
+    domain_gate_completeness,
+    gate_is_satisfied,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -326,19 +333,15 @@ class ConversationState:
     # Coverage gap analysis
     # ------------------------------------------------------------------
 
-    def get_coverage_report(self) -> dict:
+    def get_coverage_report(self, domain_gate: dict) -> dict:
         """Return a structured coverage report for evaluation / logging.
 
         Iteration 4: includes domain_gate_status and domain_completeness_score
         alongside existing IEEE-830 metrics (IT4-S1).
         """
-        from prompt_architect import (
-            IEEE830_CATEGORIES, MANDATORY_NFR_CATEGORIES,
-            compute_domain_gate, domain_gate_completeness,
-            gate_is_satisfied,
-        )
 
-        gate_status = compute_domain_gate(self)
+        gate_status = compute_domain_gate(self, domain_gate)
+        print(f"DEBUG: Computed Domain Gate Status at ConversationState {self.turn_count}: {gate_status}")
         done_count, total_count = domain_gate_completeness(gate_status)
 
         return {
@@ -365,7 +368,7 @@ class ConversationState:
             # ── Domain completeness metric (Iteration 4 — Priority 5) ──
             "domain_gate_status":         gate_status,
             "domain_completeness_score":  f"{done_count}/{total_count}",
-            "domain_completeness_pct":    round(done_count / total_count * 100),
+            "domain_completeness_pct":    round(done_count / total_count * 100) if total_count > 0 else 0,
             "domain_gate_satisfied":      gate_is_satisfied(gate_status),
         }
 
