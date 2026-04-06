@@ -64,7 +64,7 @@ from src.components.question_generator import ProactiveQuestionGenerator, Questi
 # Application setup
 # ---------------------------------------------------------------------------
 
-BASE_DIR   = Path(__file__).parent.parent
+BASE_DIR   = Path(__file__).parent
 LOG_DIR    = BASE_DIR / "logs"
 OUTPUT_DIR = BASE_DIR / "output"
 
