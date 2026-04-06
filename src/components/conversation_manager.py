@@ -190,6 +190,7 @@ class ConversationManager:
 
         # 1. Build system message
         system_msg = self._architect.build_system_message(state)
+        print(f"\n[System Message]\n{system_msg}\n")
 
         # 2. Assemble messages — use only last 20 turns to avoid context overflow
         history = state.get_message_history()[-40:]  # 20 turns = 40 messages

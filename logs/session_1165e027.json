@@ -1,0 +1,448 @@
+[
+  {
+    "timestamp": 1775441278.9049737,
+    "event_type": "session_start",
+    "data": {
+      "session_id": "1165e027",
+      "model": "gpt-4o",
+      "temperature": 0.0,
+      "gap_detection_enabled": true
+    }
+  },
+  {
+    "timestamp": 1775441291.291517,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 1,
+      "user_message": "*settles into chair and sighs*\n\nRight, so — I'm the Director of Employment Services at the Palestinian Ministry of Labor. What we're trying to do, in the simplest terms, is connect young Palestinians with jobs. That's the mission. But honestly, the thing that's keeping me up at night right now is that we have absolutely no idea what happens to these young people after they walk into one of our offices. They register with us, we help them put together a basic CV, and then... nothing. We never know if they found work, if their skills were matched to anything real, or if we actually helped them at all. We're supposed to be a public employment service, but we have nothing to show for it.",
+      "assistant_message": "I understand the challenge you're facing. What are the three most important things a user must be able to do with the system you're envisioning?",
+      "categories_updated": [],
+      "gap_report": {
+        "session_id": "1165e027",
+        "turn_id": 1,
+        "total_categories": 14,
+        "covered_count": 1,
+        "coverage_pct": 7.1,
+        "critical_gaps": [
+          {
+            "category_key": "scope",
+            "label": "System Scope & Boundaries",
+            "severity": "critical",
+            "description": "What is inside and outside the system boundary?",
+            "ieee830_ref": "1.2 Scope",
+            "is_partial": false
+          },
+          {
+            "category_key": "stakeholders",
+            "label": "Stakeholders & User Classes",
+            "severity": "critical",
+            "description": "Who are the users and stakeholders of the system?",
+            "ieee830_ref": "2.3 User Classes and Characteristics",
+            "is_partial": true
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "ieee830_ref": "3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "ieee830_ref": "3.3 Performance Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "ieee830_ref": "3.5 Usability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "ieee830_ref": "3.5.3 Security Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? What happens when it fails?",
+            "ieee830_ref": "3.5.1 Reliability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "compatibility",
+            "label": "Compatibility & Portability",
+            "severity": "critical",
+            "description": "What platforms must the system run on? What must it integrate with?",
+            "ieee830_ref": "3.5.5 Portability Requirements",
+            "is_partial": true
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability & Extensibility",
+            "severity": "critical",
+            "description": "How will the system be maintained, updated, and extended over time?",
+            "ieee830_ref": "3.5.4 Maintainability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_registration_management",
+            "label": "User Registration Management",
+            "severity": "critical",
+            "description": "How should someone sign up to use your system, like if a new job seeker wants to create an account?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_cv_creation_assistance",
+            "label": "CV Creation Assistance",
+            "severity": "critical",
+            "description": "Can you tell me more about CV Creation Assistance?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_matching_and_recommendation",
+            "label": "Job Matching and Recommendation",
+            "severity": "critical",
+            "description": "Can you tell me more about Job Matching and Recommendation?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_employment_outcome_tracking",
+            "label": "Employment Outcome Tracking",
+            "severity": "critical",
+            "description": "Can you tell me more about Employment Outcome Tracking?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_account_and_role_management",
+            "label": "User Account and Role Management",
+            "severity": "critical",
+            "description": "Can you tell me more about User Account and Role Management?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_reporting_and_history",
+            "label": "Reporting and History",
+            "severity": "critical",
+            "description": "Can you tell me more about Reporting and History?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_alerts_and_notifications",
+            "label": "Alerts and Notifications",
+            "severity": "critical",
+            "description": "Can you tell me more about Alerts and Notifications?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_documentation_and_help",
+            "label": "User Documentation and Help",
+            "severity": "critical",
+            "description": "Can you tell me more about User Documentation and Help?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_analytics_and_insights",
+            "label": "Data Analytics and Insights",
+            "severity": "critical",
+            "description": "Can you tell me more about Data Analytics and Insights?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_collection_and_analysis",
+            "label": "Feedback Collection and Analysis",
+            "severity": "critical",
+            "description": "Can you tell me more about Feedback Collection and Analysis?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "ieee830_ref": "3.2 Functional Requirements (scenarios)",
+            "is_partial": false
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "ieee830_ref": "2.5 Assumptions and Dependencies",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external systems, devices, or APIs must the system interact with?",
+            "ieee830_ref": "3.1 External Interface Requirements",
+            "is_partial": true
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What constraints exist on the design or implementation?",
+            "ieee830_ref": "3.4 Design Constraints",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [],
+        "all_categories": {
+          "purpose": "covered",
+          "scope": "uncovered",
+          "stakeholders": "partial",
+          "functional": "uncovered",
+          "use_cases": "uncovered",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "partial",
+          "maintainability": "uncovered",
+          "interfaces": "partial",
+          "constraints": "uncovered"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": 1775441590.1287096,
+    "event_type": "turn",
+    "data": {
+      "turn_id": 2,
+      "user_message": "Honestly, I don't really think in those terms — I'm not a software person. I just know what's broken and what I wish were different.\n\nI mean... if I had to say what matters most? First, I want a young person who walks into any of our offices — or maybe even goes online from home — to be able to put their information in once, properly, and have that actually mean something. Not just sit in a drawer somewhere.\n\nAnd then I want that person to somehow end up in front of the right employer — without my staff having to make ten phone calls or guess based on who they happen to know.\n\nBut honestly, the third thing is for me and my team — I need to be able to answer questions like \"how many young people found work this month, and in which sector?\" Right now I can't answer that, and it's embarrassing when our international partners ask.",
+      "assistant_message": "I see, you're looking for a more effective way to track and connect job seekers with employers. How should someone sign up to use your system, like if a new job seeker wants to create an account?",
+      "categories_updated": [],
+      "gap_report": {
+        "session_id": "1165e027",
+        "turn_id": 2,
+        "total_categories": 14,
+        "covered_count": 2,
+        "coverage_pct": 14.3,
+        "critical_gaps": [
+          {
+            "category_key": "stakeholders",
+            "label": "Stakeholders & User Classes",
+            "severity": "critical",
+            "description": "Who are the users and stakeholders of the system?",
+            "ieee830_ref": "2.3 User Classes and Characteristics",
+            "is_partial": true
+          },
+          {
+            "category_key": "functional",
+            "label": "Functional Requirements",
+            "severity": "critical",
+            "description": "What must the system do? Core features and behaviours.",
+            "ieee830_ref": "3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "performance",
+            "label": "Performance Requirements",
+            "severity": "critical",
+            "description": "How fast must the system respond? What load must it handle?",
+            "ieee830_ref": "3.3 Performance Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "usability",
+            "label": "Usability & Accessibility",
+            "severity": "critical",
+            "description": "How easy must the system be to use? Any accessibility requirements?",
+            "ieee830_ref": "3.5 Usability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "security_privacy",
+            "label": "Security & Privacy Requirements",
+            "severity": "critical",
+            "description": "How must the system protect data and prevent unauthorised access?",
+            "ieee830_ref": "3.5.3 Security Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "reliability",
+            "label": "Reliability & Availability",
+            "severity": "critical",
+            "description": "How reliable must the system be? What happens when it fails?",
+            "ieee830_ref": "3.5.1 Reliability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "compatibility",
+            "label": "Compatibility & Portability",
+            "severity": "critical",
+            "description": "What platforms must the system run on? What must it integrate with?",
+            "ieee830_ref": "3.5.5 Portability Requirements",
+            "is_partial": true
+          },
+          {
+            "category_key": "maintainability",
+            "label": "Maintainability & Extensibility",
+            "severity": "critical",
+            "description": "How will the system be maintained, updated, and extended over time?",
+            "ieee830_ref": "3.5.4 Maintainability Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_registration_management",
+            "label": "User Registration Management",
+            "severity": "critical",
+            "description": "When someone wants to sign up to find a job through your system, what basic information do you think they should provide, like their name or work experience?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_cv_creation_assistance",
+            "label": "CV Creation Assistance",
+            "severity": "critical",
+            "description": "Can you tell me more about CV Creation Assistance?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_job_matching_and_recommendation",
+            "label": "Job Matching and Recommendation",
+            "severity": "critical",
+            "description": "Can you tell me more about Job Matching and Recommendation?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_employment_outcome_tracking",
+            "label": "Employment Outcome Tracking",
+            "severity": "critical",
+            "description": "Can you tell me more about Employment Outcome Tracking?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_account_and_role_management",
+            "label": "User Account and Role Management",
+            "severity": "critical",
+            "description": "Can you tell me more about User Account and Role Management?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_reporting_and_history",
+            "label": "Reporting and History",
+            "severity": "critical",
+            "description": "Can you tell me more about Reporting and History?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_alerts_and_notifications",
+            "label": "Alerts and Notifications",
+            "severity": "critical",
+            "description": "Can you tell me more about Alerts and Notifications?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_user_documentation_and_help",
+            "label": "User Documentation and Help",
+            "severity": "critical",
+            "description": "Can you tell me more about User Documentation and Help?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_data_analytics_and_insights",
+            "label": "Data Analytics and Insights",
+            "severity": "critical",
+            "description": "Can you tell me more about Data Analytics and Insights?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          },
+          {
+            "category_key": "domain_feedback_collection_and_analysis",
+            "label": "Feedback Collection and Analysis",
+            "severity": "critical",
+            "description": "Can you tell me more about Feedback Collection and Analysis?",
+            "ieee830_ref": "§3.2 Functional Requirements",
+            "is_partial": false
+          }
+        ],
+        "important_gaps": [
+          {
+            "category_key": "use_cases",
+            "label": "Use Cases & User Stories",
+            "severity": "important",
+            "description": "How do users interact with the system step-by-step?",
+            "ieee830_ref": "3.2 Functional Requirements (scenarios)",
+            "is_partial": true
+          },
+          {
+            "category_key": "business_rules",
+            "label": "Business Rules & Constraints",
+            "severity": "important",
+            "description": "What business rules and legal constraints must the system respect?",
+            "ieee830_ref": "2.5 Assumptions and Dependencies",
+            "is_partial": false
+          },
+          {
+            "category_key": "interfaces",
+            "label": "External Interfaces",
+            "severity": "important",
+            "description": "What external systems, devices, or APIs must the system interact with?",
+            "ieee830_ref": "3.1 External Interface Requirements",
+            "is_partial": true
+          },
+          {
+            "category_key": "constraints",
+            "label": "Design & Implementation Constraints",
+            "severity": "important",
+            "description": "What constraints exist on the design or implementation?",
+            "ieee830_ref": "3.4 Design Constraints",
+            "is_partial": false
+          }
+        ],
+        "optional_gaps": [],
+        "all_categories": {
+          "purpose": "covered",
+          "scope": "covered",
+          "stakeholders": "partial",
+          "functional": "uncovered",
+          "use_cases": "partial",
+          "business_rules": "uncovered",
+          "performance": "uncovered",
+          "usability": "uncovered",
+          "security_privacy": "uncovered",
+          "reliability": "uncovered",
+          "compatibility": "partial",
+          "maintainability": "uncovered",
+          "interfaces": "partial",
+          "constraints": "uncovered"
+        }
+      }
+    }
+  }
+]

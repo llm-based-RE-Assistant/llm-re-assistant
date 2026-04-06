@@ -198,11 +198,11 @@ def send_turn():
 
     # Run gap detection BEFORE calling LLM (inject directive into prompt)
     pre_gap_report = gap_detector.analyse(state)
-    q_set = q_generator.generate(pre_gap_report, state)
+    # q_set = q_generator.generate(pre_gap_report, state)
 
-    if q_set.has_questions and hasattr(manager, "_architect"):
-        injection = q_generator.build_injection_text(q_set)
-        manager._architect.extra_context = injection
+    # if q_set.has_questions and hasattr(manager, "_architect"):
+    #     injection = q_generator.build_injection_text(q_set)
+    #     manager._architect.extra_context = injection
 
     # Send turn to LLM
     try:
@@ -252,7 +252,7 @@ def send_turn():
         "assistant_reply":     assistant_reply,
         "turn_id":             state.turn_count,
         "gap_report":          post_gap_report.to_dict(),
-        "follow_up_questions": [q.to_dict() for q in q_set.questions],
+        "follow_up_questions": "",
         "coverage_pct":        post_gap_report.coverage_pct,
         "coverage_report":     coverage_report,
         "srs_ready":           srs_ready,
