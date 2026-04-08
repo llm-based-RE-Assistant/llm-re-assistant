@@ -230,6 +230,20 @@ class DomainDiscovery:
                 gate.domains[key] = DomainSpec(label=label, status="unprobed")
         gate.reseed_turn = turn_id
 
+    def seed_from_labels(self, domain_labels: list, gate, turn_id: int, project_name: str = "the system"):
+        """IT9: Seed domain gate directly from a known list of domain labels (no LLM call needed).
+        Used when domains are derived from uploaded requirements file."""
+        if gate.seeded:
+            return
+        for label in domain_labels:
+            key = _label_to_key(label)
+            if key not in gate.domains:
+                gate.domains[key] = DomainSpec(label=label, status="unprobed")
+        if gate.domains:
+            gate.seeded = True
+            gate.seed_turn = turn_id
+            print(f"[DomainDiscovery] Seeded {len(gate.domains)} domains from uploaded reqs labels")
+
     # FIX-5: threshold = 2 reqs
     def update_domain_statuses(self, gate, state):
         req_map = {k: [] for k in gate.domains}
