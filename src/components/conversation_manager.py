@@ -147,16 +147,14 @@ class ConversationManager:
     _srs_template: Optional[SRSTemplate] = field(default=None, init=False, repr=False)
     _extractor: RequirementExtractor = field(default_factory=create_extractor, init=False)
     _gap_detector: Optional[GapDetector] = field(default=None, init=False, repr=False)
-    _question_generator: Optional[ProactiveQuestionGenerator] = field(default=None, init=False, repr=False)
+    # _question_generator: Optional[ProactiveQuestionGenerator] = field(default=None, init=False, repr=False)
     _domain_discovery: Optional[DomainDiscovery] = field(default=None, init=False, repr=False)
     _last_probed_domain: Optional[str] = field(default=None, init=False, repr=False)
 
-    SECOND_RESEED_TURN = 8
-
     def __post_init__(self):
         self._gap_detector = create_gap_detector(enabled=self.gap_enabled)
-        self._question_generator = create_question_generator(
-            max_questions_per_turn=1, mode="llm", llm_provider=self.provider)
+        # self._question_generator = create_question_generator(
+        #     max_questions_per_turn=1, mode="llm", llm_provider=self.provider)
         self._domain_discovery = create_domain_discovery(self.provider)
 
     def start_session(self):
@@ -170,24 +168,101 @@ class ConversationManager:
             "temperature":self.temperature,"gap_detection_enabled":self.gap_enabled})
         return session_id, state, logger, self._srs_template
 
-    def send_turn(self, user_message: str, state: ConversationState,
-                  logger: SessionLogger) -> str:
+    # ── SMART Quality Check ──────────────────────────────────────────────────
 
-        # FIX-LOOP: detect duplicate user messages
-        for prev_turn in state.turns:
-            if _message_similarity(user_message, prev_turn.user_message) > 0.8:
-                # Skip this duplicate — force advance to next domain
-                turn = state.add_turn(user_message, "(duplicate detected — advancing)")
-                # Force-advance: mark current domain as confirmed if stuck
-                if state.domain_gate and state.domain_gate.seeded:
-                    nd = state.domain_gate.next_unprobed()
-                    if nd and nd.probe_count >= 2:
-                        nd.status = "confirmed"
-                # Re-run the turn with the system generating a fresh question
-                break
-        else:
-            pass  # not a duplicate — proceed normally
+    _SMART_CHECK_PROMPT = """\
+You are an expert Requirements Engineer performing a SMART quality check.
 
+The following requirements were just extracted from a customer interview. \
+The customer's message that prompted them is provided for context.
+
+CUSTOMER MESSAGE (context):
+{user_message}
+
+EXTRACTED REQUIREMENTS:
+{requirements_list}
+
+For EACH requirement, evaluate it against SMART criteria:
+- Specific: Is it clear and unambiguous (no vague terms like "fast", "simple", "comprehensive")?
+- Measurable: Does it include concrete numbers, thresholds, or quantifiable criteria?
+- Testable: Can a tester verify whether it is met?
+- Unambiguous: Does it have exactly one interpretation?
+- Relevant: Is it relevant to the system being built?
+
+RULES:
+- If a requirement passes all 5 criteria, keep it as-is.
+- If it fails Measurable or Specific, REWRITE it to add concrete numbers or \
+  remove vague terms. Use reasonable domain-specific estimates if the customer \
+  did not specify exact values.
+- Return a JSON array with one object per requirement:
+  {{
+    "original": "<original text>",
+    "final": "<rewritten text or same if already SMART>",
+    "smart_score": <integer 1-5, one point per dimension passed>,
+    "specific": true/false,
+    "measurable": true/false,
+    "testable": true/false,
+    "unambiguous": true/false,
+    "relevant": true/false,
+    "rewritten": true/false
+  }}
+- Return ONLY the JSON array. No markdown, no explanation."""
+
+    def _run_smart_check(self, extracted: list, user_message: str) -> list:
+        """Batch SMART check on all extracted requirements. Returns enhanced list."""
+        if not extracted:
+            return extracted
+
+        req_lines = "\n".join(
+            f"{i+1}. [{e.req_type}] {e.text}"
+            for i, e in enumerate(extracted))
+
+        prompt = self._SMART_CHECK_PROMPT.format(
+            user_message=user_message[:800],
+            requirements_list=req_lines)
+
+        try:
+            raw = self.provider.chat(
+                system_message=(
+                    "You are a Requirements Engineering quality assurance expert. "
+                    "Return only valid JSON arrays."),
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0)
+
+            # parse JSON
+            import re as _re
+            text = _re.sub(r"```(?:json)?\s*", "", raw.strip()).strip().strip("`")
+            m = _re.search(r"\[.*?\]", text, _re.DOTALL)
+            if not m:
+                return extracted
+            results = json.loads(m.group(0))
+            if not isinstance(results, list) or len(results) != len(extracted):
+                return extracted
+
+            for i, (ext, res) in enumerate(zip(extracted, results)):
+                # Apply rewrite if needed
+                if res.get("rewritten") and res.get("final"):
+                    ext.text = res["final"].strip()
+                # Store SMART metadata on the extracted object
+                ext.smart_score = res.get("smart_score", 3)
+                ext.smart_specific = res.get("specific", True)
+                ext.smart_measurable = res.get("measurable", False)
+                ext.smart_testable = res.get("testable", True)
+                ext.smart_unambiguous = res.get("unambiguous", True)
+                ext.smart_relevant = res.get("relevant", True)
+
+            rewritten_count = sum(1 for r in results if r.get("rewritten"))
+            avg_score = sum(r.get("smart_score", 3) for r in results) / len(results)
+            print(f"[SMART Check] {len(extracted)} reqs checked | "
+                  f"avg score: {avg_score:.1f}/5 | rewritten: {rewritten_count}")
+            return extracted
+
+        except Exception as e:
+            print(f"[SMART Check] Failed: {e}")
+            return extracted
+
+    def send_turn(self, user_message: str, state: ConversationState, logger: SessionLogger) -> str:
+        
         # 1. Build system message
         system_msg = self._architect.build_system_message(state)
         print(f"\n[System Message]\n{system_msg}\n")
@@ -220,18 +295,27 @@ class ConversationManager:
                     "phase4_progress": f"{len(state.phase4_sections_covered)}/{len(PHASE4_SECTIONS)}"
                 })
 
+        # 4a2. SMART quality check — batch all extracted reqs, rewrite those failing quality
+        if extracted:
+            extracted = self._run_smart_check(extracted, user_message)
+
         if extracted and self._domain_discovery and state.domain_gate:
             # 4b. FIX-MATCH: LLM-based domain matching
             for ext in extracted:
-                matched_key = self._domain_discovery.match_requirement_to_domain(
-                    ext.text, state.domain_gate)
-                if matched_key:
-                    ext.domain_label = matched_key
+                # Check if ext.category already matches a domain key (from LLM or manual seeding)
+                cat_lower = ext.category.lower().replace(" ","_").replace("-","_")
+                if cat_lower in state.domain_gate.domains:
+                    ext.domain_label = cat_lower
+                else:
+                    matched_key = self._domain_discovery.match_requirement_to_domain(
+                        ext.text, state.domain_gate)
+                    if matched_key:
+                        ext.domain_label = matched_key
 
             # 4c. Classify NFRs
             for ext in extracted:
                 if ext.req_type == "non_functional":
-                    cat_key = self._domain_discovery.classify_nfr(ext.text)
+                    cat_key = self._domain_discovery.classify_nfr(ext)
                     if cat_key:
                         ext.category = cat_key
                         state.increment_nfr_coverage(cat_key)
@@ -257,15 +341,16 @@ class ConversationManager:
         # 4f. Domain seeding / re-seeding
         if self._domain_discovery and state.domain_gate:
             if state.turn_count == 1:
-                self._domain_discovery.seed(user_message, state.domain_gate, state.turn_count)
+                self._domain_discovery.seed(user_message, state.domain_gate, state.turn_count,
+                                            project_name=state.project_name)
             elif state.turn_count == DomainDiscovery.RESEED_TURN:
-                first_msg = state.turns[0].user_message if state.turns else user_message
-                self._domain_discovery.reseed(first_msg, state.domain_gate, state, state.turn_count)
-            elif state.turn_count == self.SECOND_RESEED_TURN:
-                if state.domain_gate.reseed_turn < self.SECOND_RESEED_TURN:
-                    first_msg = state.turns[0].user_message if state.turns else user_message
+                all_user_msgs = [t.user_message for t in state.turns] + ['\n'] + [user_message]
+                self._domain_discovery.reseed(all_user_msgs, state.domain_gate, state, state.turn_count)
+            elif state.turn_count == DomainDiscovery.SECOND_RESEED_TURN:
+                if state.domain_gate.reseed_turn < DomainDiscovery.SECOND_RESEED_TURN:
+                    all_user_msgs = [t.user_message for t in state.turns[-10:]] + ['\n'] + [user_message]
                     state.domain_gate.reseed_turn = 0
-                    self._domain_discovery.reseed(first_msg, state.domain_gate, state, state.turn_count)
+                    self._domain_discovery.reseed(all_user_msgs, state.domain_gate, state, state.turn_count)
 
             # 4g. Project name
             if state.project_name_needs_llm and state.turn_count == 1:
@@ -334,10 +419,10 @@ class ConversationManager:
         gap_report = None
         if self._gap_detector:
             gap_report = self._gap_detector.analyse(state)
-            q_set = self._question_generator.generate(
-                gap_report=gap_report, state=state, project_name=state.project_name)
-            if q_set.has_questions:
-                self._architect.extra_context = self._question_generator.build_injection_text(q_set)
+            # q_set = self._question_generator.generate(
+            #     gap_report=gap_report, state=state, project_name=state.project_name)
+            # if q_set.has_questions:
+            #     self._architect.extra_context = self._question_generator.build_injection_text(q_set)
 
         # 8. Log
         logger.log_turn(turn_id=turn.turn_id, user_msg=user_message,
@@ -348,14 +433,7 @@ class ConversationManager:
         return assistant_response
 
     def finalize_session(self, state, logger):
-        # if fr less than 5, mark as incomplete and skip SRS generation
-        if state.functional_count < 5:
-            logger.log_event("session_incomplete", {
-                "reason":"Too few functional requirements elicited",
-                "functional_count":state.functional_count})
-            print("[Session Finalized] Incomplete session — too few functional requirements elicited.")
-            return None
-        state.session_complete = True
+        # state.session_complete = True
         if not self._srs_template:
             self._srs_template = create_template(state.session_id, state.project_name)
  

@@ -290,6 +290,12 @@ class ProactiveQuestionGenerator:
         return question_set
 
     def build_injection_text(self, question_set: QuestionSet) -> str:
+        """
+        IT5: Reframed from a mandatory "DIRECTIVE" to an awareness "HINT".
+        The LLM is informed about the coverage gap and given a suggested
+        question, but is trusted to integrate it naturally rather than
+        being commanded to ask it verbatim.
+        """
         if not question_set.has_questions:
             return ""
 
@@ -298,37 +304,39 @@ class ProactiveQuestionGenerator:
         desc = COVERAGE_CHECKLIST.get(primary.category_key, {}).get("description", "")
 
         lines = [
-            "── PROACTIVE QUESTIONING DIRECTIVE ──",
-            f"Gap to probe next: {primary.category_label} (severity: {primary.severity.upper()})",
+            "── COVERAGE HINT ──",
+            f"Area not yet fully covered: {primary.category_label} (priority: {primary.severity.upper()})",
         ]
         if desc:
-            lines.append(f"Why: {desc}")
+            lines.append(f"Why it matters: {desc}")
         lines.append("")
 
         if primary.source == "domain_gate":
             lines += [
-                "This is a FUNCTIONAL DOMAIN that needs probing — highest priority.",
-                f"Suggested question: \"{primary.question_text}\"",
+                "This functional area hasn't been discussed yet.",
+                f"Suggested angle: \"{primary.question_text}\"",
                 "",
-                "Use this question or adapt it naturally. "
-                "Do NOT skip this domain. Ask for SPECIFIC NUMBERS if relevant.",
+                "Work this into the conversation when it feels natural. "
+                "If the stakeholder's answer touches on this area, follow up. "
+                "Ask for SPECIFIC numbers if relevant.",
             ]
         elif primary.source == "llm":
             lines += [
-                "Context-aware question pre-generated for this gap:",
+                "Context-aware suggestion for this gap:",
                 f"  \"{primary.question_text}\"",
                 "",
-                "You MAY use this verbatim or adapt it. Do NOT ignore this gap.",
+                "Use this verbatim, adapt it, or find your own angle — "
+                "the goal is to surface this topic naturally.",
             ]
         else:
             lines += [
-                "Suggested question (template fallback):",
+                "Suggested question:",
                 f"  \"{primary.question_text}\"",
                 "",
-                "Integrate this naturally into your response.",
+                "Integrate this into your response where it fits.",
             ]
 
-        lines.append("── END DIRECTIVE ──")
+        lines.append("── END HINT ──")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------

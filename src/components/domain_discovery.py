@@ -24,52 +24,73 @@ STRUCTURAL_CATEGORIES: dict[str, str] = {
 MIN_FUNCTIONAL_FOR_NFR = 10
 DOMAIN_SUB_DIMENSIONS = ["data","actions","constraints","automation","edge_cases"]
 
-# ── SEED — FIX-1: device→function mapping ──
+# ── SEED — transparent context, role-play framing ──
 _SEED_PROMPT = """\
-You are a requirements engineering expert.
+You are an expert Requirements Engineer. Your colleague is conducting a \
+requirements elicitation interview with a customer. Based on the customer's \
+first message below, your task is to identify all FUNCTIONAL DOMAINS that a \
+complete SRS for the project "{project_name}" should cover, so your colleague \
+knows which areas to probe during the interview.
 
-A stakeholder described their software system:
+CUSTOMER'S FIRST MESSAGE:
 ---
 {description}
 ---
 
-Identify the FUNCTIONAL DOMAINS for a complete SRS.
+Your goal: identify every functional area the customer will eventually need \
+requirements for — including areas they mentioned directly AND standard areas \
+that any system of this type must address.
 
-CRITICAL:
-1. Include domains the stakeholder EXPLICITLY mentioned.
-2. For EVERY physical device or sensor mentioned, create a domain for the
-   CONTROL FUNCTION it implies (not just connectivity):
+RULES:
+1. Include every domain the customer EXPLICITLY mentioned or implied.
+2. For EVERY physical device/sensor mentioned, create a domain for the CONTROL \
+   FUNCTION it implies (not just connectivity):
    - thermostat → "Temperature Control"
-   - dehumidifier/humidistat → "Humidity Control"
    - door locks → "Door Lock Control"
-   - lights → "Lighting Control"
-   - alarm/security panel → "Security Alarm Management"
-   - appliances/coffee maker → "Appliance Control"
    - cameras → "Security Camera Monitoring"
-3. Also include TYPICAL system domains:
-   - User account/role management
-   - Planning and scheduling (presets, time-based automation)
-   - Reporting and history (monthly reports, data export)
-   - Alerts and notifications
-   - User documentation and help
-4. Domain names: 2-5 words, title-case, USER-FACING function names.
-5. Aim for 8-12 domains. Do NOT include NFRs. Return ONLY a JSON array.
+   - appliances → "Appliance Control"
+3. Always include standard system-level domains unless clearly irrelevant:
+   - User Account and Role Management
+   - Alerts and Notifications
+   - Reporting and History
+   - User Documentation and Help
+4. For job/employment/HR systems also consider:
+   - Registration and Profile Management (job seekers)
+   - Employer Registration and Management
+   - Job Posting and Publishing
+   - AI Matching and Recommendations
+   - External Integration (job portals, government databases)
+   - Analytics and Insights Dashboard
+5. Domain names: 2-5 words, title-case, USER-FACING function names.
+6. Aim for 8-15 domains. Do NOT include NFRs or implementation details.
+7. Return ONLY a JSON array of domain name strings. No explanation.
 
 Your JSON array:"""
 
 _RESEED_PROMPT = """\
-You are a requirements engineering expert. Mid-session coverage check.
+You are an expert Requirements Engineer. Your colleague is conducting a \
+requirements elicitation interview with a customer for the project "{project_name}". \
+You previously identified functional domains based on the customer's first message. \
+Now that the interview has progressed further, you have more context and must \
+identify any ADDITIONAL functional domains that were not visible initially.
 
-SYSTEM DESCRIPTION: {description}
+CUSTOMER'S FIRST MESSAGE (used for original seeding):
+---
+{description}
+---
 
-REQUIREMENTS SO FAR ({req_count} total):
+REQUIREMENTS EXTRACTED SO FAR ({req_count} total):
 {req_sample}
 
-CURRENT DOMAINS: {current_domains}
+DOMAINS YOU ALREADY IDENTIFIED:
+{current_domains}
 
-Identify MISSING functional domains. For every device/sensor in requirements
-without a dedicated control domain, add one. Also add typical system domains
-that are missing. Return ONLY a JSON array of NEW domains (may be empty: [])."""
+Your task: Review the requirements extracted so far and identify NEW functional \
+domains that are missing from your original list. These might be areas that only \
+became apparent once the customer elaborated, or standard system areas you missed.
+
+Return ONLY a JSON array of NEW domain name strings not already in the list above. \
+If no domains are missing, return an empty array: []"""
 
 _NFR_CLASSIFY_PROMPT = """\
 Classify this requirement into one IEEE-830 NFR category:
@@ -183,14 +204,15 @@ class DomainGate:
 
 
 class DomainDiscovery:
-    RESEED_TURN = 4
+    RESEED_TURN = 10
+    SECOND_RESEED_TURN = 20
 
     def __init__(self, llm_provider) -> None:
         self._provider = llm_provider
 
-    def seed(self, description, gate, turn_id):
+    def seed(self, description, gate, turn_id, project_name="the system"):
         if gate.seeded: return
-        for label in self._call_seed(description):
+        for label in self._call_seed(description, project_name=project_name):
             key = _label_to_key(label)
             if key not in gate.domains:
                 gate.domains[key] = DomainSpec(label=label)
@@ -201,7 +223,8 @@ class DomainDiscovery:
         if gate.reseed_turn > 0: return
         current = [d.label for d in gate.domains.values()]
         for label in self._call_reseed(description, state.total_requirements,
-                                       _build_req_sample(state), current):
+                                       _build_req_sample(state), current,
+                                       project_name=state.project_name):
             key = _label_to_key(label)
             if key not in gate.domains:
                 gate.domains[key] = DomainSpec(label=label, status="unprobed")
@@ -232,8 +255,12 @@ class DomainDiscovery:
         if req_id not in d.sub_dimensions[subdim]:
             d.sub_dimensions[subdim].append(req_id)
 
-    def classify_nfr(self, req_text):
-        return self._call_classify_nfr(req_text)
+    def classify_nfr(self, req):
+        # check if req.category is already a valid NFR category key, else call LLM
+        cat_lower = req.category.lower().replace(" ","_").replace("-","_") if req.category else None
+        if cat_lower in NFR_CATEGORIES:
+            return cat_lower
+        return self._call_classify_nfr(req.text)
 
     def get_probe_question(self, domain, state):
         if domain.probe_question and domain.probe_count == 0:
@@ -286,22 +313,24 @@ class DomainDiscovery:
 
     # ── Internal LLM calls ──
 
-    def _call_seed(self, desc):
+    def _call_seed(self, desc, project_name="the system"):
         try:
             raw = self._provider.chat(
-                system_message="Requirements engineering expert. Return only valid JSON.",
-                messages=[{"role":"user","content":_SEED_PROMPT.format(description=desc[:2000])}],
+                system_message="You are an expert Requirements Engineer. Return only valid JSON arrays.",
+                messages=[{"role":"user","content":_SEED_PROMPT.format(
+                    description=desc[:2000], project_name=project_name)}],
                 temperature=0.0)
             return _parse_json_list(raw)
         except Exception: return []
 
-    def _call_reseed(self, desc, req_count, req_sample, current):
+    def _call_reseed(self, desc, req_count, req_sample, current, project_name="the system"):
         try:
             raw = self._provider.chat(
-                system_message="Requirements engineering expert. Return only valid JSON.",
+                system_message="You are an expert Requirements Engineer. Return only valid JSON arrays.",
                 messages=[{"role":"user","content":_RESEED_PROMPT.format(
                     description=desc[:1000], req_count=req_count,
-                    req_sample=req_sample, current_domains=json.dumps(current))}],
+                    req_sample=req_sample, current_domains=json.dumps(current),
+                    project_name=project_name)}],
                 temperature=0.0)
             return _parse_json_list(raw)
         except Exception: return []

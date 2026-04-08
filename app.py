@@ -1,7 +1,7 @@
 """
 app.py
 ======
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 5 | University of Hildesheim
 Web UI Backend (Flask)
 
 Responsibilities
@@ -191,13 +191,13 @@ def send_turn():
     manager: ConversationManager = session["manager"]
     logger                      = session["logger"]
     gap_detector: GapDetector   = session["gap_detector"]
-    q_generator: ProactiveQuestionGenerator = session["q_generator"]
+    # q_generator: ProactiveQuestionGenerator = session["q_generator"]
 
     if state.session_complete:
         return jsonify({"error": "Session already complete. Generate SRS or start a new session."}), 400
 
-    # Run gap detection BEFORE calling LLM (inject directive into prompt)
-    pre_gap_report = gap_detector.analyse(state)
+    # Run gap detection BEFORE calling LLM (inject coverage hints into prompt)
+    # pre_gap_report = gap_detector.analyse(state)
     # q_set = q_generator.generate(pre_gap_report, state)
 
     # if q_set.has_questions and hasattr(manager, "_architect"):
