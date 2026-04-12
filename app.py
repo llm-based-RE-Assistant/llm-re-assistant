@@ -1,8 +1,8 @@
 """
-app.py — Iteration 9 | University of Hildesheim
+app.py — Iteration 8 | University of Hildesheim
 RE Assistant — Project-based Web UI Backend
 
-New in IT9:
+New in IT8:
 - Project persistence: JSON files in ./projects/
 - GET  /api/projects                    → list all projects
 - POST /api/projects/create             → create new project (name, description, task_type)

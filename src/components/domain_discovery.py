@@ -1,5 +1,5 @@
 """
-src/components/domain_discovery.py — Iteration 4
+src/components/domain_discovery.py — Iteration 8
 University of Hildesheim
 
 """
@@ -12,7 +12,8 @@ NFR_CATEGORIES: dict[str, str] = {
     "performance":     "Performance Requirements",
     "usability":       "Usability & Accessibility Requirements",
     "security_privacy":"Security & Privacy Requirements",
-    "reliability":     "Reliability & Availability Requirements",
+    "reliability":     "Reliability Requirements",
+    "availability":    "Availability Requirements",
     "compatibility":   "Compatibility & Portability Requirements",
     "maintainability": "Maintainability Requirements",
 }
@@ -49,7 +50,8 @@ RULES:
    - door locks → "Door Lock Control"
    - cameras → "Security Camera Monitoring"
    - appliances → "Appliance Control"
-3. Always include standard system-level domains unless clearly irrelevant:
+3. Always include standard system-level domains unless clearly irrelevant, such as:
+   - User Interface and Interaction
    - User Account and Role Management
    - Alerts and Notifications
    - Reporting and History
@@ -431,7 +433,8 @@ class DomainDiscovery:
 
 
 # ── Structural coverage ──
-_MIN_FR_FOR_FUNCTIONAL_COVERAGE = 3
+_MIN_FR_FOR_FUNCTIONAL_COVERAGE = 10
+_MIN_FR_FOR_CONSTRAINT_COVERAGE = 5
 
 def compute_structural_coverage(state) -> set[str]:
     covered = set()
@@ -439,16 +442,8 @@ def compute_structural_coverage(state) -> set[str]:
     if sum(1 for r in state.requirements.values()
            if r.req_type==RequirementType.FUNCTIONAL) >= _MIN_FR_FOR_FUNCTIONAL_COVERAGE:
         covered.add("functional")
-    if state.project_name and state.project_name not in ("Unknown Project","Unnamed Project"):
-        covered.add("purpose")
-    if state.turn_count >= 2: covered.add("scope")
-    text = " ".join(r.text.lower() for r in state.requirements.values())
-    if any(kw in text for kw in ["user","admin","technician","role","account",
-           "stakeholder","operator","manager","customer"]): covered.add("stakeholders")
-    if any(kw in text for kw in ["interface","api","gateway","sensor","device",
-           "wireless","mobile","web","browser","app","thermostat","switch"]): covered.add("interfaces")
     if sum(1 for r in state.requirements.values()
-           if r.req_type==RequirementType.CONSTRAINT) >= 1: covered.add("constraints")
+           if r.req_type==RequirementType.CONSTRAINT) >= _MIN_FR_FOR_CONSTRAINT_COVERAGE: covered.add("constraints")
     return covered
 
 def _label_to_key(label):

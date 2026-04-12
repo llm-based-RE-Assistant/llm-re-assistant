@@ -1,7 +1,7 @@
 """
-requirement_preprocessor.py
+src/components/requirement_preprocessor.py
 ============================
-RE Assistant — Iteration 9 | University of Hildesheim
+RE Assistant — Iteration 8 | University of Hildesheim
 
 Handles uploaded requirement files (.txt / .json).
 Pipeline:
