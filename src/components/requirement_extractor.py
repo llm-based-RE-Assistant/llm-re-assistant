@@ -1,5 +1,5 @@
 """
-src/components/requirement_extractor.py — Iteration 4
+src/components/requirement_extractor.py — Iteration 8
 University of Hildesheim
 
 """
@@ -8,8 +8,13 @@ import re
 from dataclasses import dataclass
 
 _PATTERN_REQ_TAG = re.compile(
-    r'<REQ\s+type=["\']([^"\']+)["\']\s+category=["\']([^"\']+)["\']\s*>'
-    r'\s*(.*?)\s*</REQ>', re.DOTALL | re.IGNORECASE)
+    # Attribute-order-independent: type and category can appear in any order,
+    # with any extra attributes (domain=, source=, etc.) in between.
+    r'<REQ\b'
+    r'(?=[^>]*\btype=["\'](?P<type>functional|non_functional|non-functional|constraint|nfr)["\'])'
+    r'(?=[^>]*\bcategory=["\'](?P<category>[^"\']+)["\'])'
+    r'[^>]*>\s*(?P<text>.*?)\s*</REQ>',
+    re.DOTALL | re.IGNORECASE)
 _PATTERN_EXPLICIT = re.compile(
     r'(?:\*\*)?Requirement\s+\d+\s*\(([^)]+)\)\s*:?\*?\*?\s*([^\n]+)', re.IGNORECASE)
 _PATTERN_SHALL = re.compile(
@@ -71,13 +76,17 @@ class RequirementExtractor:
             if key not in seen and len(req.text.strip()) >= self.min_text_length:
                 seen.add(key); results.append(req)
 
-        tags = _PATTERN_REQ_TAG.findall(assistant_response)
-        for raw_type, raw_cat, raw_text in tags:
-            rt = _norm_type(raw_type)
+        tag_matches = list(_PATTERN_REQ_TAG.finditer(assistant_response))
+        for m in tag_matches:
+            raw_type = m.group('type')
+            raw_cat  = m.group('category')
+            raw_text = m.group('text')
+            rt  = _norm_type(raw_type)
             cat = _norm_category(raw_cat) or _infer_category(raw_text)
             text = _clean(raw_text)
             excerpt = f'<REQ type="{raw_type}" category="{raw_cat}">\n{raw_text.strip()}\n</REQ>'
             _add(ExtractedReq(text=text,req_type=rt,category=cat,raw_excerpt=excerpt,source="tag"))
+        tags = tag_matches  # keep the truthy check below working
 
         if not tags:
             for m in _PATTERN_EXPLICIT.finditer(assistant_response):

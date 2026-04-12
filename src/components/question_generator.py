@@ -1,7 +1,7 @@
 """
 src/components/question_generator.py
 =====================
-RE Assistant — Iteration 4 | University of Hildesheim
+RE Assistant — Iteration 8 | University of Hildesheim
 Proactive Follow-Up Question Generator
 
 """

@@ -823,6 +823,7 @@
       .chat-area {
         display: flex;
         flex-direction: column;
+        min-width: 600px;
         overflow: hidden;
         position: relative;
         background: var(--bg);
@@ -1567,11 +1568,13 @@
 
           <!-- Legend -->
           <div class="domain-legend">
-            <span id="legend-confirmed" style="color: var(--success)">✓ 0</span>
-            <span id="legend-partial" style="color: var(--warning)">◑ 0</span>
-            <span id="legend-unprobed" style="color: var(--danger)">○ 0</span>
+            <span id="legend-confirmed" style="color: var(--success)"
+              >✅ 0</span
+            >
+            <span id="legend-partial" style="color: var(--warning)">🔶 0</span>
+            <span id="legend-unprobed" style="color: var(--danger)">⬜ 0</span>
             <span id="legend-excluded" style="color: var(--text-muted)"
-              >✕ 0</span
+              >❌ 0</span
             >
           </div>
 
@@ -2889,12 +2892,12 @@
           (s) => s === "excluded",
         ).length;
         document.getElementById("legend-confirmed").textContent =
-          `✓ ${confirmed}`;
-        document.getElementById("legend-partial").textContent = `◑ ${partial}`;
+          `✅ ${confirmed}`;
+        document.getElementById("legend-partial").textContent = `🔶 ${partial}`;
         document.getElementById("legend-unprobed").textContent =
-          `○ ${unprobed}`;
+          `⬜ ${unprobed}`;
         document.getElementById("legend-excluded").textContent =
-          `✕ ${excluded}`;
+          `❌ ${excluded}`;
       }
 
       /* ══════════════════════════════════════

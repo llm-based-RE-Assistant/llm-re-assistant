@@ -1,8 +1,8 @@
 """
-conversation_manager.py — Iteration 9
+src/components/conversation_manager.py — Iteration 8
 University of Hildesheim
 
-Key changes (IT9):
+Key changes (IT8):
 - task_type parameter: "elicitation" | "srs_only"
 - PromptArchitect initialized with task_type
 - Context limited to 10 turns (20 messages) instead of 20 turns
@@ -361,6 +361,7 @@ Return ONLY the JSON array. No markdown, no explanation."""
 
         # 1. Build system message (phase-aware)
         system_msg = self._architect.build_system_message(state)
+        print(f"\n[System Message]\n{system_msg}\n")
         current_phase = self._architect.get_current_phase(state)
         print(f"\n[Phase: {current_phase}] Turn {state.turn_count + 1}\n[System prompt length: {len(system_msg)} chars]")
 

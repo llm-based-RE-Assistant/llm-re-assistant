@@ -20,7 +20,6 @@ output/
 logs/
 projects/
 
- 2d74252 (rf(iteration-3): update gitignore)
 # Flask instance folder
 instance/
 
