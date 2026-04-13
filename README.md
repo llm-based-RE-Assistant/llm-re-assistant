@@ -2,7 +2,7 @@
 
 **Requirements Engineering Assistant | University of Hildesheim**
 
-An AI-powered elicitation tool that conducts structured requirements interviews, detects coverage gaps in real time, and generates IEEE 830-compliant Software Requirements Specifications (SRS).
+An AI-powered elicitation tool that conducts structured stakeholder interviews, detects coverage gaps in real time, enforces IEEE 830-1998 completeness across functional domains and non-functional categories, and generates a full Software Requirements Specification (SRS) document.
 
 ---
 
@@ -26,20 +26,19 @@ An AI-powered elicitation tool that conducts structured requirements interviews,
 
 ## Overview
 
-The RE Assistant automates the requirements elicitation process through a conversational interview. It proactively identifies missing requirements using an IEEE 830 coverage checklist, generates targeted follow-up questions to fill gaps, and produces a structured SRS document at the end of the session.
+The RE Assistant automates the requirements elicitation process through a structured conversational interview. It guides the user through four phases — context gathering, functional domain coverage, non-functional requirement depth, and IEEE 830 documentation — producing a complete, annotated SRS document at the end.
 
 **Key capabilities:**
 
-- Conversational elicitation guided by a structured, phase-aware prompt architect
-- Dynamic domain gate: LLM seeds functional domains from the first user message and tracks coverage per domain
-- Real-time gap detection across 18 IEEE 830 coverage categories
-- Proactive follow-up question generation (LLM-powered or template fallback)
-- Automatic requirement extraction and classification from LLM responses using `<REQ>` tags
-- NFR depth enforcement: each of 6 mandatory NFR categories requires ≥ 2 measurable requirements
-- Phase 4 documentation: after all requirements are elicited, the assistant completes 8 IEEE 830 narrative sections interactively using `<SECTION>` tags
-- SRS Coverage Enricher: fills any remaining empty IEEE 830 sections via LLM synthesis or architect-review stubs
-- SMART quality annotation for every extracted requirement
-- Full IEEE 830-1998 SRS document generation in Markdown with dual coverage metrics
+- Conversational elicitation guided by a coverage-aware prompt architect (no rigid scripting)
+- Dynamic functional domain gate: the LLM seeds domains from the first user message and tracks each through `unprobed → partial → confirmed`
+- Real-time gap detection across 14 IEEE 830 coverage categories
+- NFR depth enforcement: each of 6 mandatory NFR categories requires ≥ 2 measurable requirements before moving to the next phase
+- Phase 4 documentation: interactive collection of 8 IEEE 830 narrative sections via `<SECTION>` tags
+- SRS Coverage Enricher: fills remaining empty sections via Phase 4 answers → LLM synthesis → architect-review stubs
+- SMART quality annotation and auto-rewriting for every extracted requirement
+- Requirement decomposition: auto-generates missing atomic requirements for confirmed domains
+- Full IEEE 830-1998 SRS in Markdown with dual coverage metrics
 - Single-page web UI with live domain gate ring, IEEE-830 ring, gap panel, and follow-up question panel
 - Ablation study support: gap detection can be toggled on/off per session
 
@@ -47,20 +46,20 @@ The RE Assistant automates the requirements elicitation process through a conver
 
 ## What's New in Iteration 4
 
-| Feature                              | Description                                                                                                                                                                                                                                             |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Dynamic Domain Gate**              | LLM seeds 8–12 functional domains from the stakeholder's first message. Each domain is tracked through `unprobed → partial → confirmed` states. The gate must be fully satisfied before NFR elicitation begins                                          |
-| **Domain Re-seeding**                | At turn 4 and turn 8, the domain list is automatically extended with any functional domains implied by requirements captured so far but not yet in the gate                                                                                             |
-| **Requirement Decomposition**        | For every confirmed domain with ≥ 2 requirements, the LLM generates 2–5 missing atomic requirements covering data, actions, constraints, automation, and edge cases                                                                                     |
-| **LLM Domain Matching**              | Each extracted requirement is matched to a domain key via an LLM call instead of rule-based heuristics, removing false mismatches                                                                                                                       |
-| **NFR Depth Enforcement (Phase 3)**  | Each of 6 mandatory NFR categories (`performance`, `usability`, `security_privacy`, `reliability`, `compatibility`, `maintainability`) now requires ≥ 2 measurable requirements. The assistant issues a targeted depth probe if only 1 exists           |
-| **Phase 4 — IEEE 830 Documentation** | After all NFRs reach depth, the assistant asks 8 structured questions to populate narrative SRS sections (scope, user classes, operating environment, assumptions, interfaces, product perspective). Answers are captured via `<SECTION id="X.Y">` tags |
-| **SRS Coverage Enricher**            | `srs_coverage.py` fills empty IEEE 830 sections at session end: Phase 4 customer answers take priority; LLM synthesis fills the rest; high-risk sections (hardware interfaces, database, design constraints) always get architect-review stubs          |
-| **Sub-dimension Tagging**            | Each requirement is classified into one of five sub-dimensions (`data`, `actions`, `constraints`, `automation`, `edge_cases`) for richer domain coverage reporting                                                                                      |
-| **Dual Metric UI**                   | The left panel now shows two separate coverage rings: domain gate completeness (%) and IEEE 830 structural coverage (%), each with colour-coded thresholds                                                                                              |
-| **Domain Gate UI List**              | The left panel now has a Domains / IEEE-830 tab switcher. The Domains tab shows each domain with its status icon and dynamic labels from the server                                                                                                     |
-| **Duplicate Detection**              | Turn-level Jaccard similarity check prevents duplicate user messages from advancing the conversation with repeated probes                                                                                                                               |
-| **Decomposition Deduplication**      | Decomposed requirements are compared against existing ones using similarity scoring; near-duplicates are silently dropped                                                                                                                               |
+| Feature | Description |
+|---|---|
+| **Dynamic Domain Gate** | LLM seeds 8–15 functional domains from the first stakeholder message. Each domain transitions through `unprobed → partial → confirmed` states based on requirement count thresholds (≥ 1 req = partial, ≥ 3 reqs = confirmed). Gate must be satisfied before SRS generation is unlocked. |
+| **Domain Re-seeding** | At turn 10 and turn 20, the domain list is automatically extended with any functional areas implied by requirements captured so far but not yet in the gate. |
+| **LLM Domain Matching** | Each extracted requirement is matched to a domain via a dedicated LLM call against the full domain key list, replacing rule-based heuristics. Falls back to partial key string matching. |
+| **Requirement Decomposition** | For every domain with ≥ 2 requirements, the LLM generates 2–5 missing atomic requirements covering data, actions, constraints, automation, and edge cases. Deduplication prevents near-duplicate additions (Jaccard similarity > 0.6 threshold). |
+| **NFR Depth Enforcement (Phase 3)** | Each of 6 mandatory NFR categories (`performance`, `usability`, `security_privacy`, `reliability`, `compatibility`, `maintainability`) requires ≥ 2 measurable requirements. The coverage-aware prompt guides the LLM to probe weak categories naturally. |
+| **SMART Quality Check & Auto-Rewrite** | After extraction, each batch of requirements is sent to a dedicated LLM quality check. Requirements failing Specific or Measurable criteria are automatically rewritten with concrete numbers. All requirements are scored 1–5 across 5 SMART dimensions. |
+| **Phase 4 — IEEE 830 Documentation** | After all NFR categories reach depth ≥ 2, the assistant asks 8 structured questions to populate IEEE 830 narrative sections (scope, user classes, operating environment, assumptions, user/software/communication interfaces, product perspective). Answers are captured via `<SECTION id="X.Y">` tags. |
+| **SRS Coverage Enricher** | `srs_coverage.py` fills empty IEEE 830 sections at session end: Phase 4 customer answers take priority; LLM synthesis fills low-risk sections; hardware interfaces, database requirements, and design constraints always receive architect-review stubs. |
+| **Sub-dimension Tagging** | Each requirement is classified into one of five sub-dimensions (`data`, `actions`, `constraints`, `automation`, `edge_cases`) for intra-domain depth tracking. |
+| **Coverage-Aware Prompt Architecture** | The system prompt provides a live session context block showing domain gate status, NFR depth per category, and Phase 4 section progress. The LLM is trusted to surface gaps naturally rather than following a rigid command sequence. |
+| **Dual Metric UI** | The left panel shows two independent coverage rings: domain gate completeness and IEEE-830 structural coverage. The Domains tab lists each domain with live status icons and requirement counts. |
+| **Duplicate Detection** | Jaccard similarity check prevents semantically duplicate requirements from being added during decomposition (threshold: > 0.6). |
 
 ---
 
@@ -70,37 +69,34 @@ The RE Assistant automates the requirements elicitation process through a conver
 Browser  ──POST/GET──►  Flask REST API (app.py)
                                │
                     ConversationManager
-                    ┌──────────┼──────────┐
-                    │          │          │
-             PromptArchitect  │   RequirementExtractor
-                    │         │          │
-               LLMProvider    │    ConversationState
-          (OpenAI/Ollama/Stub) │          │
-                    │         │     SRSTemplate
-                    │         │          │
-             DomainDiscovery  │    SRSFormatter
-             (seed/reseed/    │
-              match/decompose)│
-                    │         │
-             GapDetector      │
-                    │         │
-        ProactiveQuestionGenerator
-                              │
+                    ┌──────────┼──────────────────┐
+                    │          │                   │
+             PromptArchitect   │        RequirementExtractor
+                    │          │                   │
+               LLMProvider     │           ConversationState
+          (OpenAI/Ollama/Stub)  │                   │
+                    │          │              SRSTemplate
+                    │          │                   │
+             DomainDiscovery   │            SRSFormatter
+           (seed/reseed/match/ │
+            decompose/classify)│
+                    │          │
+             GapDetector       │
+                               │
                     SRSCoverageEnricher
 ```
 
 **Request flow per turn:**
 
-1. `PromptArchitect` builds a system message with live session context (phase, gate status, NFR depth, Phase 4 progress) and any gap directive from the previous turn
-2. The LLM produces a response
-3. `RequirementExtractor` parses `<REQ>` tags and, in Phase 4, `<SECTION>` tags from the response
-4. `DomainDiscovery` LLM-matches each requirement to a domain, classifies NFR category and sub-dimension, and decomposes confirmed domains
-5. Domain gate re-seeding runs at turns 4 and 8
-6. `SRSTemplate.update_from_requirements()` syncs the template
-7. `GapDetector.analyse()` produces a `GapReport`
-8. `ProactiveQuestionGenerator.generate()` produces a `QuestionSet`
-9. The gap directive is injected into `PromptArchitect.extra_context` for the next turn
-10. The API returns the assistant reply, gap report, follow-up questions, and dual coverage metrics to the UI
+1. `PromptArchitect` builds the system message with a live context block containing domain gate status, NFR depth per category, and Phase 4 section progress
+2. The LLM produces a response containing visible text plus embedded `<REQ>` tags (and `<SECTION>` tags in Phase 4)
+3. `RequirementExtractor` parses all `<REQ>` tags; in Phase 4, also parses `<SECTION>` tags and commits them to `state.srs_section_content`
+4. The SMART quality check batch-processes all newly extracted requirements, rewriting those that fail Specific or Measurable criteria
+5. `DomainDiscovery` LLM-matches each requirement to a domain, classifies its NFR category and sub-dimension, and runs decomposition for any newly confirmed domain
+6. Domain gate re-seeding runs automatically at turns 10 and 20
+7. `SRSTemplate.update_from_requirements()` syncs the template
+8. `GapDetector.analyse()` produces a `GapReport`, injecting synthetic gaps for unprobed/partial domains
+9. The API returns the assistant reply, gap report, and dual coverage metrics to the UI
 
 **At session end:**
 
@@ -120,7 +116,7 @@ Browser  ──POST/GET──►  Flask REST API (app.py)
 ├── prompt_architect.py       # System message builder; phase definitions; IEEE 830 registry
 ├── domain_discovery.py       # Domain gate seeding, matching, decomposition, NFR classification
 ├── gap_detector.py           # Coverage checklist and gap analysis
-├── question_generator.py     # Proactive follow-up question generation
+├── question_generator.py     # Proactive follow-up question generation (currently disabled by default)
 ├── requirement_extractor.py  # Extracts <REQ> and <SECTION> tags from LLM responses
 ├── srs_template.py           # IEEE 830 SRS data model (progressively populated)
 ├── srs_formatter.py          # Renders SRSTemplate to Markdown
@@ -146,9 +142,9 @@ pip install flask flask-cors requests
 # 3. For OpenAI provider
 pip install openai
 
-# 4. Set your API key (if using OpenAI or Ollama)
+# 4. Set your API key
 export OPENAI_API_KEY=sk-...
-# or
+# or for Ollama
 export OLLAMA_API_KEY=<your-key>
 export OLLAMA_BASE_URL=https://your-ollama-host/ollama   # optional, has default
 ```
@@ -167,7 +163,7 @@ python app.py --provider openai --model gpt-4o-mini
 # Local Ollama
 python app.py --provider ollama --model llama3.1:8b
 
-# Stub provider (no API key needed — for testing)
+# Stub provider (no API key needed — for testing/development)
 python app.py --provider stub
 
 # Custom host / port
@@ -178,13 +174,13 @@ Then open **http://127.0.0.1:5000** in your browser.
 
 ### CLI options
 
-| Flag         | Default     | Description                              |
-| ------------ | ----------- | ---------------------------------------- |
-| `--provider` | `openai`    | LLM provider: `openai`, `ollama`, `stub` |
-| `--model`    | `gpt-4o`    | Model name (passed to the provider)      |
-| `--host`     | `127.0.0.1` | Bind address                             |
-| `--port`     | `5000`      | Port                                     |
-| `--debug`    | off         | Enable Flask debug mode                  |
+| Flag | Default | Description |
+|---|---|---|
+| `--provider` | `openai` | LLM provider: `openai`, `ollama`, `stub` |
+| `--model` | `gpt-4o` | Model name passed to the provider |
+| `--host` | `127.0.0.1` | Bind address |
+| `--port` | `5000` | Port |
+| `--debug` | off | Enable Flask debug mode |
 
 ---
 
@@ -192,24 +188,22 @@ Then open **http://127.0.0.1:5000** in your browser.
 
 1. Open the web UI and optionally toggle **Gap Detection** on or off.
 2. Click **Start Elicitation Session**.
-3. Describe the software system you want to build — its purpose, users, and key features.
-4. Respond to the assistant's questions. Each response updates:
-   - The **Domain ring** (left panel, primary) — percentage of functional domains confirmed or excluded
-   - The **IEEE-830 ring** (left panel, secondary) — percentage of structural categories covered
-   - The **Domains / IEEE-830 tab** (left panel) — per-domain or per-category status list
-   - The **Gaps panel** (right panel) — uncovered categories ranked by severity
-   - The **Follow-ups panel** (right panel) — one proactive question targeting the highest-priority gap
+3. Describe your software system — its purpose, intended users, and key features.
+4. Respond to the assistant's questions. After each turn, the UI updates:
+   - **Domain ring** (left panel, primary) — percentage of functional domains confirmed or excluded
+   - **IEEE-830 ring** (left panel, secondary) — percentage of structural categories covered
+   - **Domains / IEEE-830 tab** (left panel) — per-domain or per-category status with icons and requirement counts
+   - **Gaps panel** (right panel) — uncovered categories ranked by severity
 5. The assistant automatically progresses through four phases:
-   - **Phase 1 (turns 1–2):** Listen, build context, seed domain gate
-   - **Phase 2 (turns 3+):** Probe each functional domain until the gate is satisfied
-   - **Phase 3:** Collect ≥ 2 measurable requirements for each of 6 mandatory NFR categories
+   - **Phase 1 & 2:** Explore functional areas; the LLM uses the domain gate to identify uncovered domains and probe them with plain-language questions
+   - **Phase 3:** Once ≥ 10 functional requirements are elicited, collect ≥ 2 measurable requirements for each of 6 mandatory NFR categories
    - **Phase 4:** Complete 8 IEEE 830 narrative documentation sections interactively
-6. Once all gates are satisfied, the **Generate SRS** button becomes available. Click it to produce the document.
+6. Once all gates are satisfied, click **⬇ SRS** or use the **Generate SRS** banner.
 7. Click **Download** in the success banner to save the Markdown SRS file.
 
 ### Requirement tagging
 
-The assistant wraps formalised requirements in XML tags that are automatically extracted:
+The assistant wraps formalised requirements in XML tags extracted automatically:
 
 ```xml
 <REQ type="functional" category="temperature_control">
@@ -227,10 +221,10 @@ During Phase 4, the assistant emits IEEE 830 narrative sections:
 
 ```xml
 <SECTION id="2.3">
-The system shall serve two primary user classes. Regular Users interact with the
-mobile application to monitor and control household devices. The Administrator
-configures system-wide settings and manages user accounts. It is assumed that
-regular users have basic smartphone proficiency; no technical expertise is required.
+The system serves two primary user classes. Regular Users interact with the mobile
+application to monitor and control household devices. The Administrator configures
+system-wide settings and manages user accounts. It is assumed that regular users have
+basic smartphone proficiency; no technical expertise is required.
 </SECTION>
 ```
 
@@ -247,13 +241,11 @@ All endpoints accept and return JSON.
 Start a new elicitation session.
 
 **Request body:**
-
 ```json
 { "gap_detection": true }
 ```
 
 **Response:**
-
 ```json
 {
   "session_id": "a1b2c3d4",
@@ -270,7 +262,6 @@ Start a new elicitation session.
 Send one user message and receive the assistant reply.
 
 **Request body:**
-
 ```json
 {
   "session_id": "a1b2c3d4",
@@ -279,7 +270,6 @@ Send one user message and receive the assistant reply.
 ```
 
 **Response:**
-
 ```json
 {
   "session_id": "a1b2c3d4",
@@ -292,22 +282,14 @@ Send one user message and receive the assistant reply.
     "optional_gaps": [...],
     "all_categories": { "purpose": "covered", "performance": "partial", ... }
   },
-  "follow_up_questions": [
-    {
-      "question_id": "domain_temperature_control_1",
-      "category_key": "domain_temperature_control",
-      "category_label": "Temperature Control",
-      "question_text": "If the internet goes out, should the thermostat keep the last scheduled temperature or let users override it manually?",
-      "severity": "critical",
-      "source": "domain_gate"
-    }
-  ],
+  "follow_up_questions": "",
   "coverage_report": {
     "domain_gate_status": { "temperature_control": "confirmed", "lighting_control": "partial", ... },
     "domain_gate_labels": { "temperature_control": "Temperature Control", ... },
     "domain_completeness_pct": 62,
     "phase4_progress": "3/8",
-    ...
+    "functional_count": 14,
+    "nonfunctional_count": 8
   },
   "srs_ready": false
 }
@@ -325,16 +307,14 @@ Get the current coverage and gap report without sending a message.
 
 ### `POST /api/session/generate_srs`
 
-Generate the SRS document for the session. Requires at least 5 functional requirements.
+Generate the SRS document. Requires at least 5 functional requirements.
 
 **Request body:**
-
 ```json
 { "session_id": "a1b2c3d4" }
 ```
 
 **Response:**
-
 ```json
 {
   "session_id": "a1b2c3d4",
@@ -347,11 +327,9 @@ Generate the SRS document for the session. Requires at least 5 functional requir
 
 ### `GET /api/session/download_srs`
 
-Download the generated SRS file.
+Download the generated SRS Markdown file.
 
 **Query params:** `session_id=a1b2c3d4`
-
-Returns the Markdown file as a download attachment.
 
 ---
 
@@ -365,179 +343,189 @@ Returns the Markdown file as a download attachment.
 
 ## Component Reference
 
+### `ConversationManager`
+
+Central orchestrator. On each `send_turn()` call it:
+
+1. Builds the system message via `PromptArchitect`
+2. Calls the LLM (last 40 messages = 20 turns kept as context)
+3. Extracts `<REQ>` and `<SECTION>` tags via `RequirementExtractor`
+4. Runs the SMART batch quality check and auto-rewrite on all new requirements
+5. LLM-matches each requirement to a domain, classifies NFR category and sub-dimension
+6. Triggers domain re-seeding at turns 10 and 20
+7. Runs decomposition for newly confirmed domains (capped at 3 domains per turn)
+8. Syncs `SRSTemplate` and runs `GapDetector`
+
+At session end (`finalize_session()`), calls `SRSCoverageEnricher.enrich()` then `SRSFormatter.write()`.
+
+---
+
 ### `DomainDiscovery`
 
-The central new component of Iteration 4. Manages the functional domain gate through the session lifecycle.
+Manages the functional domain gate. All classification and matching uses LLM calls.
 
-**Seeding (`seed()`):** On turn 1, an LLM prompt identifies 8–12 functional domains from the stakeholder's first message. For every physical device or sensor mentioned, the prompt forces a corresponding control domain (e.g., thermostat → Temperature Control).
+**Seeding (`seed()`):** On turn 1, identifies 8–15 functional domains from the first message. The prompt enforces domain creation for physical devices and sensors (e.g., thermostat → Temperature Control) and mandates standard system-level domains (alerts, user management, reporting).
 
-**Re-seeding (`reseed()`):** At turns 4 and 8, a second LLM prompt inspects requirements captured so far and adds any missing domains not in the original seed.
+**Re-seeding (`reseed()`):** At turns 10 and 20, inspects requirements captured so far and adds any implied domains not yet in the gate.
 
-**LLM domain matching (`match_requirement_to_domain()`):** Each extracted requirement is matched to its domain via an LLM call against the full domain key list. Falls back to partial key matching.
+**Domain matching (`match_requirement_to_domain()`):** Matches each extracted requirement to a domain key via LLM. Falls back to partial key string matching.
 
-**NFR classification (`classify_nfr()`):** Classifies each non-functional requirement into one of 6 mandatory categories (`performance`, `usability`, `security_privacy`, `reliability`, `compatibility`, `maintainability`).
+**NFR classification (`classify_nfr()`):** Maps non-functional requirements to one of 6 mandatory categories. First checks if the `<REQ category="...">` tag already contains a valid NFR key before calling the LLM.
 
-**Sub-dimension classification (`classify_subdimension()`):** Tags each requirement as one of `data`, `actions`, `constraints`, `automation`, or `edge_cases` for intra-domain coverage depth.
+**Sub-dimension classification (`classify_subdimension()`):** Tags each requirement as `data`, `actions`, `constraints`, `automation`, or `edge_cases`.
 
-**Decomposition (`decompose_requirements()`):** For confirmed domains with ≥ 2 requirements, generates 2–5 missing atomic requirements using a prompt that sees both domain-specific and all-other requirements as context.
+**Decomposition (`decompose_requirements()`):** For confirmed domains with ≥ 2 requirements, generates 2–5 missing atomic requirements. Receives full context (both domain-specific and all other requirements) to avoid duplication. Each domain is decomposed at most once per session.
 
 **Domain status transitions:**
-
 - `unprobed` → `partial` (≥ 1 requirement matched)
 - `partial` → `confirmed` (≥ 3 requirements matched)
-- `excluded` (set directly if stakeholder rules out a domain)
+- `excluded` (set when stakeholder rules a domain out of scope)
 
 ---
 
 ### `PromptArchitect`
 
-Builds a four-block system message on every turn. The context block (`_build_context_block`) now contains a phase-aware `⛔ HARD STOP` or `✅ ALL GATES SATISFIED` directive:
+Builds a three-block system message on every turn:
 
-| Phase                  | Trigger                       | Hard Stop Content                                           |
-| ---------------------- | ----------------------------- | ----------------------------------------------------------- |
-| Gate unseeded          | Turn 1                        | Prompt to listen and build context                          |
-| Domain gate incomplete | Gate not satisfied            | Next unprobed/partial domain + pre-generated probe question |
-| NFR Phase 3            | Gate satisfied, NFR count < 2 | Category with lowest count; depth probe if count = 1        |
-| Phase 4                | All NFRs at depth             | Next uncovered IEEE 830 section + probe question            |
-| All complete           | All gates met                 | Offer SRS generation                                        |
+1. **ROLE block** — interviewer identity, communication style (plain language, concrete examples), measurability enforcement, one-question-per-turn rule
+2. **SESSION COVERAGE AWARENESS block** — live context showing domain gate table with status icons and requirement counts, NFR coverage per category with counts vs threshold, Phase 4 section completion status, and an FR count warning when below the 10-requirement target
+3. **TASK CONTRACT block** — `<REQ>` and `<SECTION>` tag format specifications, phase-by-phase guidance, and quick-reference rules
 
-The `PHASE4_SECTIONS` list defines 8 ordered sections, each with a section ID, label, probe question, and a `can_ask_followup` flag.
+The context block is framed as *orientation* rather than commands, trusting the LLM to surface gaps naturally within the conversation flow.
 
 ---
 
 ### `GapDetector`
 
-Analyses a `ConversationState` and returns a `GapReport`. Covers 18 categories drawn from IEEE 830.
+Analyses `ConversationState` and returns a `GapReport` across 14 IEEE 830 categories. NFR categories use `state.nfr_coverage` counts against `MIN_NFR_PER_CATEGORY = 2`. Structural categories use keyword matching against the full conversation corpus plus `state.covered_categories`.
 
-**In Iteration 4**, NFR categories use the `nfr_coverage` counter against `MIN_NFR_PER_CATEGORY = 2` (raised from 1). A category with count 1 is `partial`; count ≥ 2 is `covered`.
-
-**Domain gate gap injection:** After standard analysis, any `unprobed` or `partial` domain is injected as a synthetic critical gap with its pre-generated probe question as the description, visually separated in the UI.
+**Domain gate gap injection:** After standard analysis, unprobed and partial domains are injected as synthetic critical gaps with their pre-generated probe question as the description. These appear as a separate "Domain Gate Gaps" group in the UI gap panel.
 
 ---
 
 ### `RequirementExtractor`
 
-Parses `<REQ type="..." category="..."> ... </REQ>` tags from LLM responses. Falls back to numbered "Requirement N (Type):" patterns, then to bare "The system shall ..." sentences. Deduplicates by normalised text before committing to state.
+Parses `<REQ type="..." category="..."> ... </REQ>` tags from LLM responses. Falls back to numbered `Requirement N (Type):` patterns, then to bare `The system shall ...` sentences. Deduplicates by normalised text before committing to state.
 
-**New in Iteration 4:** `extract_sections()` and `commit_sections()` parse `<SECTION id="X.Y"> ... </SECTION>` tags from Phase 4 responses and store them in `state.srs_section_content` and `state.phase4_sections_covered`.
+**Phase 4:** `extract_sections()` parses `<SECTION id="X.Y"> ... </SECTION>` tags. `commit_sections()` stores content in `state.srs_section_content` and marks sections as covered in `state.phase4_sections_covered`. Appends to existing content if a section is revisited across multiple turns.
 
 ---
 
 ### `SRSCoverageEnricher`
 
-New in Iteration 4. Fills empty IEEE 830 SRS sections before document rendering using a consumer-first strategy:
+Fills empty IEEE 830 sections before document rendering using a three-tier strategy:
 
-1. **Phase 4 content (highest priority):** If the customer answered a section during Phase 4, their answer is used verbatim.
-2. **LLM synthesis (low-risk sections):** Scope, product perspective, product functions, user classes, assumptions, operating environment, user documentation, and interface sections are synthesised from elicited requirements using targeted prompts.
-3. **Architect-review stubs (high-risk sections):** Hardware interfaces, logical database requirements, and design constraints always receive clearly marked stubs with an architect checklist rather than LLM fabrication.
+1. **Phase 4 customer answers (highest priority):** If the customer answered a section during Phase 4, their answer is used directly.
+2. **LLM synthesis (low-risk sections):** Scope, product perspective, product functions, user classes, assumptions and dependencies, operating environment, user documentation, user/software/communication interfaces — all synthesised from elicited requirements using targeted prompts. Every inferred statement is marked `[INFERRED]`.
+3. **Architect-review stubs (high-risk sections):** Hardware interfaces, logical database requirements, and design constraints always receive clearly marked stubs with an architect checklist. These are never LLM-fabricated.
 
-`render_section2_extras()` and `render_section35_stub()` are helper functions called by `SRSFormatter` to emit sentinel-prefixed content stored in `general_constraints` and `section1.references`.
+The `§2.2 Product Functions` section is special: for each non-excluded domain in the gate, a dedicated LLM call synthesises a 2–4 sentence capability description from that domain's functional requirements alone.
 
 ---
 
 ### `SRSTemplate`
 
-Progressive IEEE 830 data model. Updated after every turn via `update_from_requirements()`. Runs a heuristic SMART check on every new requirement:
-
-| Dimension   | Heuristic                                            |
-| ----------- | ---------------------------------------------------- |
-| Specific    | Starts with a defined actor (system / user / admin)  |
-| Measurable  | Contains a numeric value or unit                     |
-| Testable    | Uses IEEE "shall" form                               |
-| Unambiguous | Contains no vague adjectives (fast, simple, good, …) |
-| Relevant    | Non-empty text (assumed true)                        |
+Progressive IEEE 830 data model updated after every turn via `update_from_requirements()`. Runs a heuristic SMART check on every new requirement: Specific (actor-subject present), Measurable (numeric pattern present), Testable (uses "shall"), Unambiguous (no vague adjectives), Relevant (non-empty). The LLM-based batch check in `ConversationManager` supersedes these heuristics and can rewrite requirement text.
 
 ---
 
 ### `SRSFormatter`
 
-Renders an `SRSTemplate` to IEEE 830 Markdown. New in Iteration 4:
+Renders `SRSTemplate` to full IEEE 830 Markdown. Key sections:
 
-- **Dual metrics in header:** Domain Completeness Score and IEEE-830 Elicitation Coverage reported separately
-- **Appendix D — Design-Derived Requirements Inventory:** Dynamic stubs for all unconfirmed domains and uncovered structural sections, replacing the hard-coded domain-specific lists from earlier iterations
-- **Phase 4 section rendering:** `render_section2_extras()` emits §2.4 Operating Environment and §2.6 User Documentation; `render_section35_stub()` emits architect-review stubs for §3.5
+- **SMART quality badges** on every requirement (`★★★ 4/5`, per-dimension breakdown, rewrite notes)
+- **Appendix A — Traceability Matrix:** all requirements × (type, category, section, turn, priority, SMART score, text)
+- **Appendix B — Coverage & Quality Report:** session metrics, domain gate breakdown table, NFR coverage table, SMART dimension analysis, IEEE-830 category grid, requirements needing attention
+- **Appendix C — Conversation Transcript Summary:** turn-by-turn user/assistant excerpts
+- **Appendix D — Design-Derived Requirements Inventory:** dynamic stubs for all unconfirmed domains and uncovered structural sections with actionable architect checklists
 
 ---
 
 ## SRS Output Format
 
-Generated documents are IEEE 830-1998 Markdown files saved to `output/`. Each document contains:
+Generated documents are saved to `output/` as `SRS_<session_id>_<timestamp>.md`. Each document contains:
 
-| Section                            | Content                                                                      |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| Header                             | Project name, session metadata, dual coverage metrics, quality summary       |
-| §1 Introduction                    | Purpose, scope (Phase 4 or LLM-synthesised), definitions, references         |
-| §2.1 Product Perspective           | Phase 4 or LLM-synthesised                                                   |
-| §2.2 Product Functions             | Per-domain LLM narrative summaries                                           |
-| §2.3 User Characteristics          | Phase 4 or LLM-synthesised with Markdown table                               |
-| §2.4 Operating Environment         | Phase 4 or LLM-synthesised                                                   |
-| §2.5 Assumptions & Dependencies    | Phase 4 or LLM-synthesised numbered list                                     |
-| §2.6 User Documentation            | LLM-synthesised from usability requirements                                  |
-| §3.1 Functional Requirements       | Extracted FRs with SMART badges and priority labels                          |
-| §3.2 External Interfaces           | Phase 4 or LLM-synthesised; hardware always stubbed                          |
-| §3.3 Performance Requirements      | Extracted NFRs (performance category)                                        |
-| §3.4 Logical Database Requirements | Architect-review stub with implied-data checklist                            |
-| §3.5 Design Constraints            | Extracted CON requirements or architect-review stub                          |
-| §3.6 System Attributes             | Reliability, availability, security, maintainability, portability, usability |
-| Appendix A                         | Traceability matrix (all requirements × metadata)                            |
-| Appendix B                         | Elicitation coverage and SMART quality report                                |
-| Appendix C                         | Turn-by-turn conversation transcript summary                                 |
-| Appendix D                         | Design-derived stubs for unconfirmed domains and uncovered IEEE 830 sections |
+| Section | Content |
+|---|---|
+| Header | Project name, session metadata, dual coverage metrics, quality summary, warnings for incomplete areas |
+| §1 Introduction | Purpose, scope (Phase 4 or LLM-synthesised), definitions, references |
+| §2.1 Product Perspective | Phase 4 or LLM-synthesised |
+| §2.2 Product Functions | Per-domain LLM narrative summaries (one paragraph per confirmed domain) |
+| §2.3 User Characteristics | Phase 4 or LLM-synthesised with Markdown table |
+| §2.4 Operating Environment | Phase 4 or LLM-synthesised |
+| §2.5 Assumptions & Dependencies | Phase 4 or LLM-synthesised numbered list |
+| §2.6 User Documentation | LLM-synthesised from usability requirements and user profile |
+| §3.1 Functional Requirements | All FRs with SMART badges, priority labels, turn/category metadata |
+| §3.2 External Interfaces | Phase 4 or LLM-synthesised; hardware interfaces always stubbed |
+| §3.3 Performance Requirements | Extracted performance NFRs |
+| §3.4 Logical Database Requirements | Architect-review stub with implied-data requirement checklist |
+| §3.5 Design Constraints | Extracted CON requirements or architect-review stub |
+| §3.6 System Attributes | Reliability, availability, security, maintainability, portability, usability NFRs |
+| Appendix A | Traceability matrix |
+| Appendix B | Coverage and SMART quality report |
+| Appendix C | Conversation transcript summary |
+| Appendix D | Design-derived stubs for unconfirmed domains and structural gaps |
 
 ---
 
 ## Ablation Study Support
 
-Gap detection can be disabled per session for controlled evaluation:
+Gap detection can be disabled per session for controlled evaluation experiments.
 
-**Via the UI:** toggle the "Gap Detection" switch before starting a session.
+**Via the UI:** toggle the "Gap Detection" switch before clicking Start.
 
 **Via the API:**
-
 ```json
 POST /api/session/start
 { "gap_detection": false }
 ```
 
 **Programmatically:**
-
 ```python
 manager = ConversationManager(provider=..., gap_enabled=False)
 ```
 
-When disabled, `GapDetector` returns a full-coverage report (100%, no gaps) and `ProactiveQuestionGenerator` receives no gap targets.
+When disabled, `GapDetector` returns a full-coverage report (100%, no gaps).
 
 ---
 
 ## Configuration
 
-| Environment Variable | Description                                                            |
-| -------------------- | ---------------------------------------------------------------------- |
-| `OPENAI_API_KEY`     | Required for the OpenAI provider                                       |
-| `OLLAMA_API_KEY`     | Required for the Ollama provider                                       |
-| `OLLAMA_BASE_URL`    | Ollama base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
+| Environment Variable | Description |
+|---|---|
+| `OPENAI_API_KEY` | Required for the OpenAI provider |
+| `OLLAMA_API_KEY` | Required for the Ollama provider |
+| `OLLAMA_BASE_URL` | Ollama base URL (default: `https://genai-01.uni-hildesheim.de/ollama`) |
 
-Key thresholds in `prompt_architect.py`:
+Key thresholds defined in `prompt_architect.py`:
 
-| Constant               | Default | Description                                                                     |
-| ---------------------- | ------- | ------------------------------------------------------------------------------- |
-| `MIN_FUNCTIONAL_REQS`  | 10      | Minimum functional requirements before Phase 3 NFR probing begins               |
-| `MIN_NFR_PER_CATEGORY` | 2       | Minimum measurable requirements per NFR category (raised from 1 in Iteration 4) |
+| Constant | Default | Description |
+|---|---|---|
+| `MIN_FUNCTIONAL_REQS` | 10 | Minimum functional requirements before Phase 3 NFR probing begins |
+| `MIN_NFR_PER_CATEGORY` | 2 | Minimum measurable requirements per mandatory NFR category |
 
-Log files are written to `logs/session_<id>.json`. Generated SRS files are written to `output/SRS_<id>_<timestamp>.md`. Both directories are created automatically on first run.
+Domain gate re-seeding turns are defined in `domain_discovery.py`:
+
+| Constant | Value | Description |
+|---|---|---|
+| `RESEED_TURN` | 10 | First re-seeding pass |
+| `SECOND_RESEED_TURN` | 20 | Second re-seeding pass |
+
+Session logs are written to `logs/session_<id>.json`. Generated SRS files are written to `output/SRS_<id>_<timestamp>.md`. Both directories are created automatically.
 
 ---
 
 ## Known Limitations
 
 - **Session persistence:** Sessions are stored in memory only. Restarting the server loses all active sessions.
-- **LLM call volume:** Iteration 4 makes multiple LLM calls per turn (domain matching, NFR classification, sub-dimension classification, and optionally decomposition and probe question generation). High-latency providers may cause noticeable turn delays.
-- **Domain gate seeding quality:** Seed accuracy depends on the first user message. Vague or very short opening messages may produce an incomplete or generic domain list. Re-seeding at turns 4 and 8 mitigates this.
-- **SMART heuristics:** Quality scoring uses lightweight keyword heuristics, not full NLP. Measurability detection relies on numeric patterns and may miss domain-specific units.
-- **Requirement extraction:** The extractor depends on the LLM consistently using `<REQ>` and `<SECTION>` tags. Malformed or missing tags cause fallback to weaker pattern matching.
-- **SRS coverage stubs:** High-risk sections (hardware interfaces, database, design constraints) are always stubbed rather than LLM-synthesised. These require manual completion by a system architect before the SRS can be used for development.
-- **Single-user:** No authentication or multi-user isolation. Not intended for production deployment.
+- **LLM call volume:** Multiple LLM calls are made per turn — domain matching (one per extracted requirement), NFR classification, sub-dimension classification, SMART batch check, and optionally decomposition and probe question generation. High-latency providers will cause noticeable turn delays.
+- **Proactive question generator disabled:** `question_generator.py` exists and is functional but is commented out in `conversation_manager.py`. Gap guidance is delivered exclusively via the system prompt context block instead.
+- **Domain gate seeding quality:** Seed accuracy depends on the richness of the first user message. Vague opening messages may yield a generic or incomplete domain list. Re-seeding at turns 10 and 20 partially compensates.
+- **SMART heuristics:** The heuristic check in `srs_template.py` uses lightweight keyword and regex patterns. The LLM-based batch check in `conversation_manager.py` supersedes it for all actively extracted requirements, but requirements added via decomposition rely on the heuristic only.
+- **Requirement extraction reliability:** The extractor depends on the LLM consistently emitting well-formed `<REQ>` and `<SECTION>` tags. Malformed or missing tags trigger weaker fallback patterns.
+- **High-risk section stubs:** Hardware interfaces, logical database requirements, and design constraints are always stubbed and require manual completion by a system architect before the SRS can be used for development.
+- **Single-user, no authentication:** Not intended for multi-user or production deployment.
 
 ---
 
-_RE Assistant — Iteration 4 | University of Hildesheim_
+*RE Assistant — Iteration 4 | University of Hildesheim*

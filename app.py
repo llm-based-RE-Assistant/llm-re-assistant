@@ -51,13 +51,13 @@ from typing import Optional
 # Flat project structure — all modules live next to app.py
 sys.path.insert(0, str(Path(__file__).parent))
 
-from flask import Flask, jsonify, request, send_file, send_from_directory
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 
 from src.components.conversation_manager import ConversationManager, create_provider
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
-from src.components.question_generator import ProactiveQuestionGenerator, create_question_generator
+from src.components.question_generator import create_question_generator
 from src.components.domain_discovery import DomainGate
 from src.components.prompt_architect import MIN_NFR_PER_CATEGORY
 from src.components.domain_discovery import NFR_CATEGORIES
@@ -196,29 +196,14 @@ def send_turn():
     if state.session_complete:
         return jsonify({"error": "Session already complete. Generate SRS or start a new session."}), 400
 
-    # Run gap detection BEFORE calling LLM (inject coverage hints into prompt)
-    # pre_gap_report = gap_detector.analyse(state)
-    # q_set = q_generator.generate(pre_gap_report, state)
-
-    # if q_set.has_questions and hasattr(manager, "_architect"):
-    #     injection = q_generator.build_injection_text(q_set)
-    #     manager._architect.extra_context = injection
-
     # Send turn to LLM
     try:
         assistant_reply = manager.send_turn(user_message, state, logger)
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
 
-    # Run gap detection AFTER turn to report updated state
     post_gap_report = gap_detector.analyse(state)
 
-    # IT8: srs_ready — show the Generate SRS button when:
-    #   (a) the RE assistant has explicitly offered SRS (all gates satisfied), OR
-    #   (b) we hit the turn safety ceiling.
-    # We do NOT hard-gate on is_ready_for_srs() here because that would prevent
-    # the button appearing during Phase 4. Instead we expose it as soon as the
-    # assistant's response contains an offer phrase, or at turn limit.
     MAX_TURNS = 60
     at_turn_limit = state.turn_count >= MAX_TURNS
     nfrs_at_depth = all(

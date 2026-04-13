@@ -16,10 +16,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from conversation_state import ConversationState, RequirementType, create_session
 from prompt_architect import PromptArchitect, PHASE4_SECTIONS
 from srs_template import SRSTemplate, create_template
-from srs_formatter import SRSFormatter, generate_srs_document
+from srs_formatter import generate_srs_document
 from requirement_extractor import RequirementExtractor, create_extractor
 from gap_detector import GapDetector, create_gap_detector
-from question_generator import ProactiveQuestionGenerator, create_question_generator
 from domain_discovery import DomainDiscovery, DomainGate, create_domain_discovery
 
 
