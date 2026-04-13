@@ -1,8 +1,3 @@
-"""
-src/components/conversation_state.py — Iteration 8
-University of Hildesheim
-
-"""
 from __future__ import annotations
 import json, re, time
 from dataclasses import dataclass, field
@@ -61,26 +56,26 @@ class ConversationState:
     project_name: str = "Unknown Project"
     turns: list[Turn] = field(default_factory=list)
     requirements: dict[str, Requirement] = field(default_factory=dict)
-    domain_gate: object = field(default=None)
     nfr_coverage: dict[str, int] = field(default_factory=dict)
     session_complete: bool = False
     project_name_needs_llm: bool = field(default=False, repr=False)
-    # IT8-PHASE4: narrative SRS sections populated during Phase 4 conversation
-    # Keys are IEEE-830 section IDs e.g. "1.2", "2.1", "2.3", "3.1.1" etc.
     srs_section_content: dict[str, str] = field(default_factory=dict)
-    # IT8-PHASE4: tracks which Phase 4 sections have been asked about
     phase4_sections_covered: set = field(default_factory=set)
+    domain_req_templates: dict[str, str] = field(default_factory=dict)
+    system_complexity: str = field(default="")
     _fr_counter: int = field(default=0, repr=False)
     _nfr_counter: int = field(default=0, repr=False)
     _con_counter: int = field(default=0, repr=False)
 
     def __post_init__(self):
-        # IT8: Ensure new fields exist even on instances deserialized/created
-        # before this version (e.g. sessions already in memory when server reloads).
         if not hasattr(self, 'srs_section_content') or self.srs_section_content is None:
             self.srs_section_content = {}
         if not hasattr(self, 'phase4_sections_covered') or self.phase4_sections_covered is None:
             self.phase4_sections_covered = set()
+        if not hasattr(self, 'domain_req_templates') or self.domain_req_templates is None:
+            self.domain_req_templates = {}
+        if not hasattr(self, 'system_complexity') or self.system_complexity is None:
+            self.system_complexity = ""
 
     @property
     def turn_count(self): return len(self.turns)
@@ -98,10 +93,10 @@ class ConversationState:
 
     @property
     def covered_categories(self):
-        from prompt_architect import MIN_NFR_PER_CATEGORY
+        from src.components.system_prompt.prompt_architect import MIN_NFR_PER_CATEGORY
         covered = set()
         try:
-            from domain_discovery import compute_structural_coverage
+            from src.components.domain_discovery.domain_discovery import compute_structural_coverage
             covered |= compute_structural_coverage(self)
         except ImportError: pass
         for ck, cnt in self.nfr_coverage.items():
@@ -110,19 +105,19 @@ class ConversationState:
 
     @property
     def coverage_percentage(self):
-        from prompt_architect import IEEE830_CATEGORIES
+        from src.components.system_prompt.prompt_architect import IEEE830_CATEGORIES
         total = len(IEEE830_CATEGORIES)
         return round(len(self.covered_categories)/total*100, 1) if total else 0.0
 
     @property
     def mandatory_nfrs_covered(self):
-        from domain_discovery import NFR_CATEGORIES
-        from prompt_architect import MIN_NFR_PER_CATEGORY
+        from src.components.domain_discovery.domain_discovery import NFR_CATEGORIES
+        from src.components.system_prompt.prompt_architect import MIN_NFR_PER_CATEGORY
         return all(self.nfr_coverage.get(c, 0) >= MIN_NFR_PER_CATEGORY for c in NFR_CATEGORIES)
 
     @property
     def uncovered_categories(self):
-        from prompt_architect import IEEE830_CATEGORIES
+        from src.components.system_prompt.prompt_architect import IEEE830_CATEGORIES
         return [k for k in IEEE830_CATEGORIES if k not in self.covered_categories]
 
     def _next_fr_id(self):
@@ -163,8 +158,9 @@ class ConversationState:
         self.nfr_coverage[category_key] = self.nfr_coverage.get(category_key,0)+1
 
     def get_coverage_report(self):
-        from prompt_architect import IEEE830_CATEGORIES, MIN_NFR_PER_CATEGORY, PHASE4_SECTIONS
-        from domain_discovery import NFR_CATEGORIES
+        from src.components.system_prompt.prompt_architect import IEEE830_CATEGORIES, MIN_NFR_PER_CATEGORY
+        from src.components.system_prompt.utils import PHASE4_SECTIONS
+        from src.components.domain_discovery.domain_discovery import NFR_CATEGORIES
         covered = self.covered_categories
         # NFR depth: show per-category count vs threshold
         missing_nfrs = [IEEE830_CATEGORIES.get(c,c) for c in NFR_CATEGORIES
@@ -200,20 +196,35 @@ class ConversationState:
         }
 
     def get_next_priority_category(self):
-        from domain_discovery import NFR_CATEGORIES
-        from prompt_architect import MIN_NFR_PER_CATEGORY
+        from src.components.domain_discovery.domain_discovery import NFR_CATEGORIES
+        from src.components.system_prompt.prompt_architect import MIN_NFR_PER_CATEGORY
         for c in NFR_CATEGORIES:
             if self.nfr_coverage.get(c, 0) < MIN_NFR_PER_CATEGORY: return c
         return None
 
-    # IT8: SRS requires FRs + mandatory NFRs (depth >=2) + domain gate + Phase 4 complete
     def is_ready_for_srs(self):
-        from prompt_architect import MIN_FUNCTIONAL_REQS, PHASE4_SECTIONS
-        if self.functional_count < MIN_FUNCTIONAL_REQS: return False
-        if not self.mandatory_nfrs_covered: return False
-        if self.domain_gate and self.domain_gate.seeded:
-            if not self.domain_gate.is_satisfied: return False
-        if len(self.phase4_sections_covered) < len(PHASE4_SECTIONS): return False
+        """True when all SRS generation prerequisites are met.
+
+        Conditions (must all pass):
+        1. Enough functional requirements collected.
+        2. All mandatory NFR categories have sufficient coverage.
+        3. Domain gate satisfied — uses gate.is_satisfied which is the single
+           source of truth (defined in DomainGate, requires >=80% confirmed
+           AND all in-scope domains probed at least once).
+           - If gate is None: no domain tracking, do not block.
+           - If gate exists but not seeded (seeding failed): block — we should
+             not generate an SRS without any domain elicitation context.
+        4. All IEEE-830 documentation sections collected (Phase 4 complete).
+        """
+        from src.components.system_prompt.prompt_architect import MIN_FUNCTIONAL_REQS, PHASE4_SECTIONS
+        if self.functional_count < MIN_FUNCTIONAL_REQS:
+            return False
+        if not self.mandatory_nfrs_covered:
+            return False
+        if self.domain_gate is not None and not self.domain_gate.is_satisfied:
+            return False
+        if len(self.phase4_sections_covered) < len(PHASE4_SECTIONS):
+            return False
         return True
 
     def to_dict(self):

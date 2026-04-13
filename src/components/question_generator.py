@@ -1,18 +1,12 @@
-"""
-src/components/question_generator.py
-=====================
-RE Assistant — Iteration 8 | University of Hildesheim
-Proactive Follow-Up Question Generator
-
-"""
-
 from __future__ import annotations
 from dataclasses import dataclass, field
+from src.components.system_prompt.prompt_architect import MIN_FUNCTIONAL_REQS
+from src.components.gap_detector import COVERAGE_CHECKLIST
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from gap_detector import GapReport, CategoryGap
-    from conversation_state import ConversationState
+    from src.components.gap_detector import GapReport, CategoryGap
+    from src.components.conversation_state import ConversationState
 
 
 # ---------------------------------------------------------------------------
@@ -261,9 +255,6 @@ class ProactiveQuestionGenerator:
             return question_set
 
         # ── IEEE-830 gap pass ──
-        from prompt_architect import MIN_FUNCTIONAL_REQS
-        from gap_detector import GapSeverity
-
         all_gaps = gap_report.all_gaps if gap_report else []
 
         if state.functional_count < MIN_FUNCTIONAL_REQS:
@@ -300,7 +291,6 @@ class ProactiveQuestionGenerator:
             return ""
 
         primary = question_set.primary_question
-        from gap_detector import COVERAGE_CHECKLIST
         desc = COVERAGE_CHECKLIST.get(primary.category_key, {}).get("description", "")
 
         lines = [
@@ -492,7 +482,6 @@ class ProactiveQuestionGenerator:
         )
 
     def _get_category_description(self, key: str) -> str:
-        from gap_detector import COVERAGE_CHECKLIST
         return COVERAGE_CHECKLIST.get(key, {}).get("description", "")
 
 

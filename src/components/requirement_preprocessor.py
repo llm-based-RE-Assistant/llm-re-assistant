@@ -1,27 +1,11 @@
-"""
-src/components/requirement_preprocessor.py
-============================
-RE Assistant — Iteration 8 | University of Hildesheim
-
-Handles uploaded requirement files (.txt / .json).
-Pipeline:
-  1. Parse file (txt = one req per line, json = array of strings or objects)
-  2. LLM call: quality check, rewrite if needed, atomize, assign type + category
-  3. Return structured list ready for domain seeding and session injection
-
-The LLM returns each requirement in a <REQ> tag (same contract as elicitation)
-plus a JSON summary used to seed the domain gate.
-"""
-
 from __future__ import annotations
-
 import json
 import re
 from dataclasses import dataclass, field
 from typing import Optional, TYPE_CHECKING
-
+from src.components.system_prompt.utils import _PREPROCESS_SYSTEM, _PREPROCESS_USER
 if TYPE_CHECKING:
-    from conversation_manager import LLMProvider
+    from src.components.conversation_manager.llm_provider import LLMProvider
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -31,13 +15,13 @@ if TYPE_CHECKING:
 class ProcessedRequirement:
     original_text: str
     final_text: str
-    req_type: str          # "functional" | "non_functional" | "constraint"
-    category: str          # functional domain key OR nfr category key
-    category_label: str    # human-readable label
+    req_type: str 
+    category: str
+    category_label: str
     smart_score: int = 3
     was_rewritten: bool = False
-    was_split: bool = False   # True if this was split from a compound req
-    atomic_index: int = 0     # index within split (0 = only child or first)
+    was_split: bool = False
+    atomic_index: int = 0
 
     def to_dict(self):
         return {
@@ -55,10 +39,10 @@ class ProcessedRequirement:
 @dataclass
 class PreprocessResult:
     requirements: list[ProcessedRequirement] = field(default_factory=list)
-    domains_found: list[str] = field(default_factory=list)     # unique functional domain labels
+    domains_found: list[str] = field(default_factory=list)
     nfr_categories_found: list[str] = field(default_factory=list)
     total_input: int = 0
-    total_output: int = 0     # may differ if splits happened
+    total_output: int = 0
     rewritten_count: int = 0
     split_count: int = 0
     error: Optional[str] = None
@@ -74,57 +58,6 @@ class PreprocessResult:
             "split_count": self.split_count,
             "error": self.error,
         }
-
-
-# ---------------------------------------------------------------------------
-# LLM Prompt
-# ---------------------------------------------------------------------------
-
-_PREPROCESS_SYSTEM = """\
-You are a senior Requirements Engineer. Your job is to take a raw list of requirements \
-and return a high-quality, structured version of each one.
-
-You must:
-1. Check if each requirement is ATOMIC (expresses exactly one testable need).
-   If it is compound (contains "and", "or", multiple verbs/actions), SPLIT it into
-   separate atomic requirements.
-2. Check SMART quality (Specific, Measurable, Achievable, Relevant, Testable).
-   If vague terms exist ("fast", "easy", "good"), REWRITE to add concrete values.
-3. Assign REQ_TYPE: "functional", "non_functional", or "constraint".
-4. Assign CATEGORY:
-   - For functional reqs: assign the most fitting functional domain label
-     (e.g., "User Authentication", "Booking Management", "Notification System",
-      "Reporting & Analytics", "Payment Processing", "Search & Discovery", etc.)
-   - For non_functional reqs: assign one of these exact keys:
-     performance | usability | security_privacy | reliability | compatibility | maintainability
-   - For constraints: use "constraint"
-5. Assign SMART_SCORE (1-5).
-
-Return ONLY a JSON array. Each element must have:
-{
-  "original": "<original text>",
-  "final": "<rewritten or same>",
-  "req_type": "functional|non_functional|constraint",
-  "category": "<domain label or nfr key>",
-  "category_label": "<human readable label>",
-  "smart_score": 1-5,
-  "was_rewritten": true/false,
-  "was_split": true/false,
-  "atomic_index": 0
-}
-
-If a requirement was split, produce multiple objects all with "was_split": true,
-with atomic_index 0, 1, 2... and the same "original" value.
-
-Return ONLY the JSON array. No markdown, no explanation. No code fences."""
-
-_PREPROCESS_USER = """\
-Project context: {project_context}
-
-Requirements to process ({count} items):
-{req_list}
-
-Return the JSON array now."""
 
 
 # ---------------------------------------------------------------------------
