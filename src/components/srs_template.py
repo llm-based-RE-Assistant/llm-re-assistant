@@ -1,7 +1,6 @@
 """
 src/components/srs_template.py
 ================
-RE Assistant — Iteration 3 | University of Hildesheim
 IEEE-830 SRS Template: populated progressively during the elicitation conversation.
 
 Purpose
@@ -65,17 +64,12 @@ IEEE-830 Section Map
 """
 
 from __future__ import annotations
-
 import json
 import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
-
-# We import the state types but keep the module otherwise independent
-# so it can be unit-tested without a full ConversationManager.
-from conversation_state import Requirement, RequirementType
+from src.components.conversation_state import Requirement, RequirementType
 
 
 # ---------------------------------------------------------------------------

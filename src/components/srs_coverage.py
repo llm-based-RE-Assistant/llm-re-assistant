@@ -1,255 +1,25 @@
-"""
-src/components/srs_coverage.py — Iteration 8
-University of Hildesheim
-
-"""
-
 from __future__ import annotations
 import re
 from dataclasses import dataclass
+from src.components.conversation_state import RequirementType
+from src.components.srs_template import UserClass
+from src.components.system_prompt.utils import (
+    _SYSTEM_ROLE,
+    _SCOPE_PROMPT,
+    _PERSPECTIVE_PROMPT,
+    _PRODUCT_FUNCTIONS_DOMAIN_PROMPT,
+    _USER_CLASSES_PROMPT,
+    _GENERAL_CONSTRAINTS_PROMPT,
+    _ASSUMPTIONS_PROMPT,
+    _INTERFACES_PROMPT,
+    _CONSTRAINTS_STUB,
+    _DATABASE_STUB
+)
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from conversation_state import ConversationState
-    from srs_template import SRSTemplate
+    from src.components.conversation_state import ConversationState
+    from src.components.srs_template import SRSTemplate
 
-# ---------------------------------------------------------------------------
-# Section-level prompts
-# ---------------------------------------------------------------------------
-
-_SYSTEM_ROLE = """\
-You are a senior Requirements Engineer completing formal IEEE 830-1998 SRS \
-sections from a completed stakeholder elicitation session.
-
-ABSOLUTE RULES — violating any of these invalidates the output:
-1. NEVER invent facts not present in the provided requirements or transcript.
-2. If something was not stated, write [INFERRED] before the sentence and note \
-   it is a reasonable assumption for this type of system.
-3. Write in formal, third-person technical prose. No bullet summaries unless \
-   the section structure explicitly requires them.
-4. Use IEEE "shall" language for requirements; "is assumed that" for assumptions.
-5. Keep each section self-contained and professional — it will appear verbatim \
-   in a document handed to a development team.
-6. Return ONLY the section text with no preamble, explanation, or JSON wrapper. \
-   Do not repeat the section heading.
-"""
-
-# --------------- §1.2 Scope -------------------------------------------------
-
-_SCOPE_PROMPT = """\
-Write the IEEE 830 §1.2 Scope section for the system described below.
-
-The scope must cover:
-(a) What the system IS — its name and primary purpose in one sentence.
-(b) What it DOES — the major functional areas it covers (derive from the FR list).
-(c) What it DOES NOT DO — list every explicitly excluded feature mentioned in the transcript.
-(d) The primary benefit and objective the system delivers to its users.
-
-Do NOT mention development methodology, implementation technology, or anything \
-not evidenced by the requirements or transcript.
-
-PROJECT NAME: {project_name}
-
-ELICITED FUNCTIONAL REQUIREMENTS ({fr_count} total):
-{fr_list}
-
-EXPLICITLY EXCLUDED SCOPE ITEMS (from conversation):
-{exclusions}
-"""
-
-# --------------- §2.1 Product Perspective -----------------------------------
-
-_PERSPECTIVE_PROMPT = """\
-Write the IEEE 830 §2.1 Product Perspective section.
-
-This section must explain:
-(a) Whether the system is standalone, part of a larger system, or a replacement \
-    for an existing product — derive this only from the requirements.
-(b) Which external systems or physical devices the system interacts with \
-    (derive from compatibility/interface requirements).
-(c) How the system fits into the user's environment (home, enterprise, mobile, etc.)
-
-PROJECT NAME: {project_name}
-DOMAIN: {domain_summary}
-
-ALL REQUIREMENTS:
-{all_reqs}
-"""
-
-# --------------- §2.2 Product Functions -------------------------------------
-
-_PRODUCT_FUNCTIONS_DOMAIN_PROMPT = """\
-Write the IEEE 830 §2.2 Product Functions entry for ONE functional domain of \
-the system described below.
-
-This is a high-level narrative description of what the system does in this \
-domain — NOT a list of raw requirements. Write 2–4 sentences of formal, \
-third-person technical prose that synthesises the requirements into a coherent \
-capability statement a non-technical reader would understand.
-
-Rules:
-1. Derive ONLY from the functional requirements provided. Do not add capabilities \
-   not evidenced by the list.
-2. Do NOT reproduce requirement text verbatim. Synthesise into natural prose.
-3. Do NOT use "shall" language — this is a summary, not a requirement.
-4. Start the description with the domain name in bold, e.g. **Remote Heating Monitoring:**
-5. Return only the paragraph — no preamble, no heading.
-
-PROJECT NAME: {project_name}
-DOMAIN: {domain_label}
-DOMAIN STATUS: {domain_status}
-
-FUNCTIONAL REQUIREMENTS FOR THIS DOMAIN ({req_count} total):
-{domain_reqs}
-"""
-
-# --------------- §2.3 User Classes ------------------------------------------
-
-_USER_CLASSES_PROMPT = """\
-Write the IEEE 830 §2.3 User Classes and Characteristics section as a \
-well-structured paragraph followed by a Markdown table.
-
-Table columns: | User Class | Description | Technical Level | Primary Tasks |
-
-DERIVE ONLY from the conversation transcript below. If only one user class \
-is evident, say so. Do not invent roles not mentioned.
-
-TRANSCRIPT EXCERPTS (user turns only):
-{user_turns}
-
-STAKEHOLDER REQUIREMENTS:
-{stakeholder_reqs}
-"""
-
-# --------------- §2.4 Operating Environment ---------------------------------
-
-_OPERATING_ENV_PROMPT = """\
-Write the IEEE 830 §2.4 Operating Environment section.
-
-Cover:
-(a) Client platforms (mobile OS, desktop OS) — derive from compatibility NFRs.
-(b) Network environment (internet-dependent, LAN, offline-capable) — derive from \
-    reliability/connectivity requirements.
-(c) Physical environment of use (home, office, mobile/remote) — derive from context.
-
-Mark every sentence that is not directly supported by a requirement with [INFERRED].
-
-COMPATIBILITY REQUIREMENTS:
-{compat_reqs}
-
-RELIABILITY REQUIREMENTS:
-{reliability_reqs}
-
-FUNCTIONAL CONTEXT:
-{fr_summary}
-"""
-
-# --------------- §2.5 Assumptions & Dependencies ----------------------------
-
-_ASSUMPTIONS_PROMPT = """\
-Write the IEEE 830 §2.5 Assumptions and Dependencies section as a numbered list.
-
-Derive assumptions from:
-- Requirements that imply third-party services (e.g. push notifications → assumes \
-  internet connectivity and a notification service provider)
-- Compatibility requirements that imply platform vendor stability
-- Security requirements that assume user responsibility for credentials
-- Any explicit "I assume" or "I expect" statements in the conversation
-
-Mark every item that is not directly stated with [INFERRED].
-Limit to 6–10 items. Be specific.
-
-ALL REQUIREMENTS:
-{all_reqs}
-
-USER TURNS (for context):
-{user_turns_short}
-"""
-
-# --------------- §2.6 User Documentation ------------------------------------
-
-_USER_DOCS_PROMPT = """\
-Write the IEEE 830 §2.6 User Documentation section.
-
-This section specifies what documentation or help the system should provide \
-to its users. Derive from:
-- Any "help", "manual", "documentation", "tutorial" mentions in the conversation
-- The technical level of users described (novice users need more help)
-- Usability requirements that mention ease-of-use or no-manual-needed goals
-
-If nothing was explicitly elicited, write one short paragraph marked [INFERRED] \
-describing what a system of this type and user profile would typically need.
-
-USABILITY REQUIREMENTS:
-{usability_reqs}
-
-USER PROFILE CONTEXT:
-{user_context}
-"""
-
-# --------------- §3.2 External Interface Requirements -----------------------
-
-_INTERFACES_PROMPT = """\
-Write the content for ONE IEEE 830 interface sub-section: {interface_type}.
-
-Interface type descriptions:
-- User Interfaces: screens, controls, visual layout, accessibility
-- Software Interfaces: third-party APIs, operating system services, libraries
-- Communication Interfaces: network protocols, data formats, message channels
-
-RULES:
-- Derive ONLY from elicited requirements and context below.
-- Mark every inference with [INFERRED].
-- For items with NO elicited data at all, return exactly this string:
-  "[ARCHITECT REVIEW REQUIRED] No {interface_type} details were elicited. \
-   The architect must specify: {architect_checklist}"
-- Do NOT fabricate specific technology names (e.g. "React Native", "REST API") \
-  unless explicitly mentioned.
-
-RELEVANT REQUIREMENTS:
-{relevant_reqs}
-
-SYSTEM CONTEXT:
-{system_context}
-"""
-
-# --------------- §3.5 Design Constraints (stub only) -----------------------
-
-_CONSTRAINTS_STUB = """\
-[ARCHITECT REVIEW REQUIRED] Design and implementation constraints were not \
-elicited during the stakeholder interview. The system architect must review and \
-complete this section before development begins.
-
-Checklist of items to confirm:
-1. Programming language(s) and framework(s) to be used
-2. Required development methodology (Agile, waterfall, etc.)
-3. Target deployment environment (cloud provider, on-premise, device-local)
-4. Required compliance standards (GDPR, HIPAA, SOC2, etc.)
-5. Third-party component or licensing restrictions
-6. Performance budgets or resource constraints (memory, battery, bandwidth)
-7. Required build/CI/CD toolchain or approval gates
-8. Code quality standards (coverage thresholds, static analysis tools)
-"""
-
-# --------------- §3.4 Logical Database Requirements (stub only) -----------
-
-_DATABASE_STUB = """\
-[ARCHITECT REVIEW REQUIRED] Logical database requirements were not elicited \
-during the stakeholder interview. The architect must determine and document:
-
-1. What persistent data entities the system must store \
-   (e.g. user accounts, device states, event logs, schedules)
-2. Retention periods for historical data (event logs, energy usage records)
-3. Data privacy requirements — which entities contain personal data under GDPR or \
-   equivalent regulation
-4. Volume estimates: expected rows/records per entity over 12 months
-5. Backup and recovery requirements (RPO/RTO)
-6. Whether a relational, document, time-series, or other store is appropriate
-
-Note: The following elicited requirements imply data persistence and should \
-inform the database design:
-{implied_data_reqs}
-"""
 
 # ---------------------------------------------------------------------------
 # Helper: extract requirement texts by category
@@ -276,7 +46,6 @@ def _all_reqs_text(state: "ConversationState", max_items: int = 40) -> str:
 
 
 def _fr_list_text(state: "ConversationState", max_items: int = 25) -> str:
-    from conversation_state import RequirementType
     lines = []
     for req in state.requirements.values():
         if req.req_type == RequirementType.FUNCTIONAL:
@@ -295,7 +64,6 @@ def _user_turns_text(state: "ConversationState", max_turns: int = 12, max_chars:
 
 
 def _exclusions_text(state: "ConversationState") -> str:
-    from conversation_state import RequirementType
     lines = []
     for req in state.requirements.values():
         if req.req_type == RequirementType.CONSTRAINT and (
@@ -394,7 +162,6 @@ class SRSCoverageEnricher:
 
         # §2.3 User Classes
         if not template.section2.user_classes:
-            from srs_template import UserClass
             if sec.get("2.3"):
                 uc_text = sec["2.3"]
                 filled["§2.3 User Classes"] = "phase4"
@@ -405,6 +172,16 @@ class SRSCoverageEnricher:
                 UserClass(name="User Classes Summary", description=uc_text,
                           proficiency="See description")
             ]
+        
+        # §2.4 General Constraints — always LLM synthesis
+        if not template.section2.general_constraints:
+            if sec.get("2.4"):
+                gc_text = sec["2.4"]
+                filled["§2.4 General Constraints"] = "phase4"
+            else:
+                gc_text = self._fill_general_constraints(state)
+                filled["§2.4 General Constraints"] = "llm_synthesis"
+            template.section2.general_constraints = [gc_text]
 
         # §2.5 Assumptions & Dependencies
         if not template.section2.assumptions:
@@ -418,32 +195,6 @@ class SRSCoverageEnricher:
             else:
                 template.section2.assumptions = self._fill_assumptions(state)
                 filled["§2.5 Assumptions & Dependencies"] = "llm_synthesis"
-
-        # §2.4 Operating Environment (stored via sentinel in general_constraints)
-        _ENV_SENTINEL = "__operating_environment__"
-        env_already_set = any(
-            isinstance(c, str) and _ENV_SENTINEL in c
-            for c in template.section2.general_constraints
-        )
-        if not env_already_set:
-            if sec.get("2.4"):
-                env_text = sec["2.4"]
-                filled["§2.4 Operating Environment"] = "phase4"
-            else:
-                env_text = self._fill_operating_environment(state)
-                filled["§2.4 Operating Environment"] = "llm_synthesis"
-            template.section2.general_constraints.insert(0, f"{_ENV_SENTINEL}\n{env_text}")
-
-        # §2.6 User Documentation — LLM synthesis fallback (not a Phase 4 section)
-        _DOCS_SENTINEL = "__user_documentation__"
-        docs_already_set = any(
-            isinstance(c, str) and _DOCS_SENTINEL in c
-            for c in template.section2.general_constraints
-        )
-        if not docs_already_set:
-            docs_text = self._fill_user_documentation(state)
-            template.section2.general_constraints.append(f"{_DOCS_SENTINEL}\n{docs_text}")
-            filled["§2.6 User Documentation"] = "llm_synthesis"
 
         # §3.1.1 User Interfaces
         if not template.section3.interfaces.user_interfaces:
@@ -514,7 +265,6 @@ class SRSCoverageEnricher:
     # ------------------------------------------------------------------
 
     def _fill_scope(self, state: "ConversationState") -> str:
-        from conversation_state import RequirementType
         fr_count = sum(1 for r in state.requirements.values()
                        if r.req_type == RequirementType.FUNCTIONAL)
         prompt = _SCOPE_PROMPT.format(
@@ -557,7 +307,6 @@ class SRSCoverageEnricher:
         but handled defensively), falls back to one representative FR per
         unique category key — same as the old Python-only behaviour.
         """
-        from conversation_state import RequirementType
 
         gate = state.domain_gate
 
@@ -625,6 +374,15 @@ class SRSCoverageEnricher:
             stakeholder_reqs=stakeholder_reqs,
         )
         return self._call_llm(prompt, max_tokens=500)
+    
+    def _fill_general_constraints(self, state: "ConversationState") -> str:
+        all_reqs = _all_reqs_text(state)
+        prompt = _GENERAL_CONSTRAINTS_PROMPT.format(all_reqs=all_reqs)
+        raw = self._call_llm(prompt, max_tokens=500)
+        # Split numbered list into individual items
+        items = re.split(r"\n\s*\d+\.\s+", "\n" + raw.strip())
+        items = [i.strip() for i in items if i.strip()]
+        return "\n".join(items) if items else raw
 
     def _fill_assumptions(self, state: "ConversationState") -> list[str]:
         all_reqs = _all_reqs_text(state)
@@ -642,27 +400,6 @@ class SRSCoverageEnricher:
     # ------------------------------------------------------------------
     # Medium-risk LLM fills (inference, marked [INFERRED])
     # ------------------------------------------------------------------
-
-    def _fill_operating_environment(self, state: "ConversationState") -> str:
-        compat_reqs = _reqs_by_category(state, "compatibility")
-        reliability_reqs = _reqs_by_category(state, "reliability")
-        fr_summary = _fr_list_text(state, max_items=8)
-        prompt = _OPERATING_ENV_PROMPT.format(
-            compat_reqs=compat_reqs,
-            reliability_reqs=reliability_reqs,
-            fr_summary=fr_summary,
-        )
-        return self._call_llm(prompt, max_tokens=400)
-
-    def _fill_user_documentation(self, state: "ConversationState") -> str:
-        usability_reqs = _reqs_by_category(state, "usability")
-        user_context = _user_turns_text(state, max_turns=5, max_chars=150)
-        prompt = _USER_DOCS_PROMPT.format(
-            usability_reqs=usability_reqs,
-            user_context=user_context,
-        )
-        return self._call_llm(prompt, max_tokens=350)
-
     def _fill_interface(
         self,
         state: "ConversationState",

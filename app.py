@@ -1,26 +1,4 @@
-"""
-app.py — Iteration 8 | University of Hildesheim
-RE Assistant — Project-based Web UI Backend
-
-New in IT8:
-- Project persistence: JSON files in ./projects/
-- GET  /api/projects                    → list all projects
-- POST /api/projects/create             → create new project (name, description, task_type)
-- GET  /api/projects/<pid>              → get project metadata
-- PUT  /api/projects/<pid>              → update project name/description
-- DELETE /api/projects/<pid>            → delete project
-- POST /api/session/start               → start session (now accepts project_id + task_type)
-- POST /api/session/upload_requirements → upload .txt/.json requirements file
-- POST /api/domain/add                  → add custom domain
-- PUT  /api/domain/update               → rename/update domain
-- DELETE /api/domain/delete             → delete domain
-- PUT  /api/domain/mark_complete        → mark domain confirmed/excluded
-- GET  /api/session/download_log        → download conversation log
-- (all previous routes preserved)
-"""
-
 from __future__ import annotations
-
 import argparse
 import json
 import os
@@ -29,17 +7,17 @@ import uuid
 import time
 from pathlib import Path
 from typing import Optional
-
 sys.path.insert(0, str(Path(__file__).parent))
-
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
-
-from src.components.conversation_manager import ConversationManager, create_provider
+from src.components.conversation_manager.conversation_manager import ConversationManager
+from src.components.conversation_manager.llm_provider import create_provider
 from src.components.conversation_state import ConversationState
 from src.components.gap_detector import GapDetector, create_gap_detector
-from src.components.prompt_architect import MIN_NFR_PER_CATEGORY, PHASE4_SECTIONS
-from src.components.domain_discovery import NFR_CATEGORIES, _label_to_key, DomainSpec, DomainGate
+from src.components.system_prompt.prompt_architect import MIN_NFR_PER_CATEGORY
+from src.components.system_prompt.utils import PHASE4_SECTIONS
+from src.components.domain_discovery.domain_discovery import NFR_CATEGORIES, _label_to_key, DomainSpec
+from src.components.domain_discovery.domain_gate import  DomainGate
 from src.components.requirement_preprocessor import parse_requirements_file, create_preprocessor
 
 BASE_DIR   = Path(__file__).parent

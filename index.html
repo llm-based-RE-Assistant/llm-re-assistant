@@ -120,7 +120,6 @@
         position: fixed;
         inset: 0;
         z-index: 100;
-        display: flex;
         align-items: center;
         justify-content: center;
         background: var(--bg);
@@ -630,7 +629,7 @@
         font-size: 8px;
         fill: var(--text-muted);
       }
-      .domain-legend {
+      /* .domain-legend {
         display: flex;
         gap: 8px;
         font-size: 10px;
@@ -638,7 +637,7 @@
         justify-content: center;
         padding: 0 12px 8px;
         flex-shrink: 0;
-      }
+      } */
 
       /* ── PHASE BANNER + NEXT PHASE BTN ── */
       .phase-area {
@@ -672,7 +671,7 @@
         color: var(--success);
         border: 1px solid rgba(52, 211, 153, 0.3);
       }
-      .btn-next-phase {
+      /* .btn-next-phase {
         margin-top: 5px;
         width: 100%;
         background: var(--accent);
@@ -687,13 +686,13 @@
         align-items: center;
         justify-content: center;
         gap: 5px;
-      }
+      } 
       .btn-next-phase.visible {
         display: flex;
       }
       .btn-next-phase:hover {
         opacity: 0.88;
-      }
+      } */
 
       /* ── LEFT TABS / LISTS ── */
       .left-tabs {
@@ -753,9 +752,6 @@
       }
       .cat-item.uncovered .cat-dot {
         background: var(--danger);
-      }
-      .cat-item.optional .cat-dot {
-        background: var(--text-muted);
       }
       .cat-dot {
         width: 7px;
@@ -1096,6 +1092,7 @@
         background: var(--bg-card);
         border-radius: var(--radius);
         padding: 10px 12px;
+        margin-bottom: 10px;
         border-left: 3px solid var(--border-lit);
       }
       .gap-card.critical {
@@ -1103,9 +1100,6 @@
       }
       .gap-card.important {
         border-left-color: var(--warning);
-      }
-      .gap-card.optional {
-        border-left-color: var(--text-muted);
       }
       .gap-card-sev {
         font-size: 10px;
@@ -1568,7 +1562,7 @@
           </div>
 
           <!-- Legend -->
-          <div class="domain-legend">
+          <!-- <div class="domain-legend">
             <span id="legend-confirmed" style="color: var(--success)"
               >✅ 0</span
             >
@@ -1577,20 +1571,20 @@
             <span id="legend-excluded" style="color: var(--text-muted)"
               >❌ 0</span
             >
-          </div>
+          </div> -->
 
           <!-- Phase banner + next phase button -->
           <div class="phase-area">
             <div class="phase-banner fr" id="phase-banner">
               <span id="phase-banner-text">FR ELICITATION</span>
             </div>
-            <button
+            <!-- <button
               class="btn-next-phase"
               id="btn-next-phase"
               onclick="advancePhase()"
             >
               → Move to Next Phase
-            </button>
+            </button> -->
           </div>
 
           <!-- Left tabs -->
@@ -2095,7 +2089,7 @@
         document.getElementById("btn-gen-srs").disabled = true;
         document.getElementById("btn-dl-srs").style.display = "none";
         document.getElementById("srs-banner").classList.remove("visible");
-        document.getElementById("btn-next-phase").classList.remove("visible");
+        // document.getElementById("btn-next-phase").classList.remove("visible");
         document.getElementById("upload-result").style.display = "none";
 
         await startSession(projectId, currentTaskType);
@@ -2148,46 +2142,46 @@
       /* ══════════════════════════════════════
    PHASE MANAGEMENT
 ══════════════════════════════════════ */
-      function checkPhaseAdvanceButton(phase, turnCount, covReport) {
-        const btn = document.getElementById("btn-next-phase");
-        if (_phaseAdvanceShown || phase === "ieee") {
-          // In IEEE phase, no next phase needed
-          if (phase === "ieee") btn.classList.remove("visible");
-          return;
-        }
-        // Show button if:
-        // FR phase: all domains confirmed/excluded OR turn >= 30 OR >= MIN_FUNCTIONAL_REQS
-        // NFR phase: turn >= 10 after phase started
-        let shouldShow = false;
-        if (phase === "fr") {
-          const domPct = covReport?.domain_completeness_pct || 0;
-          const frCount = covReport?.functional_count || 0;
-          shouldShow = domPct >= 100 || turnCount >= 30 || frCount >= 15;
-        } else if (phase === "nfr") {
-          shouldShow = turnCount >= 40;
-        }
-        if (shouldShow) {
-          const labels = {
-            fr: "Move to NFR Phase →",
-            nfr: "Move to IEEE Phase →",
-          };
-          btn.textContent = labels[phase] || "→ Next Phase";
-          btn.classList.add("visible");
-        }
-      }
+      // function checkPhaseAdvanceButton(phase, turnCount, covReport) {
+      //   const btn = document.getElementById("btn-next-phase");
+      //   if (_phaseAdvanceShown || phase === "ieee") {
+      //     // In IEEE phase, no next phase needed
+      //     if (phase === "ieee") btn.classList.remove("visible");
+      //     return;
+      //   }
+      //   // Show button if:
+      //   // FR phase: all domains confirmed/excluded OR turn >= 30 OR >= MIN_FUNCTIONAL_REQS
+      //   // NFR phase: turn >= 10 after phase started
+      //   let shouldShow = false;
+      //   if (phase === "fr") {
+      //     const domPct = covReport?.domain_completeness_pct || 0;
+      //     const frCount = covReport?.functional_count || 0;
+      //     shouldShow = domPct >= 100 || turnCount >= 30 || frCount >= 15;
+      //   } else if (phase === "nfr") {
+      //     shouldShow = turnCount >= 40;
+      //   }
+      //   if (shouldShow) {
+      //     const labels = {
+      //       fr: "Move to NFR Phase →",
+      //       nfr: "Move to IEEE Phase →",
+      //     };
+      //     btn.textContent = labels[phase] || "→ Next Phase";
+      //     btn.classList.add("visible");
+      //   }
+      // }
 
-      async function advancePhase() {
-        // Inform the LLM by injecting a system nudge message
-        if (!sessionId) return;
-        _phaseAdvanceShown = true;
-        document.getElementById("btn-next-phase").classList.remove("visible");
-        const phaseMsg =
-          _currentPhase === "fr"
-            ? "Let's move to non-functional requirements. Please focus on quality attributes now — performance, security, reliability, usability, compatibility, and maintainability."
-            : "Let's move to the IEEE-830 documentation sections. Please ask about scope, user classes, operating environment, assumptions, and interface descriptions.";
-        document.getElementById("input").value = phaseMsg;
-        sendMessage();
-      }
+      // async function advancePhase() {
+      //   // Inform the LLM by injecting a system nudge message
+      //   if (!sessionId) return;
+      //   _phaseAdvanceShown = true;
+      //   document.getElementById("btn-next-phase").classList.remove("visible");
+      //   const phaseMsg =
+      //     _currentPhase === "fr"
+      //       ? "Let's move to non-functional requirements. Please focus on quality attributes now — performance, security, reliability, usability, compatibility, and maintainability."
+      //       : "Let's move to the IEEE-830 documentation sections. Please ask about scope, user classes, operating environment, assumptions, and interface descriptions.";
+      //   document.getElementById("input").value = phaseMsg;
+      //   sendMessage();
+      // }
 
       /* ══════════════════════════════════════
    SEND TURN
@@ -2224,11 +2218,6 @@
             updateCoverage(data.gap_report, data.coverage_report);
             updateBadges(data);
             updatePhaseBanner(data.current_phase || "fr");
-            checkPhaseAdvanceButton(
-              data.current_phase || "fr",
-              _turnCount,
-              data.coverage_report,
-            );
             if (data.srs_ready) showSRSBanner();
             if (
               data.coverage_report &&
@@ -2526,7 +2515,7 @@
             });
             _dynamicDomainLabels = gl;
             buildDomainGateList(gs);
-            updateLegend(gs);
+            // updateLegend(gs);
           }
 
           msgs.scrollTop = 0;
@@ -2615,7 +2604,7 @@
           }
           _dynamicDomainLabels = data.domain_gate_labels || {};
           buildDomainGateList(data.domain_gate_status || {});
-          updateLegend(data.domain_gate_status || {});
+          // updateLegend(data.domain_gate_status || {});
         } catch (e) {
           alert("Error: " + e.message);
         }
@@ -2664,7 +2653,7 @@
           }
           _dynamicDomainLabels = data.domain_gate_labels || {};
           buildDomainGateList(data.domain_gate_status || {});
-          updateLegend(data.domain_gate_status || {});
+          // updateLegend(data.domain_gate_status || {});
         } catch (e) {
           alert("Error: " + e.message);
         }
@@ -2698,7 +2687,7 @@
               });
               _dynamicDomainLabels = gl;
               buildDomainGateList(gs);
-              updateLegend(gs);
+              // updateLegend(gs);
               updateRings({ domain_gate_status: gs });
             }
           }
@@ -2877,28 +2866,6 @@
             : domainPct >= 50
               ? "var(--warning)"
               : "var(--danger)";
-        updateLegend(gate);
-      }
-      function updateLegend(gate) {
-        const confirmed = Object.values(gate).filter(
-          (s) => s === "confirmed",
-        ).length;
-        const partial = Object.values(gate).filter(
-          (s) => s === "partial",
-        ).length;
-        const unprobed = Object.values(gate).filter(
-          (s) => s === "unprobed",
-        ).length;
-        const excluded = Object.values(gate).filter(
-          (s) => s === "excluded",
-        ).length;
-        document.getElementById("legend-confirmed").textContent =
-          `✅ ${confirmed}`;
-        document.getElementById("legend-partial").textContent = `🔶 ${partial}`;
-        document.getElementById("legend-unprobed").textContent =
-          `⬜ ${unprobed}`;
-        document.getElementById("legend-excluded").textContent =
-          `❌ ${excluded}`;
       }
 
       /* ══════════════════════════════════════
@@ -2908,7 +2875,6 @@
         confirmed: { cls: "covered", icon: "✓", label: "Confirmed" },
         partial: { cls: "partial", icon: "◑", label: "Partial" },
         unprobed: { cls: "uncovered", icon: "○", label: "Unprobed" },
-        excluded: { cls: "optional", icon: "✕", label: "Excluded" },
       };
       function buildDomainGateList(gate) {
         const list = document.getElementById("domain-list");
@@ -2955,8 +2921,8 @@
       }
 
       /* ══════════════════════════════════════
-   IEEE-830 LIST
-══════════════════════════════════════ */
+        IEEE-830 LIST
+      ══════════════════════════════════════ */
       function buildCategoryList(gapReport) {
         if (!gapReport || !gapReport.all_categories) return;
         const allCats = gapReport.all_categories;
@@ -2964,14 +2930,14 @@
         [
           ...(gapReport.critical_gaps || []),
           ...(gapReport.important_gaps || []),
-          ...(gapReport.optional_gaps || []),
         ].forEach((g) => {
           metaMap[g.category_key] = { label: g.label, severity: g.severity };
         });
-        const sections = { critical: [], important: [], optional: [] };
+        const sections = { critical: [], important: [] };
         Object.entries(allCats).forEach(([key, status]) => {
           if (key.startsWith("domain_")) return;
-          const meta = metaMap[key] || { label: key, severity: "optional" };
+          const meta = metaMap[key];
+          if (!meta) return;
           (sections[meta.severity] = sections[meta.severity] || []).push({
             key,
             status,
@@ -2981,7 +2947,7 @@
         });
         const list = document.getElementById("cat-list");
         list.innerHTML = "";
-        ["critical", "important", "optional"].forEach((sev) => {
+        ["critical", "important"].forEach((sev) => {
           const items = sections[sev] || [];
           if (!items.length) return;
           const sl = document.createElement("div");
@@ -2995,9 +2961,7 @@
                 ? "covered"
                 : item.status === "partial"
                   ? "partial"
-                  : item.severity === "optional"
-                    ? "optional"
-                    : "uncovered";
+                  : "uncovered";
             div.className = `cat-item ${css}`;
             div.innerHTML = `<div class="cat-dot"></div><span class="cat-name">${escHtml(item.label)}</span>`;
             list.appendChild(div);
@@ -3021,10 +2985,6 @@
           ...(gapReport.important_gaps || []).map((g) => ({
             ...g,
             sev: "important",
-          })),
-          ...(gapReport.optional_gaps || []).map((g) => ({
-            ...g,
-            sev: "optional",
           })),
         ];
         if (!allGaps.length) {

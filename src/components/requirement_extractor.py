@@ -1,15 +1,9 @@
-"""
-src/components/requirement_extractor.py — Iteration 8
-University of Hildesheim
-
-"""
 from __future__ import annotations
 import re
 from dataclasses import dataclass
+from src.components.conversation_state import RequirementType
 
 _PATTERN_REQ_TAG = re.compile(
-    # Attribute-order-independent: type and category can appear in any order,
-    # with any extra attributes (domain=, source=, etc.) in between.
     r'<REQ\b'
     r'(?=[^>]*\btype=["\'](?P<type>functional|non_functional|non-functional|constraint|nfr)["\'])'
     r'(?=[^>]*\bcategory=["\'](?P<category>[^"\']+)["\'])'
@@ -21,8 +15,6 @@ _PATTERN_SHALL = re.compile(
     r'(?:The\s+(?:system|app|application|user|platform)\s+shall|Users?\s+shall)\s+'
     r'([^\n.]{10,200}[.!?]?)', re.IGNORECASE)
 
-# IT8: Pattern for Phase 4 narrative section tags
-# Format: <SECTION id="2.3">content</SECTION>
 _PATTERN_SECTION_TAG = re.compile(
     r'<SECTION\s+id=["\']([^"\']+)["\']\s*>'
     r'\s*(.*?)\s*</SECTION>', re.DOTALL | re.IGNORECASE)
@@ -37,14 +29,6 @@ class ExtractedReq:
     domain_label: str = ""
 
 _VALID_TYPES = {"functional","non_functional","non-functional","constraint","nfr"}
-_CATEGORY_INFERENCE = {
-    "performance":"performance","speed":"performance","response time":"performance",
-    "usability":"usability","easy to use":"usability","intuitive":"usability",
-    "security":"security_privacy","authentication":"security_privacy","privacy":"security_privacy",
-    "reliability":"reliability","availability":"reliability","uptime":"reliability",
-    "compatible":"compatibility","platform":"compatibility",
-    "maintain":"maintainability","update":"maintainability",
-}
 
 def _norm_type(raw):
     t = raw.strip().lower().replace("-","_")
@@ -53,12 +37,6 @@ def _norm_type(raw):
 
 def _norm_category(raw):
     return raw.strip().lower().replace(" ","_").replace("-","_")
-
-def _infer_category(text):
-    lower = text.lower()
-    for kw, cat in _CATEGORY_INFERENCE.items():
-        if kw in lower: return cat
-    return "functional"
 
 def _clean(text):
     text = re.sub(r'\s+',' ',text.strip())
@@ -82,7 +60,7 @@ class RequirementExtractor:
             raw_cat  = m.group('category')
             raw_text = m.group('text')
             rt  = _norm_type(raw_type)
-            cat = _norm_category(raw_cat) or _infer_category(raw_text)
+            cat = _norm_category(raw_cat)
             text = _clean(raw_text)
             excerpt = f'<REQ type="{raw_type}" category="{raw_cat}">\n{raw_text.strip()}\n</REQ>'
             _add(ExtractedReq(text=text,req_type=rt,category=cat,raw_excerpt=excerpt,source="tag"))
@@ -92,13 +70,13 @@ class RequirementExtractor:
             for m in _PATTERN_EXPLICIT.finditer(assistant_response):
                 text = _clean(m.group(2).rstrip("*").strip())
                 _add(ExtractedReq(text=text,req_type=_norm_type(m.group(1)),
-                     category=_infer_category(text),raw_excerpt=m.group(0).strip(),source="pattern"))
+                     category=cat,raw_excerpt=m.group(0).strip(),source="pattern"))
 
         if not tags and not any(r.source=="pattern" for r in results):
             for m in _PATTERN_SHALL.finditer(assistant_response):
                 text = _clean(m.group(0).strip())
                 _add(ExtractedReq(text=text,req_type="functional",
-                     category=_infer_category(text),raw_excerpt=text,source="shall"))
+                     category=cat,raw_excerpt=text,source="shall"))
         return results
 
     def match_domains(self, extracted, gate):
@@ -114,7 +92,6 @@ class RequirementExtractor:
                     req.domain_label = key; break
 
     def commit(self, extracted, state):
-        from conversation_state import RequirementType
         existing = {re.sub(r'\s+',' ',r.text.strip().lower()) for r in state.requirements.values()}
         added = []
         for ext in extracted:
