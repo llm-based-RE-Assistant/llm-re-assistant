@@ -1,0 +1,59 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+src/components/__pycache__/
+src/__pycache__/
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+
+# Output files
+output/
+logs/
+projects/
+
+# Flask instance folder
+instance/
+
+# Logs
+*.log
+
+# SQLite database (common in Flask dev)
+*.db
+*.sqlite3
+
+# Bytecode / compiled
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# IDEs / Editors
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints
+
+# Migrations (optional - depends on strategy)
+#migrations/
