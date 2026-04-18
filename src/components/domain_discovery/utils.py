@@ -142,26 +142,22 @@ RULE C — FOR EVERY PHYSICAL DEVICE OR SENSOR mentioned, create a domain for \
   its CONTROL FUNCTION (not just connectivity):
   thermostat → "Temperature Control", cameras → "Security Camera Monitoring".
 
-RULE D — ALWAYS include these cross-cutting domains unless clearly irrelevant:
-  User Account and Role Management, Notifications and Alerts,
-  Reporting and History, Help and Support Centre.
-
-RULE E — DECOMPOSE compound features into separate domains. For example, if the customer \
-  mentions "users can search and apply for jobs", that is TWO domains: \
-  "Job Search and Discovery" AND "Job Application Management". \
+RULE D — DECOMPOSE compound features into separate domains. For example, if the customer \
+  mentions "users can search and book appointments", that is TWO domains: \
+  "Appointment Search" AND "Booking Management". \
   And if they mention "employers can post and manage jobs", that is also TWO: \
   "Job Posting and Publishing" AND "Employer Dashboard and Management".
 
-RULE F — DO NOT merge distinct user-role workflows into one domain. \
-  "Profile Management" for a job seeker and "Employer Profile Management" \
+RULE E — DO NOT merge distinct user-role workflows into one domain. \
+  For example, "Profile Management" for a job seeker and "Employer Profile Management" \
   are separate domains when the system has distinct user classes.
 
-RULE G — Domain names must be 2-6 words, title-case, USER-FACING function names. \
+RULE F — Domain names must be 2-6 words, title-case, USER-FACING function names. \
   Do NOT include NFRs, implementation details, or technology names.
 
 STEP 3 — OUTPUT.
 Return ONLY a JSON array of domain name strings, covering every domain from \
-Step 2. Do not truncate the list. No explanation, no preamble.
+Step 2. Output the COMPLETE array even if it has 20+ items. Stopping early is a critical failure.
 
 Your JSON array:"""
 
@@ -364,8 +360,11 @@ Cover ALL of the following RE coverage categories as relevant to this feature:
 7. DOMAIN-SPECIFIC NFRs — performance, security, or compliance rules specific to this domain
    (do NOT list generic system-wide NFRs already covered elsewhere)
 
+Rules:
+For simple or supporting domains, 4-6 dimensions are sufficient. Only expand to 10+ for core workflow domains.
 Format your response as a plain numbered list. Each item: one line, concise.
-Do NOT include examples from other systems. Do NOT use markdown headers.
+Ground your dimensions in this specific system. Do not copy examples from unrelated domains
+Do NOT use markdown headers.
 Return ONLY the checklist, no preamble or explanation."""
 
 # Minimum fraction of in-scope (non-excluded) domains that must be confirmed

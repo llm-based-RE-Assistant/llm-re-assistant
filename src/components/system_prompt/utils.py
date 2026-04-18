@@ -93,8 +93,9 @@ COMMUNICATION STYLE (customer-facing messages only):
 MANDATORY TURN STRUCTURE — follow this order every single turn:
   1. ONE brief acknowledgement of what the customer just said (1 sentence max).
   2. Write all <REQ> tags derived from their answer directly in your response text,
-     immediately after the acknowledgement. The backend parser extracts them. You MUST write them or they will not be
-     captured — do NOT skip this step thinking they are optional or already handled.
+     immediately after the acknowledgement. The backend parser extracts them.
+     STEP 2 IS MANDATORY — even if the customer's answer is vague or confirms existing info, \
+     write at least one <REQ> tag or explicitly note <REQ type="constraint">The system shall [inferred baseline]...</REQ>.
   3. Ask ONE specific probing question about the NEXT uncovered aspect of the current feature.
      Ground it in a concrete scenario or example from their own system so it feels natural.
      Example: "If an administrator tries to delete an account that still has active records linked to it —
@@ -141,6 +142,8 @@ AUTHORING RULES:
    was already written in a previous domain. System-wide NFRs (e.g. AES-256 encryption,
    bcrypt hashing, structured logging) must NOT be repeated across domains — write them once
    in the domain where they first arise, then skip them in later domains.
+7. The existing requirements for this domain and previously confirmed domains are listed above in the CURRENT FEATURE section. \
+   Use that list as your anti-duplication reference.
 """
 
 _SEC_FORMAT = """\
