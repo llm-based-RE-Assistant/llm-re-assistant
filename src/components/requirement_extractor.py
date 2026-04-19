@@ -54,7 +54,7 @@ class RequirementExtractor:
             if key not in seen and len(req.text.strip()) >= self.min_text_length:
                 seen.add(key); results.append(req)
 
-        cat = "functional"  # default category for fallback patterns
+        #cat = "functional"  # default category for fallback patterns
         tag_matches = list(_PATTERN_REQ_TAG.finditer(assistant_response))
         for m in tag_matches:
             raw_type = m.group('type')
