@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          # ── Core runtime deps (everything the source code imports) ──
+          pip install flask flask-cors
+          pip install openai requests
+          pip install pydantic anyio httpx
+          pip install langchain langchain-core
+          pip install langgraph langgraph-checkpoint langgraph-prebuilt langgraph-sdk
+          pip install langsmith
+          pip install spacy
+
+          # ── Test tooling ──
+          pip install pytest pytest-cov flake8
+
+          # ── spaCy model (non-fatal if GitHub times out) ──
+          pip install \
+            https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl \
+            --timeout 120 \
+            || echo "spaCy model skipped — not required for unit/integration tests"
+
+      - name: Lint with flake8
+        run: |
+          # Fail only on syntax errors and undefined names
+          flake8 src/ app.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warn on style (never fails the build)
+          flake8 src/ app.py --count --exit-zero --max-line-length=120 --statistics
+
+      - name: Run tests with pytest
+        env:
+          OPENAI_API_KEY: sk-test-dummy-key-for-ci
+          OLLAMA_API_KEY: dummy-ollama-key-for-ci
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest tests/ \
+            --tb=short \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-py${{ matrix.python-version }}
+          path: coverage.xml
+          retention-days: 7
