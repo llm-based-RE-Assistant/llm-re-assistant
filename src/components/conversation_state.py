@@ -66,6 +66,10 @@ class ConversationState:
     _fr_counter: int = field(default=0, repr=False)
     _nfr_counter: int = field(default=0, repr=False)
     _con_counter: int = field(default=0, repr=False)
+    project_brief: dict[str, str] = field(default_factory=dict)
+    scope_complete: bool = field(default=False)
+    # scope_turn_count tracks how many scope turns have been used (max 10)
+    scope_turn_count: int = field(default=0)
 
     def __post_init__(self):
         if not hasattr(self, 'srs_section_content') or self.srs_section_content is None:
@@ -76,6 +80,12 @@ class ConversationState:
             self.domain_req_templates = {}
         if not hasattr(self, 'system_complexity') or self.system_complexity is None:
             self.system_complexity = ""
+        if not hasattr(self, 'project_brief') or self.project_brief is None:
+            self.project_brief = {}
+        if not hasattr(self, 'scope_complete') or self.scope_complete is None:
+            self.scope_complete = False
+        if not hasattr(self, 'scope_turn_count') or self.scope_turn_count is None:
+            self.scope_turn_count = 0
 
     @property
     def turn_count(self): return len(self.turns)
@@ -227,9 +237,30 @@ class ConversationState:
             return False
         return True
 
+    def format_brief_for_prompt(self) -> str:
+        """Render the project brief as a compact block for injection into system prompts."""
+        if not self.project_brief:
+            return ""
+        LABELS = {
+            "system_purpose":     "System Purpose",
+            "user_classes":       "User classes",
+            "core_features":      "Core features",
+            "scale_and_context":  "Scale / context",
+            "key_constraints":    "Known constraints",
+            "integration_points": "Integration points",
+            "out_of_scope":       "Out of scope",
+        }
+        lines = ["PROJECT BRIEF (confirmed in scope session):"]
+        for key, label in LABELS.items():
+            value = self.project_brief.get(key, "")
+            lines.append(f"  {label:<22}: {value if value else '(not specified)'}")
+        return "\n".join(lines)
+
     def to_dict(self):
         return {"session_id":self.session_id,"project_name":self.project_name,
                 "session_complete":self.session_complete,
+                "scope_complete":self.scope_complete,
+                "project_brief":dict(self.project_brief),
                 "turns":[t.to_dict() for t in self.turns],
                 "requirements":{k:v.to_dict() for k,v in self.requirements.items()},
                 "nfr_coverage":dict(self.nfr_coverage),

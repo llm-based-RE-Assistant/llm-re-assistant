@@ -4,23 +4,25 @@ from typing import TYPE_CHECKING
 from src.components.system_prompt.utils import (
     MIN_NFR_PER_CATEGORY,
     MANDATORY_NFR_CATEGORIES,
-    _ELICITATION_FR_ROLE,
-    _COMMS_STYLE,
-    _ELICITATION_IEEE_ROLE,
-    _ELICITATION_NFR_ROLE,
-    _REQ_FORMAT,
-    _SEC_FORMAT,
-    _SRS_ONLY_ROLE,
+    ELICITATION_FR_ROLE,
+    PHASE0_SCOPE_ROLE,
+    ELICITATION_IEEE_ROLE,
+    ELICITATION_NFR_ROLE,
+    COMMS_STYLE,
+    REQ_FORMAT,
+    SEC_FORMAT,
+    SRS_ONLY_ROLE,
     IEEE830_CATEGORIES,
-    MIN_FUNCTIONAL_REQS,
-    PHASE4_SECTIONS
+    MIN_FUNCTIONAL_REQS
 )
 from src.components.system_prompt.prompt_context import (
     _build_domain_context,
     _build_nfr_context,
     _build_ieee_section_context,
     _build_requirements_summary,
+    _build_scope_context,
     determine_elicitation_phase,
+    _build_brief_for_ieee,
     ElicitationPhase,
     TaskType
 )
@@ -44,35 +46,45 @@ class PromptArchitect:
 
     def _build_elicitation_message(self, state: "ConversationState") -> str:
         phase        = determine_elicitation_phase(state)
-        project_name = state.project_name
+        project_name = state.project_name or "(project name is not defined yet)"
 
-        if phase == "fr":
-            domain_ctx = _build_domain_context(state)
-            role = _ELICITATION_FR_ROLE.format(
+        if phase == "scope":
+            scope_ctx = _build_scope_context(state)
+            role = PHASE0_SCOPE_ROLE.format(
                 project_name=project_name,
-                comms_style=_COMMS_STYLE,
-                req_format=_REQ_FORMAT,
+                scope_context=scope_ctx,
+            )
+            phase_label = "=== CURRENT PHASE 0: PROJECT SCOPE CLARIFICATION ==="
+
+        elif phase == "fr":
+            domain_ctx = _build_domain_context(state)
+            role = ELICITATION_FR_ROLE.format(
+                project_name=project_name,
+                comms_style=COMMS_STYLE,
+                req_format=REQ_FORMAT,
             )
             phase_label = f"=== CURRENT PHASE 1: ELICIT AND AUTHOR REQUIREMENTS FOR CURRENT FEATURE ===\n{domain_ctx}"
 
         elif phase == "nfr":
             nfr_ctx = _build_nfr_context(state)
-            role = _ELICITATION_NFR_ROLE.format(
+            role = ELICITATION_NFR_ROLE.format(
                 project_name=project_name,
                 nfr_context=nfr_ctx,
                 min_nfr=MIN_NFR_PER_CATEGORY,
-                comms_style=_COMMS_STYLE,
-                req_format=_REQ_FORMAT,
+                comms_style=COMMS_STYLE,
+                req_format=REQ_FORMAT,
             )
             phase_label = "=== CURRENT PHASE 2: NON-FUNCTIONAL REQUIREMENTS — GAP COVERAGE ==="
 
         else:  # ieee
             sec_ctx = _build_ieee_section_context(state)
-            role = _ELICITATION_IEEE_ROLE.format(
+            project_brief = _build_brief_for_ieee(state)
+            role = ELICITATION_IEEE_ROLE.format(
                 project_name=project_name,
                 section_context=sec_ctx,
-                comms_style=_COMMS_STYLE,
-                sec_format=_SEC_FORMAT,
+                comms_style=COMMS_STYLE,
+                sec_format=SEC_FORMAT,
+                project_brief=project_brief
             )
             phase_label = "=== CURRENT PHASE 3: IEEE-830 DOCUMENTATION SECTIONS ==="
 
@@ -87,11 +99,11 @@ class PromptArchitect:
     def _build_srs_only_message(self, state: "ConversationState") -> str:
         sec_ctx     = _build_ieee_section_context(state)
         req_summary = _build_requirements_summary(state)
-        role = _SRS_ONLY_ROLE.format(
+        role = SRS_ONLY_ROLE.format(
             project_name=state.project_name,
             section_context=sec_ctx,
-            comms_style=_COMMS_STYLE,
-            req_format=_REQ_FORMAT,
+            comms_style=COMMS_STYLE,
+            req_format=REQ_FORMAT,
         )
         parts = [
             "=== ROLE & INSTRUCTIONS ===\n" + role,

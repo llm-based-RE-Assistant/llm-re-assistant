@@ -13,14 +13,59 @@ if TYPE_CHECKING:
 # CONTEXT BLOCK BUILDERS — focused, one-target-at-a-time
 # ---------------------------------------------------------------------------
 
+def _build_scope_context(state: "ConversationState") -> str:
+    """Phase 0: show which brief fields are filled and which are still empty."""
+    BRIEF_FIELDS = [
+        ("system_purpose",     "System Purpose",      "what problem does this system solve, purpose of the system?"),
+        ("user_classes",       "User classes",        "Who uses the system and what is each person's primary goal?"),
+        ("core_features",      "Core features",       "What are the main things the system must do?"),
+        ("scale_and_context",  "Scale / context",     "How many users/devices? Home, enterprise, cloud?"),
+        ("key_constraints",    "Known constraints",   "Any regulatory, legal, budget, or technical limits?"),
+        ("integration_points", "Integration points",  "Does it connect to external systems, devices, or APIs?"),
+        ("out_of_scope",       "Out of scope",        "What should the system explicitly NOT do?"),
+    ]
+    brief = getattr(state, "project_brief", {})
+    scope_turn = getattr(state, "scope_turn_count", 0)
+
+    filled   = [(key, label) for key, label, _ in BRIEF_FIELDS if brief.get(key)]
+    empty    = [(key, label, hint) for key, label, hint in BRIEF_FIELDS if not brief.get(key)]
+
+    lines = [
+        f"SCOPE BRIEF PROGRESS: {len(filled)}/7 fields confirmed | Turns used: {scope_turn}/10",
+        "",
+    ]
+    if filled:
+        lines.append("CONFIRMED fields:")
+        for key, label in filled:
+            lines.append(f"  ✅ {label}: {brief[key]}")
+        lines.append("")
+
+    if empty:
+        # Show the next empty field as the current target
+        next_key, next_label, next_hint = empty[0]
+        lines.append(f"NEXT FIELD TO FILL: {next_label}({next_key})")
+        lines.append(f"  What to ask: {next_hint}")
+        if len(empty) > 1:
+            lines.append(f"  Still needed after this: {', '.join(l for _, l, _ in empty[1:])}")
+    else:
+        lines.append("All fields confirmed. Emit <SCOPE field=\"status\">complete</SCOPE> and transition.")
+
+    return "\n".join(lines)
+
+
 def _build_domain_context(state: "ConversationState") -> str:
-    """FR phase: current domain + its reqs + requirement coverage template + remaining domain list."""
+    """FR phase: project brief + current domain + its reqs + coverage template + remaining list."""
     gate = state.domain_gate
+
+    # ── Project brief block (from Phase 0) ───────────────────────────────────
+    brief_block = state.format_brief_for_prompt() if hasattr(state, "format_brief_for_prompt") else ""
+
     if gate is None or not gate.seeded or not gate.domains:
-        return (
+        fallback = (
             "Domain discovery not yet complete. Begin by understanding what the "
             "system should do, then elicit requirements feature by feature."
         )
+        return (brief_block + "\n\n" + fallback) if brief_block else fallback
 
     # Current = first non-confirmed, non-excluded domain
     current_domain = None
@@ -63,7 +108,12 @@ def _build_domain_context(state: "ConversationState") -> str:
 
     domain_key = _label_to_key(current_domain.label) or 'not-yet-assessed'
 
-    lines = [
+    lines = []
+    if brief_block:
+        lines.append(brief_block)
+        lines.append("")
+
+    lines += [
         f'CURRENT FEATURE: "{current_domain.label}"',
         f"Feature's Category Key: {domain_key} | Probes so far: {current_domain.probe_count} | System complexity: {complexity}",
         "",
@@ -187,6 +237,10 @@ def _build_nfr_context(state: "ConversationState") -> str:
 
     return "\n".join(lines)
 
+def _build_brief_for_ieee(state: "ConversationState") -> str:
+    brief_block = state.format_brief_for_prompt() if hasattr(state, "format_brief_for_prompt") else ""
+    return brief_block
+
 
 def _build_ieee_section_context(state: "ConversationState") -> str:
     """IEEE phase: current section + completed / remaining sections."""
@@ -230,7 +284,7 @@ def _build_ieee_section_context(state: "ConversationState") -> str:
         "REQUIREMENTS FOR CONTEXT:",
         f"  FR={state.functional_count} | NFR={state.nonfunctional_count} | Total={state.total_requirements}",
     ]
-    return "\n".join(lines)
+    return "\n".join(lines), brief_block
 
 
 def _build_requirements_summary(state: "ConversationState") -> str:
@@ -265,7 +319,7 @@ def _build_requirements_summary(state: "ConversationState") -> str:
 # ---------------------------------------------------------------------------
 
 TaskType = Literal["elicitation", "srs_only"]
-ElicitationPhase = Literal["fr", "nfr", "ieee"]
+ElicitationPhase = Literal["scope", "fr", "nfr", "ieee"]
 
 # Minimum fraction of seeded domains that must be confirmed before the
 # FR phase is considered complete. Grounded in completeness coverage:
@@ -275,30 +329,38 @@ ElicitationPhase = Literal["fr", "nfr", "ieee"]
 def determine_elicitation_phase(state: "ConversationState") -> ElicitationPhase:
     """Determine which elicitation phase the conversation is in.
 
-    Phase order: fr → nfr → ieee. All gates must pass before advancing.
+    Phase order: scope → fr → nfr → ieee. All gates must pass before advancing.
+
+    SCOPE gate — passes when scope_complete is True on the state.
+      For srs_only task type: scope phase is skipped entirely.
 
     FR gate — two conditions must both be true:
       1. functional_count >= MIN_FUNCTIONAL_REQS.
       2. Domain gate satisfied: gate.is_satisfied is True OR no gate was seeded.
-         gate.is_satisfied (defined in DomainGate) requires:
-           - >= 80% of in-scope (non-excluded) domains are confirmed
-           - every in-scope unconfirmed domain has probe_count >= 1
-         This is the single source of truth for domain coverage — the logic
-         lives in DomainGate, not duplicated here.
-
-         IMPORTANT: if gate exists but seeding failed (seeded=False, domains={}),
-         we do NOT treat it as "no gate" and bypass the check. Instead we block
-         in FR phase until seeding succeeds. This prevents the silent bypass that
-         occurred in earlier iterations where `not gate.seeded` was treated as
-         "domain gate not in use" rather than "domain gate not yet ready".
 
     NFR gate:
       All keys in MANDATORY_NFR_CATEGORIES have >= MIN_NFR_PER_CATEGORY reqs.
-      MANDATORY_NFR_CATEGORIES must exactly match keys in domain_discovery.NFR_CATEGORIES.
 
     IEEE gate:
       FR + NFR both satisfied.
     """
+    # srs_only always skips scope and starts at ieee
+    task_type = getattr(state, "task_type", "elicitation")
+    if task_type == "srs_only":
+        gate = state.domain_gate
+        domain_ok = (gate is None) or gate.is_satisfied
+        if not domain_ok:
+            return "fr"
+        nfr_done = all(
+            state.nfr_coverage.get(c, 0) >= MIN_NFR_PER_CATEGORY
+            for c in MANDATORY_NFR_CATEGORIES
+        )
+        return "ieee" if nfr_done else "nfr"
+
+    # ── Scope gate ────────────────────────────────────────────────────────────
+    if not getattr(state, "scope_complete", False):
+        return "scope"
+
     gate = state.domain_gate
 
     # ── FR gate ──────────────────────────────────────────────────────────────

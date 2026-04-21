@@ -271,6 +271,9 @@ def start_session():
             "To get started, please describe the software system you want to build — "
             "its main purpose, who will use it, and any key features you have in mind."
         )
+        # Note: the first customer message triggers Phase 0 (scope clarification).
+        # scope_complete starts as False; the LLM will ask up to 6 scope questions
+        # before domain seeding and FR elicitation begin.
     else:
         opening = (
             "Hello! I can see you've uploaded your requirements list. I'll now help you complete "
@@ -416,6 +419,8 @@ def send_turn():
         "srs_ready":       srs_ready,
         "current_phase":   current_phase,
         "task_type":       session.get("task_type", "elicitation"),
+        "scope_complete":  getattr(state, "scope_complete", False),
+        "project_brief":   getattr(state, "project_brief", {}),
     })
 
 

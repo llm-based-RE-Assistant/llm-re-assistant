@@ -42,6 +42,19 @@ def _clean(text):
     text = re.sub(r'\s+',' ',text.strip())
     return re.sub(r'^[\-\*•]\s*','',text)
 
+def parse_scope_tags(text: str) -> dict:
+    """Extract <SCOPE field="...">value</SCOPE> tags from assistant response.
+    Returns dict of {field: value}. Special field 'status' signals completion.
+    """
+    results = {}
+    for m in re.finditer(
+        r'<SCOPE\s+field=["\']([^"\']+)["\']>(.*?)</SCOPE>',
+        text, re.DOTALL | re.IGNORECASE
+    ):
+        field = m.group(1).strip()
+        value = m.group(2).strip()
+        results[field] = value
+    return results
 
 class RequirementExtractor:
     def __init__(self, min_text_length=15):

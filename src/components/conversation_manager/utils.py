@@ -10,7 +10,7 @@ def _message_similarity(a: str, b: str) -> float:
 
 # ── SMART Quality Check ──
 
-_SMART_CHECK_PROMPT = """\
+SMART_CHECK_PROMPT = """\
 You are an expert Requirements Engineer performing a SMART quality check.
 
 CUSTOMER MESSAGE (context):

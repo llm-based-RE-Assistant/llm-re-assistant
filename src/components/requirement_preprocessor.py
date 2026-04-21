@@ -3,7 +3,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from typing import Optional, TYPE_CHECKING
-from src.components.system_prompt.utils import _PREPROCESS_SYSTEM, _PREPROCESS_USER
+from src.components.system_prompt.utils import PREPROCESS_SYSTEM, PREPROCESS_USER
 if TYPE_CHECKING:
     from src.components.conversation_manager.llm_provider import LLMProvider
 
@@ -182,14 +182,14 @@ class RequirementPreprocessor:
     ) -> list[ProcessedRequirement]:
         """Run one LLM call on a batch of up to BATCH_SIZE requirements."""
         req_list = "\n".join(f"{i+1}. {r}" for i, r in enumerate(batch))
-        prompt = _PREPROCESS_USER.format(
+        prompt = PREPROCESS_USER.format(
             project_context=project_context[:200],
             count=len(batch),
             req_list=req_list,
         )
         try:
             raw = self._provider.chat(
-                system_message=_PREPROCESS_SYSTEM,
+                system_message=PREPROCESS_SYSTEM,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0,
             )

@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 from src.components.domain_discovery.domain_space import DomainSpec
-from src.components.domain_discovery.utils import _DOMAIN_GATE_COVERAGE_FRACTION
+from src.components.domain_discovery.utils import DOMAIN_GATE_COVERAGE_FRACTION
 
 @dataclass
 class DomainGate:
@@ -55,7 +55,7 @@ class DomainGate:
         if active == 0:
             return True  # all domains excluded — nothing to elicit
         confirmed = self.confirmed_count
-        coverage_ok = (confirmed / active) >= _DOMAIN_GATE_COVERAGE_FRACTION
+        coverage_ok = (confirmed / active) >= DOMAIN_GATE_COVERAGE_FRACTION
         all_probed = all(
             d.probe_count >= 1 or d.status in ("confirmed", "excluded")
             for d in self.domains.values()

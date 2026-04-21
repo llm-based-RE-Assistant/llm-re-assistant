@@ -4,16 +4,16 @@ from dataclasses import dataclass
 from src.components.conversation_state import RequirementType
 from src.components.srs_template import UserClass
 from src.components.system_prompt.utils import (
-    _SYSTEM_ROLE,
-    _SCOPE_PROMPT,
-    _PERSPECTIVE_PROMPT,
-    _PRODUCT_FUNCTIONS_DOMAIN_PROMPT,
-    _USER_CLASSES_PROMPT,
-    _GENERAL_CONSTRAINTS_PROMPT,
-    _ASSUMPTIONS_PROMPT,
-    _INTERFACES_PROMPT,
-    _CONSTRAINTS_STUB,
-    _DATABASE_STUB
+    SYSTEM_ROLE,
+    SCOPE_PROMPT,
+    PERSPECTIVE_PROMPT,
+    PRODUCT_FUNCTIONS_DOMAIN_PROMPT,
+    USER_CLASSES_PROMPT,
+    GENERAL_CONSTRAINTS_PROMPT,
+    ASSUMPTIONS_PROMPT,
+    INTERFACES_PROMPT,
+    CONSTRAINTS_STUB,
+    DATABASE_STUB
 )
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -81,6 +81,29 @@ def _domain_summary(state: "ConversationState") -> str:
                   if d.status != "excluded"]
         return ", ".join(labels) if labels else "general software system"
     return "general software system"
+
+
+def _brief_block(state: "ConversationState") -> str:
+    """Render the project brief as a labelled block for injection into enricher prompts.
+    Returns empty string when no brief was collected (srs_only / upload flows).
+    """
+    brief = getattr(state, "project_brief", {})
+    if not brief:
+        return ""
+    LABELS = {
+        "user_classes":       "User classes",
+        "core_features":      "Core features",
+        "scale_and_context":  "Scale / context",
+        "key_constraints":    "Known constraints",
+        "integration_points": "Integration points",
+        "out_of_scope":       "Out of scope",
+    }
+    lines = ["PROJECT BRIEF (confirmed with customer before elicitation):"]
+    for key, label in LABELS.items():
+        value = brief.get(key, "")
+        if value:
+            lines.append(f"  {label:<22}: {value}")
+    return "\n".join(lines)
 
 
 def _implied_data_reqs(state: "ConversationState") -> str:
@@ -255,7 +278,7 @@ class SRSCoverageEnricher:
             for r in template.section1.references
         )
         if not con_already_set and not template.section3.design_constraints:
-            template.section1.references.append(_CON_SENTINEL + _CONSTRAINTS_STUB)
+            template.section1.references.append(_CON_SENTINEL + CONSTRAINTS_STUB)
             filled["§3.5 Design Constraints"] = "stub"
 
         return filled
@@ -267,8 +290,9 @@ class SRSCoverageEnricher:
     def _fill_scope(self, state: "ConversationState") -> str:
         fr_count = sum(1 for r in state.requirements.values()
                        if r.req_type == RequirementType.FUNCTIONAL)
-        prompt = _SCOPE_PROMPT.format(
+        prompt = SCOPE_PROMPT.format(
             project_name=state.project_name,
+            project_brief=_brief_block(state),
             fr_count=fr_count,
             fr_list=_fr_list_text(state),
             exclusions=_exclusions_text(state),
@@ -276,8 +300,9 @@ class SRSCoverageEnricher:
         return self._call_llm(prompt, max_tokens=400)
 
     def _fill_perspective(self, state: "ConversationState") -> str:
-        prompt = _PERSPECTIVE_PROMPT.format(
+        prompt = PERSPECTIVE_PROMPT.format(
             project_name=state.project_name,
+            project_brief=_brief_block(state),
             domain_summary=_domain_summary(state),
             all_reqs=_all_reqs_text(state),
         )
@@ -343,7 +368,7 @@ class SRSCoverageEnricher:
                 req_lines = "\n".join(
                     f"- [{r.req_id}] {r.text}" for r in domain_reqs
                 )
-                prompt = _PRODUCT_FUNCTIONS_DOMAIN_PROMPT.format(
+                prompt = PRODUCT_FUNCTIONS_DOMAIN_PROMPT.format(
                     project_name=state.project_name,
                     domain_label=domain.label,
                     domain_status=domain.status,
@@ -369,7 +394,8 @@ class SRSCoverageEnricher:
     def _fill_user_classes(self, state: "ConversationState") -> str:
         stakeholder_reqs = _reqs_by_category(state, "stakeholders")
         user_turns = _user_turns_text(state, max_turns=8, max_chars=200)
-        prompt = _USER_CLASSES_PROMPT.format(
+        prompt = USER_CLASSES_PROMPT.format(
+            project_brief=_brief_block(state),
             user_turns=user_turns,
             stakeholder_reqs=stakeholder_reqs,
         )
@@ -377,9 +403,11 @@ class SRSCoverageEnricher:
     
     def _fill_general_constraints(self, state: "ConversationState") -> str:
         all_reqs = _all_reqs_text(state)
-        prompt = _GENERAL_CONSTRAINTS_PROMPT.format(all_reqs=all_reqs)
+        prompt = GENERAL_CONSTRAINTS_PROMPT.format(
+            project_brief=_brief_block(state),
+            all_reqs=all_reqs,
+        )
         raw = self._call_llm(prompt, max_tokens=500)
-        # Split numbered list into individual items
         items = re.split(r"\n\s*\d+\.\s+", "\n" + raw.strip())
         items = [i.strip() for i in items if i.strip()]
         return "\n".join(items) if items else raw
@@ -387,12 +415,12 @@ class SRSCoverageEnricher:
     def _fill_assumptions(self, state: "ConversationState") -> list[str]:
         all_reqs = _all_reqs_text(state)
         user_turns = _user_turns_text(state, max_turns=6, max_chars=120)
-        prompt = _ASSUMPTIONS_PROMPT.format(
+        prompt = ASSUMPTIONS_PROMPT.format(
+            project_brief=_brief_block(state),
             all_reqs=all_reqs,
             user_turns_short=user_turns,
         )
         raw = self._call_llm(prompt, max_tokens=500)
-        # Split numbered list into individual items
         items = re.split(r"\n\s*\d+\.\s+", "\n" + raw.strip())
         items = [i.strip() for i in items if i.strip()]
         return items if items else [raw]
@@ -424,13 +452,17 @@ class SRSCoverageEnricher:
             if len(relevant_reqs_lines) >= 15:
                 break
         relevant_reqs = "\n".join(relevant_reqs_lines) or "(none elicited)"
-        system_context = (f"Project: {state.project_name}. "
-                          f"Domains: {_domain_summary(state)}.")
-        prompt = _INTERFACES_PROMPT.format(
+        system_context = (
+            f"Project: {state.project_name}. "
+            f"Domains: {_domain_summary(state)}."
+        )
+        brief = _brief_block(state)
+        prompt = INTERFACES_PROMPT.format(
             interface_type=interface_type,
             architect_checklist=architect_checklist,
             relevant_reqs=relevant_reqs,
             system_context=system_context,
+            project_brief=brief,
         )
         return self._call_llm(prompt, max_tokens=400)
 
@@ -448,7 +480,7 @@ class SRSCoverageEnricher:
         """
         try:
             response = self.provider.chat(
-                system_message=_SYSTEM_ROLE,
+                system_message=SYSTEM_ROLE,
                 messages=[{"role": "user", "content": user_prompt}],
                 temperature=self.temperature,
             )
@@ -468,7 +500,7 @@ class SRSCoverageEnricher:
 
 def _implied_data_reqs_stub(state: "ConversationState") -> str:
     implied = _implied_data_reqs(state)
-    return _DATABASE_STUB.format(implied_data_reqs=implied)
+    return DATABASE_STUB.format(implied_data_reqs=implied)
 
 
 # ---------------------------------------------------------------------------
