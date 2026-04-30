@@ -16,13 +16,13 @@ from src.components.system_prompt.utils import (
     MIN_FUNCTIONAL_REQS
 )
 from src.components.system_prompt.prompt_context import (
-    _build_domain_context,
-    _build_nfr_context,
-    _build_ieee_section_context,
-    _build_requirements_summary,
-    _build_scope_context,
+    build_domain_context,
+    build_nfr_context,
+    build_ieee_section_context,
+    build_requirements_summary,
+    build_scope_context,
     determine_elicitation_phase,
-    _build_brief_for_ieee,
+    build_brief_for_ieee,
     ElicitationPhase,
     TaskType
 )
@@ -49,7 +49,7 @@ class PromptArchitect:
         project_name = state.project_name or "(project name is not defined yet)"
 
         if phase == "scope":
-            scope_ctx = _build_scope_context(state)
+            scope_ctx = build_scope_context(state)
             role = PHASE0_SCOPE_ROLE.format(
                 project_name=project_name,
                 scope_context=scope_ctx,
@@ -57,7 +57,7 @@ class PromptArchitect:
             phase_label = "=== CURRENT PHASE 0: PROJECT SCOPE CLARIFICATION ==="
 
         elif phase == "fr":
-            domain_ctx = _build_domain_context(state)
+            domain_ctx = build_domain_context(state)
             role = ELICITATION_FR_ROLE.format(
                 project_name=project_name,
                 comms_style=COMMS_STYLE,
@@ -66,7 +66,7 @@ class PromptArchitect:
             phase_label = f"=== CURRENT PHASE 1: ELICIT AND AUTHOR REQUIREMENTS FOR CURRENT FEATURE ===\n{domain_ctx}"
 
         elif phase == "nfr":
-            nfr_ctx = _build_nfr_context(state)
+            nfr_ctx = build_nfr_context(state)
             role = ELICITATION_NFR_ROLE.format(
                 project_name=project_name,
                 nfr_context=nfr_ctx,
@@ -77,8 +77,8 @@ class PromptArchitect:
             phase_label = "=== CURRENT PHASE 2: NON-FUNCTIONAL REQUIREMENTS — GAP COVERAGE ==="
 
         else:  # ieee
-            sec_ctx = _build_ieee_section_context(state)
-            project_brief = _build_brief_for_ieee(state)
+            sec_ctx = build_ieee_section_context(state)
+            project_brief = build_brief_for_ieee(state)
             role = ELICITATION_IEEE_ROLE.format(
                 project_name=project_name,
                 section_context=sec_ctx,
@@ -97,8 +97,8 @@ class PromptArchitect:
         return "\n\n".join(parts)
 
     def _build_srs_only_message(self, state: "ConversationState") -> str:
-        sec_ctx     = _build_ieee_section_context(state)
-        req_summary = _build_requirements_summary(state)
+        sec_ctx     = build_ieee_section_context(state)
+        req_summary = build_requirements_summary(state)
         role = SRS_ONLY_ROLE.format(
             project_name=state.project_name,
             section_context=sec_ctx,

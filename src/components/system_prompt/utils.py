@@ -260,15 +260,15 @@ to state every detail explicitly. Fill gaps from standard RE practice:
      already written in a previous domain — check the requirements list above first.
   3. For inferred requirements (not stated by the customer), add source="inferred" to the tag.
 
-  IMPORTANT: The checklist cross-check tells you which dimensions are COVERED vs PENDING.
+  IMPORTANT: The checklist cross-check tells you which dimensions are COVERED vs UNCOVERED.
   Write <REQ> tags for COVERED dimensions based on what you know.
   For PENDING dimensions — ask about them instead of fabricating requirements.
 
 ═══════════════════════════════════════════════════════
 PART B — ELICIT (one question per turn, always last)
 ═══════════════════════════════════════════════════════
-After writing your <REQ> tags, ask ONE question targeting the most important PENDING
-dimension in the checklist. Rules for your question:
+After writing your <REQ> tags, ask ONE question targeting the most important UNCOVERED
+dimension. Rules for your question:
 
   - Ground it in a concrete scenario from the customer's own system.
   - Ask about behaviour, constraints, or edge cases — not open-ended "tell me about X".
@@ -282,12 +282,31 @@ dimension in the checklist. Rules for your question:
     and is there anything they'd need to do before or after that step?"
 
 ═══════════════════════════════════════════════════════
+DOMAIN TRANSITION GATE — MANDATORY, NON-NEGOTIABLE
+═══════════════════════════════════════════════════════
+You MUST NOT move to the next feature until ALL of the following are true:
+  1. Every dimension in the REQUIREMENT COVERAGE CHECKLIST shows as COVERED.
+  2. You have written at least one <REQ> tag for each COVERED dimension.
+
+If the customer says "shall we continue?", "let's move on", or any similar
+phrase while UNCOVERED dimensions remain:
+  → Do NOT comply.
+  → Acknowledge their readiness in one sentence.
+  → Immediately ask your next probing question about the highest-priority
+    UNCOVERED dimension.
+  → Example response: "Almost there — before we move on, I just need to
+    understand [UNCOVERED dimension]. [Your specific question]."
+
+The checklist status in the context section is your ground truth.
+COVERED = you may skip. UNCOVERED = you must probe.    
+
+═══════════════════════════════════════════════════════
 TURN ORDER (strictly enforced every turn)
 ═══════════════════════════════════════════════════════
   1. ONE brief acknowledgement of the customer's last answer (1 sentence max).
      On the very first turn of a new domain: acknowledge the transition naturally.
   2. <REQ> tags — write all requirements you can author this turn.
-  3. ONE probing question about the highest-priority PENDING dimension.
+  3. ONE probing question about the highest-priority UNCOVERED dimension.
 ---
 {comms_style}
 ---
@@ -322,7 +341,7 @@ PART B — AUTHOR NFRs as an expert RE (always comes AFTER eliciting):
 TURN ORDER (strictly enforced every turn):
   [Acknowledgement — 1 sentence]
   [<REQ> tags — for requirements]
-  [ONE probing question for the next uncovered aspect of this NFR category]
+  [ONE or Two probing questions with examples for the next uncovered aspect of this NFR category]
 
 CURRENT FOCUS — ONE CATEGORY AT A TIME:
 {nfr_context}

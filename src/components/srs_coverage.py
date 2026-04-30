@@ -54,10 +54,13 @@ def _fr_list_text(state: "ConversationState", max_items: int = 25) -> str:
             break
     return "\n".join(lines)
 
+_TRANSITION_MSG_PREFIX = "__SYSTEM_TRANSITION__"
 
 def _user_turns_text(state: "ConversationState", max_turns: int = 12, max_chars: int = 150) -> str:
     lines = []
     for turn in state.turns[:max_turns]:
+        if turn.user_message.startswith(_TRANSITION_MSG_PREFIX):
+            continue   # exclude automated phase-transition triggers
         excerpt = turn.user_message.strip()[:max_chars].replace("\n", " ")
         lines.append(f"Turn {turn.turn_id}: {excerpt}")
     return "\n".join(lines)
@@ -91,6 +94,7 @@ def _brief_block(state: "ConversationState") -> str:
     if not brief:
         return ""
     LABELS = {
+        "system_purpose":     "System purpose",
         "user_classes":       "User classes",
         "core_features":      "Core features",
         "scale_and_context":  "Scale / context",

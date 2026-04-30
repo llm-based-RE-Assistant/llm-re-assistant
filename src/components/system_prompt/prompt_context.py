@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 # CONTEXT BLOCK BUILDERS — focused, one-target-at-a-time
 # ---------------------------------------------------------------------------
 
-def _build_scope_context(state: "ConversationState") -> str:
+def build_scope_context(state: "ConversationState") -> str:
     """Phase 0: show which brief fields are filled and which are still empty."""
     BRIEF_FIELDS = [
         ("system_purpose",     "System Purpose",      "what problem does this system solve, purpose of the system?"),
@@ -44,7 +44,7 @@ def _build_scope_context(state: "ConversationState") -> str:
         # Show the next empty field as the current target
         next_key, next_label, next_hint = empty[0]
         lines.append(f"NEXT FIELD TO FILL: {next_label}({next_key})")
-        lines.append(f"  What to ask: {next_hint}")
+        lines.append(f"  Ask something like: {next_hint}")
         if len(empty) > 1:
             lines.append(f"  Still needed after this: {', '.join(l for _, l, _ in empty[1:])}")
     else:
@@ -53,7 +53,7 @@ def _build_scope_context(state: "ConversationState") -> str:
     return "\n".join(lines)
 
 
-def _build_domain_context(state: "ConversationState") -> str:
+def build_domain_context(state: "ConversationState") -> str:
     """FR phase: project brief + current domain + its reqs + coverage template + remaining list."""
     gate = state.domain_gate
 
@@ -113,9 +113,15 @@ def _build_domain_context(state: "ConversationState") -> str:
         lines.append(brief_block)
         lines.append("")
 
+    # if remaining:
+    #     lines.append(f"Remaining features to elicit after this: {', '.join(remaining[:2])}" + 
+    #                  (f", and {len(remaining)-2} more" if len(remaining) > 2 else ""))
+    #     lines.append("Focus on eliciting the current feature completely before moving on to the next one.")
+    #     lines.append("")
+
     lines += [
         f'CURRENT FEATURE: "{current_domain.label}"',
-        f"Feature's Category Key: {domain_key} | Probes so far: {current_domain.probe_count} | System complexity: {complexity}",
+        f"Feature's Category Key: {domain_key}",
         "",
         f"Functional requirements written for this feature ({len(fr_lines)}):",
     ]
@@ -133,29 +139,79 @@ def _build_domain_context(state: "ConversationState") -> str:
     template = domain_templates.get(domain_key, "") if domain_key else ""
 
     if template:
-        lines += [
-            "",
-            "REQUIREMENT COVERAGE CHECKLIST FOR THIS FEATURE:",
-            "  (Generated from the customer's description. Each dimension below must be",
-            "   addressed before moving to the next feature. Cross off by writing <REQ> tags",
-            "   for each one — do not leave any dimension unaddressed.)",
-            "",
-        ]
-        for line in template.splitlines():
-            lines.append(f"  {line}")
-        lines += [
-            "",
-            "DIMENSION COVERAGE CROSS CHECK:",
-            "   For each dimension in the REQUIREMENT COVERAGE CHECKLIST, assign exactly one status:",
-            "   [COVERED]    — customer gave me sufficient information; I have written a <REQ> for it.",
-            "   [PENDING]    — insufficient customer input yet; I will probe this in a future turn.",
-            "   [OUT-OF-SCOPE] — this dimension belongs to a different feature; do not write it here.",
-            "",
-            "   Rule:"
-            "   - Write <REQ> tags ONLY for [COVERED] dimensions.",
-            "   - Do NOT write requirements for [PENDING] dimensions — probe them instead.",
-            "   - Do NOT write requirements for [OUT-OF-SCOPE] dimensions under any circumstance.",
-        ]
+        # Filter to only uncovered dimensions so the LLM focuses
+        # its probing on gaps, not re-asking about already-covered ground.
+        uncovered = current_domain.uncovered_dimensions  # [] if check not run yet
+        coverage_run = bool(current_domain.covered_dimensions)
+
+        if coverage_run and uncovered:
+            # Coverage check has run — show only pending dimensions
+            filtered_lines = []
+            for line in template.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Match dimension label against uncovered list (case-insensitive substring)
+                line_lower = stripped.lower()
+                is_uncovered = any(
+                    dim.lower() in line_lower or line_lower.startswith(dim.lower()[:6])
+                    for dim in uncovered
+                )
+                if is_uncovered:
+                    filtered_lines.append(f"  {stripped}")
+
+            if filtered_lines:
+                n_total = len(current_domain.covered_dimensions)
+                n_covered = n_total - len(uncovered)
+                lines += [
+                    "",
+                    f"UNCOVERED DIMENSIONS OF FEATURE \"{current_domain.label}\":",
+                    f"  ({len(uncovered)} dimensions pending — showing only PENDING dimensions below.)",
+                    f"  These are the gaps. Probe these specifically before moving to the next feature.",
+                    "",
+                ]
+                lines += filtered_lines
+            else:
+                # All dimensions covered — signal completion
+                lines += [
+                    "",
+                    "REQUIREMENT COVERAGE CHECKLIST FOR THIS FEATURE:",
+                    "  ✅ All dimensions covered. This feature is complete.",
+                    "  Transition to the next feature.",
+                ]
+        elif coverage_run and not uncovered:
+            # All covered
+            lines += [
+                "",
+                "REQUIREMENT COVERAGE CHECKLIST FOR THIS FEATURE:",
+                "  ✅ All dimensions covered. This feature is complete.",
+                "  Transition to the next feature.",
+            ]
+        else:
+            # Coverage check hasn't run yet — show full checklist as before
+            lines += [
+                "",
+                f"UNCOVERED DIMENSIONS OF FEATURE \"{current_domain.label}\":",
+                "  (Generated from the customer's description. Each dimension below must be",
+                "   addressed before moving to the next feature. Cross off by writing <REQ> tags",
+                "   for each one — do not leave any dimension unaddressed.)",
+                "",
+            ]
+            for line in template.splitlines():
+                lines.append(f"  {line}")
+            # lines += [
+            #     "",
+            #     "DIMENSION COVERAGE CROSS CHECK:",
+            #     "   For each dimension in the REQUIREMENT COVERAGE CHECKLIST, assign exactly one status:",
+            #     "   [COVERED]    — customer gave me sufficient information; I have written a <REQ> for it.",
+            #     "   [PENDING]    — insufficient customer input yet; I will probe this in a future turn.",
+            #     "   [OUT-OF-SCOPE] — this dimension belongs to a different feature; do not write it here.",
+            #     "",
+            #     "   Rule:"
+            #     "   - Write <REQ> tags ONLY for [COVERED] dimensions.",
+            #     "   - Do NOT write requirements for [PENDING] dimensions — probe them instead.",
+            #     "   - Do NOT write requirements for [OUT-OF-SCOPE] dimensions under any circumstance.",
+            # ]
     else:
         lines += [
             "",
@@ -171,16 +227,35 @@ def _build_domain_context(state: "ConversationState") -> str:
 
     lines += [""]
 
-    if remaining:
-        lines.append(f"Remaining features to elicit after this: {', '.join(remaining[:2])}" + 
-                     (f", and {len(remaining)-2} more" if len(remaining) > 2 else ""))
+    lines += [
+        "",
+        "WHEN A DIMENSION IS DEFERRED:",
+        "If the stakeholder says they don't know, can't answer, or needs to ",
+        "check with the team about a specific dimension:",
+        "  1. Write one REQ source='inferred' capturing the most conservative safe default behaviour for that dimension.",
+        "  2. The coverage check will mark it 'deferred' — do not re-probe it.",
+        "  3. Move immediately to the next PENDING dimension.",
+        " Never leave a deferred dimension with zero requirements.",
+        "",
+    ]
+
+    if current_domain is not None and domain_key is not None:
+        lines += [
+            "",
+            "═══════════════════════════════════════════════════════",
+            "STRICT RULE",
+            "═══════════════════════════════════════════════════════",
+            f"NOW ASK ABOUT THIS FEATURE \"{current_domain.label}\".",
+            f"Extract requirements for this feature: \"{domain_key}\"",
+            "",
+        ]
 
     lines.append(f"\nDomain progress: {gate.done_count}/{gate.total} features complete")
     lines.append(f"Session totals: FR={state.functional_count}, NFR={state.nonfunctional_count}")
     return "\n".join(lines)
 
 
-def _build_nfr_context(state: "ConversationState") -> str:
+def build_nfr_context(state: "ConversationState") -> str:
     """NFR phase: current NFR category + its reqs + all category statuses."""
     from src.components.domain_discovery.domain_discovery import NFR_CATEGORIES
 
@@ -237,12 +312,12 @@ def _build_nfr_context(state: "ConversationState") -> str:
 
     return "\n".join(lines)
 
-def _build_brief_for_ieee(state: "ConversationState") -> str:
+def build_brief_for_ieee(state: "ConversationState") -> str:
     brief_block = state.format_brief_for_prompt() if hasattr(state, "format_brief_for_prompt") else ""
     return brief_block
 
 
-def _build_ieee_section_context(state: "ConversationState") -> str:
+def build_ieee_section_context(state: "ConversationState") -> str:
     """IEEE phase: current section + completed / remaining sections."""
     phase4_covered = getattr(state, 'phase4_sections_covered', set())
 
@@ -284,10 +359,10 @@ def _build_ieee_section_context(state: "ConversationState") -> str:
         "REQUIREMENTS FOR CONTEXT:",
         f"  FR={state.functional_count} | NFR={state.nonfunctional_count} | Total={state.total_requirements}",
     ]
-    return "\n".join(lines), brief_block
+    return "\n".join(lines)
 
 
-def _build_requirements_summary(state: "ConversationState") -> str:
+def build_requirements_summary(state: "ConversationState") -> str:
     """Compact requirements list for SRS-only mode."""
     reqs = state.requirements
     if not reqs:
@@ -348,8 +423,8 @@ def determine_elicitation_phase(state: "ConversationState") -> ElicitationPhase:
     task_type = getattr(state, "task_type", "elicitation")
     if task_type == "srs_only":
         gate = state.domain_gate
-        domain_ok = (gate is None) or gate.is_satisfied
-        if not domain_ok:
+        fr_done = (gate is None) or gate.is_satisfied
+        if not fr_done:
             return "fr"
         nfr_done = all(
             state.nfr_coverage.get(c, 0) >= MIN_NFR_PER_CATEGORY
@@ -364,12 +439,9 @@ def determine_elicitation_phase(state: "ConversationState") -> ElicitationPhase:
     gate = state.domain_gate
 
     # ── FR gate ──────────────────────────────────────────────────────────────
-    if gate is None:
-        domain_ok = True
-    else:
-        domain_ok = gate.is_satisfied
+    fr_done = (gate is not None) and gate.is_satisfied
 
-    if not domain_ok:
+    if not fr_done:
         return "fr"
 
     # ── NFR gate ─────────────────────────────────────────────────────────────

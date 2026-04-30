@@ -11,7 +11,8 @@ from src.components.domain_discovery.utils import (
     DECOMPOSE_PROMPT,
     PROJECT_NAME_PROMPT,
     COMPLEXITY_PROMPT,
-    DOMAIN_TEMPLATE_PROMPT
+    DOMAIN_TEMPLATE_PROMPT,
+    DOMAIN_COVERAGE_CHECK_PROMPT
 )
 
 class DomainDiscovery:
@@ -42,7 +43,7 @@ class DomainDiscovery:
         generated_domains_list = self._call_seed(
             description,
             project_name=project_name,
-            project_brief=project_brief or {}
+            project_brief=project_brief
         )
         for label in generated_domains_list:
             key = _label_to_key(label)
@@ -100,37 +101,170 @@ class DomainDiscovery:
             print(f"[DomainDiscovery] Seeded {len(gate.domains)} domains from uploaded reqs labels")
 
     def update_domain_statuses(self, gate, state):
-        """Update each domain's status based on requirement count AND probe history.
+        """Sync req_ids for every domain from the requirements store.
 
-        IT10b: A domain is "confirmed" only when it has >= 3 requirements AND has
-        been actively probed at least once (probe_count >= 1). This prevents
-        decomposed or inferred requirements from silently confirming a domain that
-        the RE assistant has never actually asked the customer about. Without this
-        guard, domains accumulate requirements from domain-matching of unrelated
-        elicitation and get confirmed before a single question is asked about them,
-        which causes determine_elicitation_phase() to see is_satisfied=True
-        prematurely and advance to NFR or IEEE phase after only a few turns.
+        This method ONLY updates domain.req_ids — it no longer sets domain.status.
+        Status is determined by check_domain_coverage() which is called separately
+        from conversation_manager after this sync, so it always operates on fresh
+        req_id counts.
+
+        user_locked and excluded domains still get their req_ids updated (for
+        accurate counts in the UI) but their status is never touched.
         """
         req_map = {k: [] for k in gate.domains}
         for rid, req in state.requirements.items():
             dk = getattr(req, "domain_key", None)
             if dk and dk in gate.domains:
                 req_map[dk].append(rid)
+
         for key, domain in gate.domains.items():
-            if domain.status == "excluded":
-                continue
+            # Always update req_ids for accurate counts
             domain.req_ids = req_map.get(key, [])
-            req_count = len(domain.req_ids)
-            if req_count >= 3 and domain.probe_count >= 1:
-                # Actively elicited AND has sufficient requirements
-                domain.status = "confirmed"
-            elif req_count >= 1:
-                # Has some requirements but not yet fully elicited
+
+    def check_domain_coverage(
+        self,
+        domain_key: str,
+        gate,
+        state,
+        project_brief: str = "",
+        conversation_history: str = ""
+    ) -> None:
+        """Approach P+Q+LLM hybrid: update domain status using template-grounded
+        LLM coverage check, with a req-count pre-filter to avoid wasteful LLM calls.
+
+        Decision logic (Approach P gate first):
+          req_count == 0          → unprobed  (no LLM call)
+          0 < req_count < 2       → partial   (no LLM call — too thin for meaningful check)
+          req_count >= 2          → run LLM coverage check against template dimensions
+            coverage_fraction >= 0.85 → confirmed
+            coverage_fraction >= 0.40 → partial
+            coverage_fraction <  0.40 → unprobed (reqs exist but cover almost nothing)
+
+        Approach Q side-effect: stores per-dimension coverage result in
+        domain.covered_dimensions so _build_domain_context() can filter the
+        checklist to show only uncovered dimensions.
+
+        user_locked domains are always skipped.
+        """
+        if domain_key not in gate.domains:
+            return
+        domain = gate.domains[domain_key]
+
+        # Never touch user-set status
+        if domain.user_locked or domain.status == "excluded":
+            return
+
+        req_count = len(domain.req_ids)
+
+        # ── cheap pre-filter ─────────────────────────────────────
+        if req_count == 0:
+            if domain.status not in ("confirmed",):
+                domain.status = "unprobed"
+            return
+
+        if req_count < 2:
+            domain.status = "partial"
+            return
+
+        # ── LLM coverage check ───────────────────────────────────────────────
+        templates = getattr(state, "domain_req_templates", {})
+        template = templates.get(domain_key, "")
+
+        if not template:
+            # No template yet — fall back to req-count heuristic
+            domain.status = "confirmed" if req_count >= 5 else "partial"
+            return
+
+        reqs_text = "\n".join(
+            f"- {state.requirements[rid].text[:150]}"
+            for rid in domain.req_ids
+            if rid in state.requirements
+        ) or "(none)"
+
+        # all Constraints reqs of this project
+        if (state.constraint_count > 0):
+            constraints_reqs_text = "\n".join(
+                f"- {state.requirements[rid].text[:150]}"
+                for rid in state.requirements
+                if state.requirements[rid].category == "constraints"
+            )
+        else:
+            constraints_reqs_text = "(none)"
+
+        # all NFRs of this project
+        if (state.nonfunctional_count > 0):
+            nfr_reqs_text = "\n".join(
+                f"- {state.requirements[rid].text[:150]}"
+                for rid in state.requirements
+                if state.requirements[rid].category in NFR_CATEGORIES
+            )
+        else:
+            nfr_reqs_text = "(none)"
+
+        try:
+            raw = self._provider.chat(
+                system_message=(
+                    "You are a Requirements Engineering coverage analyst. "
+                    "Return only valid JSON objects."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": DOMAIN_COVERAGE_CHECK_PROMPT.format(
+                        project_name=state.project_name,
+                        domain_label=domain.label,
+                        template=template,
+                        reqs_text=reqs_text,
+                        constraints_reqs_text=constraints_reqs_text,
+                        NFR_reqs_text=nfr_reqs_text,
+                        conversation_history=conversation_history or "(no recent conversation history available)"
+                    )
+                }],
+                temperature=0.0,
+            )
+            # Parse JSON result
+            text = re.sub(r"```(?:json)?\s*", "", raw.strip()).strip().strip("`")
+            m = re.search(r"\{.*\}", text, re.DOTALL)
+            if not m:
+                raise ValueError("No JSON object found in response")
+            result: dict = json.loads(m.group(0))
+
+            # Normalise values: accept "covered"/"pending"/"deferred"/"out_of_scope"
+            normalised = {}
+            for dim, val in result.items():
+                v = str(val).strip().lower()
+                normalised[dim] = "covered" if "covered" in v else "deferred" if "deferred" in v else "pending" if "pending" in v else "out_of_scope"
+
+            # Store for Approach Q (system prompt filtering)
+            domain.covered_dimensions = normalised
+
+            # Compute coverage fraction and set status deterministically
+            total = len(normalised)
+            if total == 0:
                 domain.status = "partial"
+                return
+            n_covered = sum(1 for v in normalised.values() if v == "covered" or v == "deferred" or v == "out_of_scope")
+            fraction = n_covered / total
+
+            print(
+                f"[CoverageCheck] {domain.label}: "
+                f"{n_covered}/{total} dims covered ({fraction:.0%}) → ",
+                end=""
+            )
+
+            if fraction >= 0.85:
+                domain.status = "confirmed"
+                print("confirmed")
+            elif fraction >= 0.40:
+                domain.status = "partial"
+                print("partial")
             else:
-                # No requirements yet — keep as unprobed
-                if domain.status not in ("confirmed",):
-                    domain.status = "unprobed"
+                domain.status = "unprobed" if req_count < 3 else "partial"
+                print(domain.status)
+
+        except Exception as exc:
+            # Graceful fallback: use req count heuristic so we never crash
+            print(f"[CoverageCheck] LLM call failed ({exc}), falling back to req-count")
+            domain.status = "confirmed" if req_count >= 5 else "partial"
 
     def classify_subdimension(self, req_text):
         return self._call_classify_subdim(req_text)
@@ -157,7 +291,7 @@ class DomainDiscovery:
         return q
 
     # IT10b: template-aware decomposition with re-run support
-    def decompose_requirements(self, domain_key, gate, state):
+    def decompose_requirements(self, domain_key, gate, state, project_brief=None):
         """Generate missing requirements for a domain using the coverage template as guide.
 
         IT10b changes vs previous:
@@ -228,6 +362,7 @@ class DomainDiscovery:
             "\n".join(f"- {t}" for t in own),
             "\n".join(f"- {t}" for t in other_sample) or "(none)",
             coverage_guidance=coverage_guidance,
+            project_brief=project_brief
         )
         domain.decompose_count += 1
         domain._last_decompose_size = len(own)
@@ -259,8 +394,6 @@ class DomainDiscovery:
         return None
 
     def extract_project_name(self, project_brief):
-        brief = project_brief or {}
-        brief_block = self._format_brief_block(brief)
         try:
             raw = self._provider.chat(
                 system_message="Extract system names. Reply with only the name.",
@@ -268,7 +401,7 @@ class DomainDiscovery:
                     {
                         "role":"user",
                         "content":PROJECT_NAME_PROMPT.format(
-                            project_brief=brief_block
+                            project_brief=project_brief if project_brief else "(not available)"
                         )
                     }
                 ],
@@ -293,35 +426,6 @@ class DomainDiscovery:
         """
         domain_count = gate.total if gate and gate.seeded else 0
 
-        req_text = " ".join(r.text.lower() for r in state.requirements.values())
-        description_lower = (project_brief or "").lower()
-        combined = req_text + " " + description_lower
-        brief = project_brief or {}
-        # Build the brief block for prompt injection
-        if brief:
-            brief_block = self._format_brief_block(brief)
-        else:
-            brief_block = ""
-        stakeholder_indicators = [
-            kw for kw in [
-                "admin", "manager", "employer", "employee", "recruiter", "technician",
-                "operator", "tenant", "guest", "moderator", "analyst", "supplier",
-                "partner", "regulator", "auditor",
-            ] if kw in combined
-        ]
-        integration_indicators = [
-            kw for kw in [
-                "api", "payment", "stripe", "paypal", "oauth", "google", "linkedin",
-                "sensor", "iot", "device", "mqtt", "webhook", "gdpr", "hipaa",
-                "pci", "government", "database", "third-party", "ai", "ml",
-                "machine learning", "recommendation", "matching algorithm",
-                "real-time", "streaming", "microservice",
-            ] if kw in combined
-        ]
-
-        stakeholder_hints = ", ".join(stakeholder_indicators) or "none detected"
-        integration_hints  = ", ".join(integration_indicators)  or "none detected"
-
         try:
             raw = self._provider.chat(
                 system_message=(
@@ -333,10 +437,8 @@ class DomainDiscovery:
                         "role": "user",
                         "content": COMPLEXITY_PROMPT.format(
                             project_name=project_name,
-                            project_brief=brief_block,
+                            project_brief=project_brief if project_brief else "(not available)",
                             domain_count=domain_count,
-                            stakeholder_hints=stakeholder_hints,
-                            integration_hints=integration_hints,
                         )
                     }
                 ],
@@ -348,9 +450,9 @@ class DomainDiscovery:
         except Exception:
             pass
         # Fallback: infer from domain count and integration breadth
-        if domain_count >= 10 or len(integration_indicators) >= 4:
+        if domain_count >= 10:
             return "complex"
-        if domain_count >= 6 or len(stakeholder_indicators) >= 2:
+        if domain_count >= 6:
             return "medium"
         return "simple"
 
@@ -370,12 +472,6 @@ class DomainDiscovery:
         dimension it must cover — without relying on arbitrary numeric targets.
         """
         existing_text = "\n".join(f"- {r.text[:120]}" for r in existing_reqs) or "(none yet)"
-        brief = project_brief or {}
-        # Build the brief block for prompt injection
-        if brief:
-            brief_block = self._format_brief_block(brief)
-        else:
-            brief_block = "(Not available)"
         try:
             raw = self._provider.chat(
                 system_message=(
@@ -386,7 +482,7 @@ class DomainDiscovery:
                     {
                         "role": "user",
                         "content": DOMAIN_TEMPLATE_PROMPT.format(
-                            project_brief=brief_block,
+                            project_brief=project_brief if project_brief else "(not available)",
                             domain_label=domain_label,
                             project_name=project_name,
                             complexity=complexity,
@@ -420,14 +516,11 @@ class DomainDiscovery:
         If no brief is available (srs_only / upload fallback), the raw description
         is used directly as before.
         """
-        brief = project_brief or {}
         # Build the brief block for prompt injection
-        if brief:
-            brief_block = self._format_brief_block(brief)
-            # supplementary raw description (customer's literal first message)
+        if project_brief:
             extra = f"\nCUSTOMER'S OPENING MESSAGE (supplementary context):\n{desc[:800]}" if desc else ""
         else:
-            brief_block = "(not available — using raw description below)"
+            project_brief = "(not available — using raw description below)"
             extra = ""
 
         try:
@@ -438,7 +531,7 @@ class DomainDiscovery:
                         "role": "user",
                         "content": SEED_PROMPT.format(
                             project_name=project_name,
-                            project_brief=brief_block,
+                            project_brief=project_brief,
                             extra_context=extra
                         )
                     }
@@ -460,13 +553,11 @@ class DomainDiscovery:
             project_brief=None
         ):
         """IT10: Added complexity param so reseed prompt can reference system type context."""
-        brief = project_brief or {}
         # Build the brief block for prompt injection
-        if brief:
-            brief_block = self._format_brief_block(brief)
+        if project_brief:
             extra = f"\nCUSTOMER'S OPENING MESSAGE (supplementary context):\n{desc[:800]}" if desc else ""
         else:
-            brief_block = "(not available — using raw description below)"
+            project_brief = "(not available — using raw description below)"
             extra = f"\nCUSTOMER'S OPENING MESSAGE (supplementary context):\n{desc[:800]}" if desc else ""
         try:
             raw = self._provider.chat(
@@ -480,7 +571,7 @@ class DomainDiscovery:
                             req_sample=req_sample,
                             current_domains=json.dumps(current),
                             project_name=project_name,
-                            project_brief=brief_block,
+                            project_brief=project_brief,
                             complexity=complexity
                         )
                     }
@@ -534,7 +625,8 @@ class DomainDiscovery:
             project_name,
             existing,
             all_other,
-            coverage_guidance: str = ""
+            coverage_guidance: str = "",
+            project_brief: str = ""
         ) -> list:
         """IT10b: Returns list of (text, is_nfr) tuples.
         The [NFR] prefix in generated text signals quality-attribute requirements
@@ -556,6 +648,7 @@ class DomainDiscovery:
                             existing_reqs=existing,
                             all_other_reqs=all_other,
                             coverage_guidance=coverage_guidance,
+                            project_brief=project_brief if project_brief else "(not available)"
                         )
                     }
                 ],
@@ -630,19 +723,6 @@ class DomainDiscovery:
         #     return (f"I'd like to understand more about how you'd use the "
         #             f"{domain.label.lower()} features — for example, "
         #             f"how often would you use them and what's most important to you?")
-
-    def _format_brief_block(self, brief: str):
-        brief_lines = [
-                f"  System Purpose    : {brief.get('system_purpose', '(not specified)')}",
-                f"  User classes      : {brief.get('user_classes', '(not specified)')}",
-                f"  Core features     : {brief.get('core_features', '(not specified)')}",
-                f"  Scale / context   : {brief.get('scale_and_context', '(not specified)')}",
-                f"  Known constraints : {brief.get('key_constraints', '(not specified)')}",
-                f"  Integration points: {brief.get('integration_points', '(not specified)')}",
-                f"  Out of scope      : {brief.get('out_of_scope', '(not specified)')}",
-            ]
-        brief_block = "\n".join(brief_lines)
-        return brief_block
 
 # ── Structural coverage ──
 _MIN_REQS_FOR_CONSTRAINT_COVERAGE = 3

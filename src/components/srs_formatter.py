@@ -49,45 +49,43 @@ def _render_req_block(ann: AnnotatedRequirement, show_smart: bool = True) -> lis
     lines: list[str] = []
     req = ann.requirement
 
-    priority_icon = _priority_badge(ann.priority)
-    smart_str = _badge(ann.smart.score) if show_smart else ""
+    # priority_icon = _priority_badge(ann.priority)
+    # smart_str = _badge(ann.smart.score) if show_smart else ""
 
     # Headline
-    ambiguity_flag = " ⚠️" if req.is_ambiguous else ""
-    lines.append(f"**{req.req_id}** {priority_icon} {smart_str}{ambiguity_flag}")
-    lines.append("")
-    lines.append(req.text)
+    # ambiguity_flag = " ⚠️" if req.is_ambiguous else ""
+    lines.append(f"**{req.req_id}**: {req.text}")
     lines.append("")
 
     # Metadata blockquote
-    cat_label = IEEE830_CATEGORIES.get(req.category, req.category)
-    lines.append(f"> *Source: Turn {req.turn_id} | Category: {cat_label} | Section §{ann.ieee_section}*")
+    # cat_label = IEEE830_CATEGORIES.get(req.category, req.category)
+    # lines.append(f"> *Source: Turn {req.turn_id} | Category: {cat_label} | Section §{ann.ieee_section}*")
 
-    if show_smart:
-        # SMART dimension summary
-        def _dim(flag: SmartFlag, label: str) -> str:
-            if flag in ann.smart.satisfied:
-                return f"{label} ✓"
-            elif flag in ann.smart.violated:
-                return f"{label} ✗"
-            return f"{label} ?"
+    # if show_smart:
+    #     # SMART dimension summary
+    #     def _dim(flag: SmartFlag, label: str) -> str:
+    #         if flag in ann.smart.satisfied:
+    #             return f"{label} ✓"
+    #         elif flag in ann.smart.violated:
+    #             return f"{label} ✗"
+    #         return f"{label} ?"
 
-        dims = ", ".join([
-            _dim(SmartFlag.SPECIFIC,    "Specific"),
-            _dim(SmartFlag.MEASURABLE,  "Measurable"),
-            _dim(SmartFlag.TESTABLE,    "Testable"),
-            _dim(SmartFlag.UNAMBIGUOUS, "Unambiguous"),
-            _dim(SmartFlag.RELEVANT,    "Relevant"),
-        ])
-        lines.append(f"> *SMART: {dims}*")
+    #     dims = ", ".join([
+    #         _dim(SmartFlag.SPECIFIC,    "Specific"),
+    #         _dim(SmartFlag.MEASURABLE,  "Measurable"),
+    #         _dim(SmartFlag.TESTABLE,    "Testable"),
+    #         _dim(SmartFlag.UNAMBIGUOUS, "Unambiguous"),
+    #         _dim(SmartFlag.RELEVANT,    "Relevant"),
+    #     ])
+    #     lines.append(f"> *SMART: {dims}*")
 
-        if ann.smart.notes:
-            lines.append(f"> *⚠️ {ann.smart.notes}*")
+    #     if ann.smart.notes:
+    #         lines.append(f"> *⚠️ {ann.smart.notes}*")
 
-    if req.ambiguity_note:
-        lines.append(f"> *🔍 Ambiguity note: {req.ambiguity_note}*")
+    # if req.ambiguity_note:
+    #     lines.append(f"> *🔍 Ambiguity note: {req.ambiguity_note}*")
 
-    lines.append("")
+    # lines.append("")
     return lines
 
 

@@ -253,7 +253,7 @@ class ConversationState:
         lines = ["PROJECT BRIEF (confirmed in scope session):"]
         for key, label in LABELS.items():
             value = self.project_brief.get(key, "")
-            lines.append(f"  {label:<22}: {value if value else '(not specified)'}")
+            lines.append(f"  {label}: {value if value else '(not specified)'}")
         return "\n".join(lines)
 
     def to_dict(self):

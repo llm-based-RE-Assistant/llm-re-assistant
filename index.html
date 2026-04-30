@@ -2208,6 +2208,9 @@
             appendMessage("assistant", "⚠ " + (data.error || "Error"));
           } else {
             appendMessage("assistant", data.assistant_reply);
+            if (data.phase_transitioned) {
+              appendMessage("assistant", data.follow_up_message);
+            }
             _lastCovReport = data.coverage_report;
             _turnCount = data.turn_id || 0;
             _currentPhase = data.current_phase || "fr";

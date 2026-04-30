@@ -391,6 +391,8 @@ Reply with ONLY the domain key (text before the colon). If none fit, reply "none
 DECOMPOSE_PROMPT = """You are a requirements engineering expert helping a colleague write a complete
 IEEE 830-1998 SRS for the "{project_name}" system.
 
+{project_brief}
+
 Your task: generate MISSING atomic requirements for the "{domain_label}" domain.
 
 REQUIREMENTS ALREADY WRITTEN FOR THIS DOMAIN:
@@ -457,8 +459,6 @@ PROJECT BRIEF (confirmed with the customer):
 {project_brief}
 
 DOMAIN COUNT: {domain_count}
-STAKEHOLDER INDICATORS: {stakeholder_hints}
-INTEGRATION INDICATORS: {integration_hints}
 
 Reply with ONLY one word: simple, medium, or complex."""
 
@@ -664,3 +664,38 @@ COVERAGE_CHECKLIST: dict[str, dict] = {
         "ieee830_ref": "3.6.6",
     }
 }
+
+# ---------------------------------------------------------------------------
+# Domain Coverage Check Prompt
+# ---------------------------------------------------------------------------
+DOMAIN_COVERAGE_CHECK_PROMPT = """You are a Requirements Engineering coverage analyst.
+
+PROJECT: {project_name}
+DOMAIN / FEATURE: {domain_label}
+
+COVERAGE TEMPLATE (the dimensions that must be addressed for this domain):
+{template}
+
+REQUIREMENTS WRITTEN SO FAR FOR THIS DOMAIN:
+{reqs_text}
+
+CONSTRAINTS AND NFRs WRITTEN SO FAR FOR THIS PROJECT:
+{constraints_reqs_text}
+
+{NFR_reqs_text}
+
+CONVERSATION HISTORY (relevant turns about this domain):
+{conversation_history}
+
+TASK:
+From the given conversation history and requirements, classify each dimension as:
+  - "covered"    → requirements adequately address it
+  - "deferred"   → RE assistant asked about it, stakeholder said they 
+                   don't know / can't answer / needs to check with team
+  - "pending"    → not yet probed in conversation
+  - "out_of_scope" → stakeholder explicitly said not applicable
+
+Return JSON: {{"dimension_key": "covered|deferred|pending|out_of_scope"}}
+ No preamble, no explanation.
+Example: {{"actions": "covered", "data": "deferred", "constraints": "covered"}}
+"""

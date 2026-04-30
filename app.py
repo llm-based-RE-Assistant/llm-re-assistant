@@ -391,7 +391,17 @@ def send_turn():
         return jsonify({"error": "Session complete. Generate SRS or start a new session."}), 400
 
     try:
-        assistant_reply = manager.send_turn(user_message, state, logger)
+        result = manager.send_turn(user_message, state, logger)
+        # send_turn now returns SendTurnResult; unwrap for backwards compat
+        if hasattr(result, "primary_response"):
+            assistant_reply      = result.primary_response
+            follow_up_message   = result.follow_up_message
+            phase_transitioned   = result.phase_transitioned
+        else:
+            # Fallback: old code path returned a plain string
+            assistant_reply    = result
+            follow_up_message  = ""
+            phase_transitioned = False
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
 
@@ -411,16 +421,18 @@ def send_turn():
             _save_project(p)
 
     return jsonify({
-        "session_id":      session_id,
-        "assistant_reply": assistant_reply,
-        "turn_id":         state.turn_count,
-        "gap_report":      post_gap_report.to_dict(),
-        "coverage_report": coverage_report,
-        "srs_ready":       srs_ready,
-        "current_phase":   current_phase,
-        "task_type":       session.get("task_type", "elicitation"),
-        "scope_complete":  getattr(state, "scope_complete", False),
-        "project_brief":   getattr(state, "project_brief", {}),
+        "session_id":         session_id,
+        "assistant_reply":    assistant_reply,
+        "follow_up_message":  follow_up_message,
+        "phase_transitioned": phase_transitioned,
+        "turn_id":            state.turn_count,
+        "gap_report":         post_gap_report.to_dict(),
+        "coverage_report":    coverage_report,
+        "srs_ready":          srs_ready,
+        "current_phase":      current_phase,
+        "task_type":          session.get("task_type", "elicitation"),
+        "scope_complete":     getattr(state, "scope_complete", False),
+        "project_brief":      getattr(state, "project_brief", {}),
     })
 
 
@@ -640,6 +652,7 @@ def domain_mark_complete():
         return jsonify({"error": f"Domain '{key}' not found"}), 404
 
     state.domain_gate.domains[key].status = status
+    state.domain_gate.domains[key].user_locked = status in ("confirmed", "excluded")
     return jsonify({
         "key": key,
         "status": status,

@@ -8,16 +8,30 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.components.conversation_state import ConversationState, RequirementType, create_session
 from src.components.system_prompt.prompt_architect import PromptArchitect, TaskType
+from src.components.system_prompt.prompt_context import determine_elicitation_phase
 from src.components.system_prompt.utils import PHASE4_SECTIONS
 from src.components.srs_template import SRSTemplate, create_template
 from src.components.srs_formatter import generate_srs_document
-from src.components.requirement_extractor import RequirementExtractor, create_extractor, parse_scope_tags
+from src.components.requirement_extractor import (
+    RequirementExtractor,
+    create_extractor,
+    parse_scope_tags
+)
 from src.components.gap_detector import GapDetector, create_gap_detector
 from src.components.domain_discovery.domain_discovery import DomainDiscovery, create_domain_discovery
 from src.components.domain_discovery.domain_gate import DomainGate
 from src.components.conversation_manager.llm_provider import LLMProvider
 from src.components.conversation_manager.session_logger import SessionLogger
-from src.components.conversation_manager.utils import _message_similarity, SMART_CHECK_PROMPT
+from src.components.conversation_manager.utils import (
+    _message_similarity,
+    SMART_CHECK_PROMPT,
+    TRANSITION_MSG,
+    TRIGGER_MESSAGES,
+    SendTurnResult,
+    SYSTEM_PROMPT_TRANS_1,
+    SYSTEM_PROMPT_TRANS_2,
+    SYSTEM_PROMPT_TRANS_3,
+)
 
 # ── Conversation Manager ──
 
@@ -196,33 +210,30 @@ class ConversationManager:
         commit requirements, update domain statuses, run decomposition, sync
         templates, detect gaps, log.
         """
+        # Capture phase BEFORE any processing - used to detect transitions in step 8
+        phase_before = determine_elicitation_phase(state)
 
         # ── PRE-CALL: resolve all context the system prompt depends on ────────
         next_turn_id = state.turn_count + 1  # what turn_count will be after add_turn()
         if self._domain_discovery and state.domain_gate:
-
-            # Only run domain operations after scope phase is complete
-            scope_done = getattr(state, "scope_complete", False)
-            task_type  = getattr(state, "task_type", "elicitation")
-            # srs_only bypasses scope phase entirely
-            if task_type == "srs_only":
-                scope_done = True
-
             # Must run before system-prompt build so domain context is available.
             # turn_count is still the PREVIOUS count here (add_turn not called yet),
             # so "turn 1" == next_turn_id == 1, i.e. turn_count == 0.
             has_existing_domains = state.domain_gate.seeded and state.domain_gate.total > 0
             project_brief = getattr(state, "project_brief", {})
+            brief_summary = state.format_brief_for_prompt() \
+                    if hasattr(state, "format_brief_for_prompt") else ""
 
             # P1. Project name resolution
             if state.project_name_needs_llm and project_brief:
-                name = self._domain_discovery.extract_project_name(project_brief)
+                name = self._domain_discovery.extract_project_name(brief_summary)
                 if name:
                     state.project_name = name
                     state.project_name_needs_llm = False
 
-            # P2. Domain seeding / re-seeding.
-            if scope_done:
+            # P2-P6
+            if state.scope_complete:
+                # P2. Domain seeding / re-seeding.
                 if not has_existing_domains and not state.domain_gate.seeded:
                     # Fresh seed on first FR turn: use project brief + message for richer context
                     seed_description = (user_message).strip()
@@ -231,7 +242,7 @@ class ConversationManager:
                         state.domain_gate,
                         next_turn_id,
                         project_name=state.project_name,
-                        project_brief=project_brief
+                        project_brief=brief_summary,
                     )
                 elif has_existing_domains and not state.domain_gate.seeded:
                     # Pre-loaded domains (uploaded reqs): reseed with first message
@@ -240,7 +251,7 @@ class ConversationManager:
                         gate=state.domain_gate,
                         state=state,
                         turn_id=next_turn_id,
-                        project_brief=project_brief
+                        project_brief=brief_summary
                     )
                 elif next_turn_id == DomainDiscovery.RESEED_TURN:
                     all_user_msgs = " ".join(t.user_message for t in state.turns) + "\n" + user_message
@@ -249,7 +260,7 @@ class ConversationManager:
                         gate=state.domain_gate,
                         state=state,
                         turn_id=next_turn_id,
-                        project_brief=project_brief
+                        project_brief=brief_summary
                     )
                 elif next_turn_id == DomainDiscovery.SECOND_RESEED_TURN:
                     all_user_msgs = " ".join(t.user_message for t in state.turns[-15:]) + "\n" + user_message
@@ -258,7 +269,7 @@ class ConversationManager:
                         gate=state.domain_gate,
                         state=state,
                         turn_id=next_turn_id,
-                        project_brief=project_brief
+                        project_brief=brief_summary
                     )
                 elif next_turn_id == DomainDiscovery.THIRD_RESEED_TURN:
                     _cx = getattr(state, "system_complexity", "")
@@ -269,11 +280,9 @@ class ConversationManager:
                             gate=state.domain_gate,
                             state=state,
                             turn_id=next_turn_id,
-                            project_brief=project_brief
+                            project_brief=brief_summary
                         )
 
-            # P3–P6 only relevant once domain seeding is active (scope complete)
-            if scope_done:
                 # P3. System complexity classification (once, after seeding complete).
                 if (not getattr(state, "system_complexity", "")
                         and state.domain_gate.seeded
@@ -281,7 +290,7 @@ class ConversationManager:
                         and project_brief):
                     _complexity = self._domain_discovery.classify_system_complexity(
                         project_name=state.project_name,
-                        description=project_brief,
+                        project_brief=brief_summary,
                         gate=state.domain_gate,
                         state=state,
                     )
@@ -309,7 +318,7 @@ class ConversationManager:
                         _template = self._domain_discovery.generate_domain_req_template(
                             domain_label=_cur_dv.label,
                             project_name=state.project_name,
-                            project_brief=project_brief,
+                            project_brief=brief_summary,
                             existing_reqs=_existing_reqs,
                             complexity=getattr(state, "system_complexity", "") or "medium",
                         )
@@ -331,7 +340,6 @@ class ConversationManager:
                     dv = state.domain_gate.domains.get(self._last_probed_domain)
                     if dv and dv.status not in ("confirmed", "excluded"):
                         dv.probe_count += 1
-                    self._last_probed_domain = None   # reset so it only fires once
 
         # ── CALL: build system prompt and invoke LLM ──────────────────────────
 
@@ -364,7 +372,7 @@ class ConversationManager:
         # Must run before anything else so scope_complete is set before
         # domain seeding on the NEXT turn's pre-call block.
         scope_tags = parse_scope_tags(assistant_response)
-        if scope_tags:
+        if scope_tags and current_phase == "scope":
             VALID_BRIEF_FIELDS = {
                 "system_purpose", "user_classes", "core_features", "scale_and_context",
                 "key_constraints", "integration_points", "out_of_scope",
@@ -378,9 +386,22 @@ class ConversationManager:
                     })
                 elif field in VALID_BRIEF_FIELDS and value:
                     state.project_brief[field] = value
+
             state.scope_turn_count = getattr(state, "scope_turn_count", 0) + 1
-            # Force completion after 6 scope turns regardless
-            if state.scope_turn_count >= 6 and not state.scope_complete:
+
+            # Auto-complete if all fields are filled
+            if (not state.scope_complete
+                    and VALID_BRIEF_FIELDS.issubset(state.project_brief.keys())
+                    and all(state.project_brief.get(f) for f in VALID_BRIEF_FIELDS)):
+                state.scope_complete = True
+                logger.log_event("scope_phase_auto_complete", {
+                    "turn_id": turn.turn_id,
+                    "reason": "all_brief_fields_filled",
+                    "brief": dict(state.project_brief),
+                })
+
+            # Force-complete after 10 turns
+            if state.scope_turn_count >= 10 and not state.scope_complete:
                 state.scope_complete = True
                 logger.log_event("scope_phase_forced_complete", {
                     "turn_id": turn.turn_id,
@@ -443,10 +464,38 @@ class ConversationManager:
                         self._domain_discovery.tag_subdimension(
                             req_id, subdim, ext.domain_label, state.domain_gate)
 
-        # 4h. Update domain statuses (req counts changed by 4g)
+        # 4h. Sync req_ids from requirements store (no status changes here)
         if self._domain_discovery and state.domain_gate:
             self._domain_discovery.update_domain_statuses(state.domain_gate, state)
 
+        # 4h-ii. Coverage check — run for the current active domain only.
+        # Running for ALL domains every turn would be too expensive (N LLM calls/turn).
+        # We only check the domain currently being elicited. Once it flips to
+        # "confirmed", the next turn will pick up the next domain automatically.
+        if self._domain_discovery and state.domain_gate and state.domain_gate.seeded:
+            _active_dk = None
+            for _dk, _dv in state.domain_gate.domains.items():
+                if _dv.status not in ("confirmed", "excluded") and not _dv.user_locked:
+                    _active_dk = _dk
+                    break
+            if _active_dk:
+                # last 6 user and assistant messages for context, stop if Transition_message in user_message
+                conversation_history = "\n".join(
+                    f"User: {t.user_message}\nAssistant: {t.assistant_message}"
+                    for t in state.turns[-6:] if TRANSITION_MSG not in t.user_message
+                )
+                self._domain_discovery.check_domain_coverage(
+                    domain_key=_active_dk,
+                    gate=state.domain_gate,
+                    state=state,
+                    project_brief=brief_summary,
+                    conversation_history=conversation_history
+                )
+                print(
+                    f"[CoverageCheck] Active domain '{_active_dk}' → "
+                    f"status={state.domain_gate.domains[_active_dk].status}"
+                )
+        
         # 4i. Record which domain was just probed (increment happens next turn's PRE-CALL)
         if self._domain_discovery and state.domain_gate:
             nd = state.domain_gate.next_unprobed()
@@ -475,7 +524,7 @@ class ConversationManager:
         #         if not _should_decompose:
         #             continue
         #         new_items = self._domain_discovery.decompose_requirements(
-        #             dk, state.domain_gate, state)
+        #             dk, state.domain_gate, state, project_brief=brief_summary)
         #         existing_texts = {r.text.lower().strip() for r in state.requirements.values()}
         #         added = 0
         #         for text, is_nfr in new_items:
@@ -532,7 +581,137 @@ class ConversationManager:
             gap_report_dict=gap_report.to_dict() if gap_report else None
         )
 
-        return assistant_response
+        # 8. Phase transition follow-up - detect if we just crossed a phase boundary
+        # and, if so, generate a follow-up message using the NEW phase system prompt.
+        # This eliminates the "dead turn" where the user must send a dummy message
+        # just to trigger the transition.
+        #
+        # Transitions handled:
+        #   scope -> FR   : scope_complete just became True
+        #   FR    -> NFR  : domain gate just became satisfied
+        #   NFR   -> IEEE : all NFR categories just became satisfied
+        #
+        # Each transition generates exactly one follow-up LLM call. The result is
+        # returned in SendTurnResult.follow_up_message and rendered as a separate
+        # chat bubble in the UI.
+        follow_up_message: str = ""
+        new_phase_after = determine_elicitation_phase(state)
+ 
+        if phase_before != new_phase_after:
+            follow_up_message = self._generate_transition_message(
+                state=state,
+                from_phase=phase_before,
+                to_phase=new_phase_after,
+                logger=logger,
+            )
+            if follow_up_message:
+                logger.log_event("phase_transition_follow_up", {
+                    "from_phase": phase_before,
+                    "to_phase":   new_phase_after,
+                    "turn_id":    turn.turn_id,
+                })
+ 
+        return SendTurnResult(
+            primary_response=assistant_response,
+            follow_up_message=follow_up_message,
+            phase_transitioned=bool(follow_up_message),
+            new_phase=new_phase_after,
+        )
+    
+    def _generate_transition_message(
+        self,
+        state: ConversationState,
+        from_phase: str,
+        to_phase: str,
+        logger: SessionLogger,
+    ) -> str:
+        """Generate a follow-up LLM response when a phase transition is detected.
+ 
+        Called at the end of send_turn() when phase_before != new_phase_after.
+        Makes one LLM call using the NEW phase system prompt and a brief
+        transition trigger message. The result becomes a follow-up chat bubble.
+ 
+        Transition trigger messages are marked with _TRANSITION_MSG prefix so
+        they are excluded from SRS enricher transcript helpers (_user_turns_text).
+ 
+        Returns the follow-up response string, or "" on failure.
+        """
+        system_prompt = ""
+
+        # Build trigger message per transition type
+        trigger = TRIGGER_MESSAGES.get((from_phase, to_phase))
+        if not trigger:
+            # Unexpected transition - no follow-up needed
+            return ""
+ 
+        # Run domain seeding immediately for scope->FR so the FR system prompt
+        # has domains available on this very follow-up call
+        if from_phase == "scope" and to_phase == "fr":
+            project_brief = getattr(state, "project_brief", {})
+            if state.project_name_needs_llm and project_brief:
+                brief_summary = state.format_brief_for_prompt() \
+                    if hasattr(state, "format_brief_for_prompt") else ""
+                name = self._domain_discovery.extract_project_name(brief_summary)
+                if name:
+                    state.project_name = name
+                    state.project_name_needs_llm = False
+            if self._domain_discovery and state.domain_gate and not state.domain_gate.seeded:
+                brief_summary = state.format_brief_for_prompt() \
+                    if hasattr(state, "format_brief_for_prompt") else ""
+                seed_desc = state.turns[0].user_message if state.turns else ""
+                self._domain_discovery.seed(
+                    seed_desc, state.domain_gate,
+                    turn_id=state.turn_count,
+                    project_name=state.project_name,
+                    project_brief=brief_summary,
+                )
+                logger.log_event("domain_seeded_on_transition", {
+                    "domain_count": state.domain_gate.total,
+                })
+            # first domain to probe.
+            domain = None
+            if state.domain_gate and state.domain_gate.seeded:
+                for dk, dv in state.domain_gate.domains.items():
+                    if dv.status not in ("confirmed", "excluded"):
+                        domain = dv.label
+                        break
+            
+            system_prompt = SYSTEM_PROMPT_TRANS_1.format(from_phase=from_phase, to_phase=to_phase, domain=domain or "unknown")
+
+        if (from_phase, to_phase) == ("fr", "nfr"):
+            system_prompt = SYSTEM_PROMPT_TRANS_2.format(from_phase=from_phase, to_phase=to_phase)
+        if (from_phase, to_phase) == ("nfr", "ieee"):
+            system_prompt = SYSTEM_PROMPT_TRANS_3.format(from_phase=from_phase, to_phase=to_phase)
+        # Build system prompt for the NEW phase
+        try:
+            response = self.provider.chat(
+                system_message=system_prompt,
+                messages=[{
+                    "role":    "user",
+                    "content": f"{TRANSITION_MSG}: {trigger}",
+                }],
+                temperature=0.3,
+            )
+            # Record as a turn so it appears in history for subsequent turns
+            follow_up_turn = state.add_turn(
+                user_message=f"{TRANSITION_MSG}: {trigger}",
+                assistant_message=response.strip(),
+            )
+            logger.log_turn(
+                turn_id=follow_up_turn.turn_id,
+                user_msg=f"{TRANSITION_MSG}: {trigger}",
+                assistant_msg=response.strip(),
+                categories_updated=[],
+                gap_report_dict=None,
+            )
+            return response.strip()
+        except Exception as exc:
+            logger.log_event("transition_follow_up_failed", {
+                "from_phase": from_phase,
+                "to_phase":   to_phase,
+                "error":      str(exc),
+            })
+            return ""
 
     def finalize_session(self, state, logger):
         if not self._srs_template:
@@ -541,7 +720,7 @@ class ConversationManager:
         self._srs_template.update_from_requirements(
             state.requirements, project_name=state.project_name)
 
-        from srs_coverage import create_enricher
+        from src.components.srs_coverage import create_enricher
         enricher = create_enricher(provider=self.provider)
         filled_sections = enricher.enrich(self._srs_template, state)
 
