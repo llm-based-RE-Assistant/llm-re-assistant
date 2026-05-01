@@ -24,8 +24,8 @@ if "src.components.system_prompt.utils" not in sys.modules:
         "src.components.system_prompt.utils"
     )
 _pu = sys.modules["src.components.system_prompt.utils"]
-_pu._PREPROCESS_SYSTEM = "You are a requirements preprocessor."
-_pu._PREPROCESS_USER   = (
+_pu.PREPROCESS_SYSTEM = "You are a requirements preprocessor."
+_pu.PREPROCESS_USER   = (
     "Project: {project_context}\n"
     "Count: {count}\n"
     "Requirements:\n{req_list}"
@@ -37,7 +37,7 @@ if "src.components.system_prompt.prompt_architect" not in sys.modules:
         "src.components.system_prompt.prompt_architect"
     )
 _pa = sys.modules["src.components.system_prompt.prompt_architect"]
-_pa.MIN_NFR_PER_CATEGORY = 2
+_pa.MIN_NFR_PER_CATEGORY = 3
 
 # Now import real classes
 from src.components.requirement_preprocessor import (   # noqa: E402

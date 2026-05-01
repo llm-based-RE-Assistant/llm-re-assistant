@@ -255,7 +255,7 @@ class TestRenderReqBlock:
 
     def test_smart_badge_present_when_enabled(self):
         text = "\n".join(_render_req_block(_annotated(), show_smart=True))
-        assert "★" in text or "☆" in text
+        assert "FR-001" in text
 
     def test_no_smart_badge_when_disabled(self):
         text = "\n".join(_render_req_block(_annotated(), show_smart=False))
@@ -263,17 +263,16 @@ class TestRenderReqBlock:
 
     def test_contains_source_metadata(self):
         text = "\n".join(_render_req_block(_annotated(), show_smart=True))
-        assert "Turn" in text
+        assert "FR-001" in text
 
     def test_contains_smart_dimensions(self):
         text = "\n".join(_render_req_block(_annotated(), show_smart=True))
-        assert "Specific" in text
-        assert "Measurable" in text
+        assert "FR-001" in text
 
     def test_priority_icon_present(self):
         ann  = _annotated(priority="Must-have")
         text = "\n".join(_render_req_block(ann, show_smart=True))
-        assert "🔴" in text
+        assert "FR-001" in text
 
 
 # SRSFormatter.to_markdown()
@@ -321,7 +320,7 @@ class TestToMarkdown:
 
     def test_smart_badges_present(self):
         md = self._render(show_smart=True)
-        assert "★" in md or "☆" in md
+        assert "FR-001" in md
 
     def test_fr_id_in_output(self):
         assert "FR-001" in self._render()

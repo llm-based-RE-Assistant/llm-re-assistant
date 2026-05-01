@@ -29,6 +29,10 @@ from unittest.mock import MagicMock
 from enum import Enum
 import pytest
 
+def _response(result):
+    """Extract string response from either str or SendTurnResult."""
+    return result.primary_response if hasattr(result, "primary_response") else result
+
 _to_clear = [
     "src.components.srs_coverage",
     "src.components.system_prompt.prompt_architect",
@@ -77,21 +81,21 @@ _ensure_stub(
     },
     COVERAGE_CHECKLIST={},
     DOMAIN_SUB_DIMENSIONS=["data","actions","constraints","automation","edge_cases"],
-    _DOMAIN_GATE_COVERAGE_FRACTION=0.80,
+    DOMAIN_GATE_COVERAGE_FRACTION=0.80,     
     GapSeverity=GapSeverity,
     STRUCTURAL_CATEGORIES={},
     MIN_FUNCTIONAL_FOR_NFR=10,
     NFR_PROBE_HINTS={},
-    # Prompt template strings that domain_discovery.py imports
-    _SEED_PROMPT="",
-    _RESEED_PROMPT="",
-    _NFR_CLASSIFY_PROMPT="",
-    _SUBDIM_CLASSIFY_PROMPT="",
-    _DOMAIN_MATCH_PROMPT="",
-    _DECOMPOSE_PROMPT="",
-    _PROJECT_NAME_PROMPT="",
-    _COMPLEXITY_PROMPT="",
-    _DOMAIN_TEMPLATE_PROMPT="",
+    SEED_PROMPT="",           
+    RESEED_PROMPT="",         
+    NFR_CLASSIFY_PROMPT="",     
+    SUBDIM_CLASSIFY_PROMPT="",
+    DOMAIN_MATCH_PROMPT="",   
+    DECOMPOSE_PROMPT="",      
+    PROJECT_NAME_PROMPT="",   
+    COMPLEXITY_PROMPT="",    
+    DOMAIN_TEMPLATE_PROMPT="",
+    DOMAIN_COVERAGE_CHECK_PROMPT="",
 )
 
 # ---------------------------------------------------------------------------
@@ -129,25 +133,26 @@ _ensure_stub(
     }),
     IEEE830_CATEGORIES={},
     NFR_PROBE_HINTS={},
-    _COMMS_STYLE="",
-    _REQ_FORMAT="",
-    _SEC_FORMAT="",
-    _ELICITATION_FR_ROLE="",
-    _ELICITATION_NFR_ROLE="",
-    _ELICITATION_IEEE_ROLE="",
-    _SRS_ONLY_ROLE="",
-    _PREPROCESS_SYSTEM="",
-    _PREPROCESS_USER="",
-    _SCOPE_PROMPT="",
-    _PERSPECTIVE_PROMPT="",
-    _PRODUCT_FUNCTIONS_DOMAIN_PROMPT="",
-    _USER_CLASSES_PROMPT="",
-    _GENERAL_CONSTRAINTS_PROMPT="",
-    _ASSUMPTIONS_PROMPT="",
-    _INTERFACES_PROMPT="",
-    _CONSTRAINTS_STUB="",
-    _DATABASE_STUB="",
-    _SYSTEM_ROLE="",
+    COMMS_STYLE="",           
+    REQ_FORMAT="",            
+    SEC_FORMAT="",            
+    ELICITATION_FR_ROLE="",   
+    ELICITATION_NFR_ROLE="",  
+    ELICITATION_IEEE_ROLE="", 
+    SRS_ONLY_ROLE="",         
+    PREPROCESS_SYSTEM="",     
+    PREPROCESS_USER="",       
+    SCOPE_PROMPT="",          
+    PERSPECTIVE_PROMPT="",    
+    PRODUCT_FUNCTIONS_DOMAIN_PROMPT="", 
+    USER_CLASSES_PROMPT="",   
+    GENERAL_CONSTRAINTS_PROMPT="",      
+    ASSUMPTIONS_PROMPT="",    
+    INTERFACES_PROMPT="",     
+    CONSTRAINTS_STUB="",      
+    DATABASE_STUB="",         
+    SYSTEM_ROLE="",           
+    PHASE0_SCOPE_ROLE="",
 )
 
 # ---------------------------------------------------------------------------
@@ -289,18 +294,18 @@ class TestStartSession:
 
 class TestSendTurn:
     def _setup(self, tmp_path, responses=None):
-        mgr = _make_manager(tmp_path, responses=responses or ["What would you like to build?"])
+        mgr = _make_manager(tmp_path, responses=responses)
         _, state, logger, _ = mgr.start_session()
         return mgr, state, logger
-
     def test_returns_string(self, tmp_path):
         mgr, state, logger = self._setup(tmp_path)
-        assert isinstance(mgr.send_turn("I want to build a library system.", state, logger), str)
+        result = mgr.send_turn("I want to build a library system.", state, logger)
+        assert isinstance(_response(result), str)
 
     def test_returns_stub_response(self, tmp_path):
         mgr, state, logger = self._setup(tmp_path, responses=["Who are the primary users?"])
         result = mgr.send_turn("I want to build a library system.", state, logger)
-        assert result == "Who are the primary users?"
+        assert _response(result) == "Who are the primary users?"
 
     def test_turn_recorded_in_state(self, tmp_path):
         mgr, state, logger = self._setup(tmp_path)
@@ -525,8 +530,8 @@ class TestFullFlow:
     def test_start_and_send_turn(self, tmp_path):
         mgr = _make_manager(tmp_path, responses=["Great! Who are the primary users?"])
         session_id, state, logger, _ = mgr.start_session()
-        response = mgr.send_turn("I want to build a library management system.", state, logger)
-        assert isinstance(response, str) and len(response) > 0
+        result = mgr.send_turn("I want to build a library management system.", state, logger)
+        assert isinstance(_response(result), str) and len(_response(result)) > 0
         data = json.loads(logger.get_log_path().read_text(encoding="utf-8"))
         types_ = [e["event_type"] for e in data]
         assert "session_start" in types_ and "turn" in types_
@@ -539,15 +544,10 @@ class TestFullFlow:
 
     def test_stub_responses_cycle(self, tmp_path):
         mgr = _make_manager(tmp_path, responses=["Alpha", "Beta"])
-
         mgr._run_smart_check = lambda extracted, msg: extracted
-
         _, state, logger, _ = mgr.start_session()
-
-        r = [mgr.send_turn(f"Turn {i}", state, logger) for i in range(4)]
-
-        # Ensure cycling pattern regardless of offset
-        unique = list(dict.fromkeys(r))  # preserves order
+        r = [_response(mgr.send_turn(f"Turn {i}", state, logger)) for i in range(4)]
+        unique = list(dict.fromkeys(r))
         assert set(unique) == {"Alpha", "Beta"}
         assert len(unique) == 2
 

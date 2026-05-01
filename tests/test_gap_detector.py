@@ -78,7 +78,7 @@ if "src.components.domain_discovery.utils" not in sys.modules:
         "src.components.domain_discovery.utils"
     )
 _du = sys.modules["src.components.domain_discovery.utils"]
-_du._DOMAIN_GATE_COVERAGE_FRACTION = 0.8
+_du.DOMAIN_GATE_COVERAGE_FRACTION = 0.8
 _du.NFR_CATEGORIES     = NFR_CATEGORIES
 _du.COVERAGE_CHECKLIST = COVERAGE_CHECKLIST
 _du.GapSeverity        = GapSeverity

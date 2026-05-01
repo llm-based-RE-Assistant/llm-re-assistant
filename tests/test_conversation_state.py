@@ -25,7 +25,7 @@ import json
 
 if "src.components.domain_discovery.utils" not in sys.modules:
     _du = types.ModuleType("src.components.domain_discovery.utils")
-    _du._DOMAIN_GATE_COVERAGE_FRACTION = 0.8
+    _du.DOMAIN_GATE_COVERAGE_FRACTION = 0.8
     sys.modules["src.components.domain_discovery.utils"] = _du
 
 if "src.components.system_prompt.prompt_architect" not in sys.modules:

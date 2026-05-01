@@ -20,7 +20,7 @@ import types
 # Stub utils constant — domain_gate only needs _DOMAIN_GATE_COVERAGE_FRACTION
 if "src.components.domain_discovery.utils" not in sys.modules:
     _utils = types.ModuleType("src.components.domain_discovery.utils")
-    _utils._DOMAIN_GATE_COVERAGE_FRACTION = 0.8
+    _utils.DOMAIN_GATE_COVERAGE_FRACTION = 0.80
     sys.modules["src.components.domain_discovery.utils"] = _utils
 
 # Now import the real classes (both have no other heavy dependencies)
@@ -94,6 +94,7 @@ class TestDomainSpec:
         assert set(d.to_dict().keys()) == {
             "label", "req_ids", "status", "probe_question",
             "sub_dimensions", "probe_count", "decompose_count",
+            "user_locked", "covered_dimensions",
         }
 
 
