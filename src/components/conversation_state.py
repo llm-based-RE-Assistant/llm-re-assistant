@@ -226,7 +226,8 @@ class ConversationState:
              not generate an SRS without any domain elicitation context.
         4. All IEEE-830 documentation sections collected (Phase 4 complete).
         """
-        from src.components.system_prompt.prompt_architect import MIN_FUNCTIONAL_REQS, PHASE4_SECTIONS
+        from src.components.system_prompt.prompt_architect import MIN_FUNCTIONAL_REQS
+        from src.components.system_prompt.utils import PHASE4_SECTIONS
         if self.functional_count < MIN_FUNCTIONAL_REQS:
             return False
         if not self.mandatory_nfrs_covered:
